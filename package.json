@@ -1,0 +1,36 @@
+{
+  "name": "notion-cms",
+  "version": "0.1.0",
+  "description": "A TypeScript library for using Notion as a headless CMS",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "notion",
+    "cms",
+    "typescript",
+    "headless-cms"
+  ],
+  "author": "Miguel Gonzalez",
+  "license": "MIT",
+  "dependencies": {
+    "@notionhq/client": "^2.2.14"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "ts-morph": "^21.0.1",
+    "typescript": "^5.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikemajara/notion-cms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mikemajara/notion-cms/issues"
+  },
+  "homepage": "https://github.com/mikemajara/notion-cms#readme"
+}
