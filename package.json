@@ -18,7 +18,8 @@
   "author": "Miguel Gonzalez",
   "license": "MIT",
   "dependencies": {
-    "@notionhq/client": "^2.2.14"
+    "@notionhq/client": "^2.2.14",
+    "commander": "^13.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",

@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Project
+
+- This project is meant to be a library that adds functionality to other projects on which it's installed.
+- When implementing new methods make sure these methods are needed in this project and are not part of the ../notion-cms-test/ project on which we're testing this library.
+- This project should only contain general methods that should be made available to any project installing this library as a package.
