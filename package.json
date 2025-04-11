@@ -1,37 +1,23 @@
 {
-  "name": "notion-cms",
-  "version": "0.1.0",
-  "description": "A TypeScript library for using Notion as a headless CMS",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "jest",
-    "prepare": "npm run build"
-  },
-  "keywords": [
-    "notion",
-    "cms",
-    "typescript",
-    "headless-cms"
+  "name": "notion-cms-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
   ],
-  "author": "Miguel Gonzalez",
-  "license": "MIT",
-  "dependencies": {
-    "@notionhq/client": "^2.2.14",
-    "commander": "^13.1.0"
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types"
   },
   "devDependencies": {
-    "@types/node": "^20.10.5",
-    "ts-morph": "^21.0.1",
-    "typescript": "^5.3.3"
+    "turbo": "^1.12.5",
+    "eslint": "^8.56.0",
+    "typescript": "^5.4.2"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mikemajara/notion-cms.git"
-  },
-  "bugs": {
-    "url": "https://github.com/mikemajara/notion-cms/issues"
-  },
-  "homepage": "https://github.com/mikemajara/notion-cms#readme"
+  "packageManager": "pnpm@8.15.0",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
