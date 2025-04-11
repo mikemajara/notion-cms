@@ -23,6 +23,7 @@ import {
   EmailPropertyItemObjectResponse,
   PhoneNumberPropertyItemObjectResponse,
   UserObjectResponse,
+  PageObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import * as fs from "fs";
 import * as path from "path";
@@ -32,6 +33,12 @@ import { Project, SourceFile } from "ts-morph";
 export type NotionPropertyType =
   DatabaseObjectResponse["properties"][string]["type"];
 type NotionPropertyConfig = DatabaseObjectResponse["properties"][string];
+
+// Export interfaces for use in other modules
+export interface DatabaseRecord {
+  id: string;
+  [key: string]: any;
+}
 
 // Helper function to sanitize property names
 function sanitizePropertyName(name: string): string {
@@ -146,7 +153,7 @@ function generateHelperTypes(sourceFile: SourceFile): void {
   // Add imports
   sourceFile.addImportDeclaration({
     moduleSpecifier: "@notionhq/client/build/src/api-endpoints",
-    namedImports: ["PropertyItemObjectResponse"],
+    namedImports: ["PropertyItemObjectResponse", "PageObjectResponse"],
   });
 
   // Add NotionPropertyType definition if not imported
@@ -261,92 +268,155 @@ export function getPropertyValue<T extends NotionPropertyType>(
 }
 
 function generateHelperFunctions(sourceFile: SourceFile): void {
-  // Instead of adding the function with its toString(), add a proper statement
+  // Add the getPropertyValue helper function
   sourceFile.addFunction({
     name: "getPropertyValue",
     typeParameters: [{ name: "T extends NotionPropertyType" }],
-    parameters: [{ name: "property", type: "NotionProperty<T>" }],
+    parameters: [
+      {
+        name: "property",
+        type: "NotionProperty<T>",
+      },
+    ],
     returnType: "any",
+    statements: [
+      `switch (property.type) {
+        case "title": {
+          const titleProp = property as any;
+          const richText = titleProp.title;
+          return richText?.[0]?.plain_text ?? "";
+        }
+        case "rich_text": {
+          const richTextProp = property as any;
+          const richText = richTextProp.rich_text;
+          return richText?.[0]?.plain_text ?? "";
+        }
+        case "number":
+          return (property as any).number;
+        case "select":
+          return (property as any).select?.name ?? null;
+        case "multi_select":
+          return (property as any).multi_select.map((select: any) => select.name);
+        case "date": {
+          const dateProp = property as any;
+          return dateProp.date ? new Date(dateProp.date.start) : null;
+        }
+        case "people": {
+          const peopleProp = property as any;
+          return Array.isArray(peopleProp.people)
+            ? peopleProp.people.map((person: any) => ({
+                id: person.id,
+                name: person.name,
+                avatar_url: person.avatar_url,
+              }))
+            : [];
+        }
+        case "files": {
+          const filesProp = property as any;
+          return filesProp.files.map((file: any) => ({
+            name: file.name,
+            url: file.type === "external" ? file.external.url : "",
+          }));
+        }
+        case "checkbox":
+          return (property as any).checkbox;
+        case "url":
+          return (property as any).url;
+        case "email":
+          return (property as any).email;
+        case "phone_number":
+          return (property as any).phone_number;
+        case "formula":
+          return (property as any).formula;
+        case "relation": {
+          const relationProp = property as any;
+          return Array.isArray(relationProp.relation)
+            ? relationProp.relation.map((rel: any) => rel.id)
+            : [];
+        }
+        case "rollup":
+          return (property as any).rollup;
+        case "created_time":
+          return (property as any).created_time;
+        case "created_by": {
+          const createdBy = (property as any).created_by;
+          return {
+            id: createdBy.id,
+            name: createdBy.name,
+            avatar_url: createdBy.avatar_url,
+          };
+        }
+        case "last_edited_time":
+          return (property as any).last_edited_time;
+        case "last_edited_by": {
+          const lastEditedBy = (property as any).last_edited_by;
+          return {
+            id: lastEditedBy.id,
+            name: lastEditedBy.name,
+            avatar_url: lastEditedBy.avatar_url,
+          };
+        }
+        default:
+          return null;
+      }`,
+    ],
     isExported: true,
-    statements: `  switch (property.type) {
-    case "title": {
-      const titleProp = property as any;
-      const richText = titleProp.title;
-      return richText?.[0]?.plain_text ?? "";
-    }
-    case "rich_text": {
-      const richTextProp = property as any;
-      const richText = richTextProp.rich_text;
-      return richText?.[0]?.plain_text ?? "";
-    }
-    case "number":
-      return (property as any).number;
-    case "select":
-      return (property as any).select?.name ?? null;
-    case "multi_select":
-      return (property as any).multi_select.map((select: any) => select.name);
-    case "date": {
-      const dateProp = property as any;
-      return dateProp.date ? new Date(dateProp.date.start) : null;
-    }
-    case "people": {
-      const peopleProp = property as any;
-      return Array.isArray(peopleProp.people)
-        ? peopleProp.people.map((person: any) => ({
-            id: person.id,
-            name: person.name,
-            avatar_url: person.avatar_url,
-          }))
-        : [];
-    }
-    case "files": {
-      const filesProp = property as any;
-      return filesProp.files.map((file: any) => ({
-        name: file.name,
-        url: file.type === "external" ? file.external.url : "",
-      }));
-    }
-    case "checkbox":
-      return (property as any).checkbox;
-    case "url":
-      return (property as any).url;
-    case "email":
-      return (property as any).email;
-    case "phone_number":
-      return (property as any).phone_number;
-    case "formula":
-      return (property as any).formula;
-    case "relation": {
-      const relationProp = property as any;
-      return Array.isArray(relationProp.relation)
-        ? relationProp.relation.map((rel: any) => rel.id)
-        : [];
-    }
-    case "rollup":
-      return (property as any).rollup;
-    case "created_time":
-      return (property as any).created_time;
-    case "created_by": {
-      const createdBy = (property as any).created_by;
-      return {
-        id: createdBy.id,
-        name: createdBy.name,
-        avatar_url: createdBy.avatar_url,
-      };
-    }
-    case "last_edited_time":
-      return (property as any).last_edited_time;
-    case "last_edited_by": {
-      const lastEditedBy = (property as any).last_edited_by;
-      return {
-        id: lastEditedBy.id,
-        name: lastEditedBy.name,
-        avatar_url: lastEditedBy.avatar_url,
-      };
-    }
-    default:
-      return null;
-  }
-`,
   });
+
+  // Add the simplifyNotionRecord helper function in the generated file as well
+  sourceFile.addFunction({
+    name: "simplifyNotionRecord",
+    parameters: [
+      {
+        name: "page",
+        type: "PageObjectResponse",
+      },
+    ],
+    returnType: "DatabaseRecord",
+    statements: [
+      `const result: Record<string, any> = {
+        id: page.id,
+      };
+
+      for (const [key, value] of Object.entries(page.properties)) {
+        result[key] = getPropertyValue(value as PropertyItemObjectResponse);
+      }
+
+      return result as DatabaseRecord;`,
+    ],
+    isExported: true,
+  });
+
+  // Add the simplifyNotionRecords helper function in the generated file as well
+  sourceFile.addFunction({
+    name: "simplifyNotionRecords",
+    parameters: [
+      {
+        name: "pages",
+        type: "PageObjectResponse[]",
+      },
+    ],
+    returnType: "DatabaseRecord[]",
+    statements: [`return pages.map(page => simplifyNotionRecord(page));`],
+    isExported: true,
+  });
+}
+
+// Export these utility functions for use in other modules
+export function simplifyNotionRecord(page: PageObjectResponse): DatabaseRecord {
+  const result: Record<string, any> = {
+    id: page.id,
+  };
+
+  for (const [key, value] of Object.entries(page.properties)) {
+    result[key] = getPropertyValue(value as PropertyItemObjectResponse);
+  }
+
+  return result as DatabaseRecord;
+}
+
+export function simplifyNotionRecords(
+  pages: PageObjectResponse[]
+): DatabaseRecord[] {
+  return pages.map((page) => simplifyNotionRecord(page));
 }
