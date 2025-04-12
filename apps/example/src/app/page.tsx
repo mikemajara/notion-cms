@@ -1,16 +1,17 @@
 import { NotionCMS } from "notion-cms";
-import { DatabaseRecord } from "../types/notion-types";
+import { BlogRecord } from "../types/notion-types-blog";
+import Link from "next/link";
 
 // Server component for fetching data
 export default async function Home() {
   // Fetch data on the server
-  let records: DatabaseRecord[] = [];
+  let records: BlogRecord[] = [];
   let error: string | null = null;
 
   try {
     const cms = new NotionCMS(process.env.NOTION_TOKEN!);
-    const response = await cms.getDatabase<DatabaseRecord>(
-      process.env.NOTION_DATABASE_ID!
+    const response = await cms.getDatabase<BlogRecord>(
+      process.env.NOTION_BLOG_DATABASE_ID!
     );
     records = response.results;
     console.log("Fetched records:", JSON.stringify(records, null, 2));
@@ -31,6 +32,15 @@ export default async function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24">
+      <div className="w-full max-w-4xl mb-8 flex justify-center">
+        <Link
+          href="/blog"
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          View Blog
+        </Link>
+      </div>
+
       <h1 className="text-4xl font-bold mb-8">Notion Database Records</h1>
       <div className="w-full max-w-4xl space-y-4">
         {/* Log records before rendering */}
@@ -50,7 +60,7 @@ export default async function Home() {
               )}
               {record.tags && record.tags.length > 0 && (
                 <div className="mt-2 flex gap-2">
-                  {record.tags.map((tag, index) => (
+                  {record.tags.map((tag: string, index: number) => (
                     <span
                       key={index}
                       className="px-3 py-1 rounded-full bg-blue-100 text-blue-800"
