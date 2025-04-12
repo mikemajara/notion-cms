@@ -15,6 +15,15 @@ import {
   simplifyNotionRecords,
   DatabaseRecord,
 } from "./generator";
+import {
+  QueryBuilder,
+  FilterBuilder,
+  SortDirection,
+  ComparisonOperator,
+  LogicalOperator,
+  FilterCondition,
+  QueryResult,
+} from "./query-builder";
 
 export interface QueryOptions {
   filter?: QueryDatabaseParameters["filter"];
@@ -39,6 +48,15 @@ export class NotionCMS {
 
   constructor(token: string) {
     this.client = new Client({ auth: token });
+  }
+
+  /**
+   * Creates a query builder for a Notion database with type safety
+   * @param databaseId The ID of the Notion database
+   * @returns A query builder instance for the specified database
+   */
+  query<T extends DatabaseRecord>(databaseId: string): QueryBuilder<T> {
+    return new QueryBuilder<T>(this.client, databaseId);
   }
 
   /**
@@ -624,3 +642,14 @@ export class NotionCMS {
 
 // Re-export types and utilities
 export * from "./generator";
+
+// Re-export query builder types and classes
+export {
+  QueryBuilder,
+  FilterBuilder,
+  SortDirection,
+  ComparisonOperator,
+  LogicalOperator,
+  FilterCondition,
+  QueryResult,
+};
