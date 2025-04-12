@@ -20,23 +20,30 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     const cms = new NotionCMS(process.env.NOTION_TOKEN!);
 
     // First, get all posts and find the one with the matching slug
-    const response = await cms.getDatabase<BlogRecord>(
-      process.env.NOTION_BLOG_DATABASE_ID!,
-      {
-        filter: {
-          property: "slug",
-          formula: {
-            string: {
-              equals: slug,
-            },
-          },
-        },
-      }
-    );
+    // const response = await cms.getDatabase<BlogRecord>(
+    //   process.env.NOTION_BLOG_DATABASE_ID!,
+    //   {
+    //     filter: {
+    //       property: "slug",
+    //       formula: {
+    //         string: {
+    //           equals: slug,
+    //         },
+    //       },
+    //     },
+    //   }
+    // );
 
-    if (response.results.length > 0) {
-      post = response.results[0];
+    post = (await cms
+      .query<BlogRecord>(process.env.NOTION_BLOG_DATABASE_ID!)
+      .where("slug")
+      .equals(slug)
+      .single()) as BlogRecord;
 
+    console.log(!!post);
+    console.log(post?.id);
+
+    if (!!post) {
       // Fetch the content of the post
       const blocks = await cms.getPageContent(post.id, true);
       content = cms.blocksToMarkdown(blocks, { includeImageUrls: true });
