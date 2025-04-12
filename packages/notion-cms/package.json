@@ -3,14 +3,22 @@
   "version": "0.1.0",
   "description": "A TypeScript library for using Notion as a headless CMS",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
+  "bin": {
+    "notion-cms": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "lint": "eslint src --ext .ts",
     "check-types": "tsc --noEmit",
     "test": "jest",
-    "prepare": "npm run build"
+    "prepare": "pnpm run build",
+    "postbuild": "chmod +x dist/cli.js"
   },
   "keywords": [
     "notion",
@@ -27,6 +35,7 @@
   "devDependencies": {
     "@types/node": "^20.10.5",
     "ts-morph": "^21.0.1",
+    "tsup": "^8.0.2",
     "typescript": "^5.3.3"
   },
   "repository": {
@@ -36,5 +45,19 @@
   "bugs": {
     "url": "https://github.com/mikemajara/notion-cms/issues"
   },
-  "homepage": "https://github.com/mikemajara/notion-cms#readme"
+  "homepage": "https://github.com/mikemajara/notion-cms#readme",
+  "tsup": {
+    "entry": [
+      "src/index.ts",
+      "src/cli.ts"
+    ],
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true
+  }
 }

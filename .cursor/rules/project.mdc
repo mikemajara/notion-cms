@@ -7,5 +7,15 @@ alwaysApply: true
 # Project
 
 - This project is meant to be a library that adds functionality to other projects on which it's installed.
-- When implementing new methods make sure these methods are needed in this project and are not part of the ../notion-cms-test/ project on which we're testing this library.
-- This project should only contain general methods that should be made available to any project installing this library as a package.
+- The main goal is simplifying the Notion API to facilitate dev experience with Notion as a CMS
+
+## Design 
+- Notion users should be able to quickly query fields and use it as a simple database, but also have access to the complex information that notion sends in it's API. This would be structured in 3 levels:
+
+### Database records
+- Notion simple CMS API: Types of a database are accessed in a simple fashion and Notion Types match JS types. Example: Dates in Notion would convert to Date types in JS easily accessible for example with record.updatedAt
+- Notion advanced CMS API: Types of a database are accessed in a simple fashion but contain default converted complex types. Example: Notion Multi Selec tags would convert to a more complex JS type that includes the label, and extra metadata like colors, or sorting. People type in Notion would convert to a more complex JS type that includes the user name, user ID and user email if available.
+
+### Blocks
+- Notion simple CMS API: Blocks would be extracted and downloaded as pure markdown to render them as similarly as possible to notion. Notion API returns blocks in a parent child hierarchy so this would require multiple calls and processing the data in an advanced way. But could work.
+- Notion advanced CMS API: Can be configured to support more advanced fields, blocks and fields if needed. (future support)

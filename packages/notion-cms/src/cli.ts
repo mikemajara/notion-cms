@@ -2,34 +2,34 @@
 
 import { Command } from "commander";
 import { generateTypes } from "./generator";
+import * as path from "path";
 
 const program = new Command();
 
 program
   .name("notion-cms")
-  .description("Generate TypeScript types from Notion databases")
-  .version("0.0.1");
+  .description("CLI for generating TypeScript types from Notion databases");
 
 program
   .command("generate")
   .description("Generate TypeScript types from a Notion database")
-  .argument("<database-id>", "ID of the Notion database")
+  .requiredOption("-d, --database <id>", "Notion database ID")
+  .option("-o, --output <path>", "Output path", "./types")
   .requiredOption("-t, --token <token>", "Notion API token")
-  .option(
-    "-o, --output <path>",
-    "Output directory for generated types",
-    "./src/types"
-  )
-  .action(
-    async (databaseId: string, options: { token: string; output: string }) => {
-      try {
-        await generateTypes(databaseId, options.output, options.token);
-        console.log("✨ Types generated successfully!");
-      } catch (error) {
-        console.error("Error generating types:", error);
-        process.exit(1);
-      }
-    }
-  );
+  .action(async (options) => {
+    try {
+      const outputPath = path.resolve(process.cwd(), options.output);
 
-program.parse();
+      console.log(`Generating types for database: ${options.database}`);
+      console.log(`Output path: ${outputPath}`);
+
+      await generateTypes(options.database, outputPath, options.token);
+
+      console.log("Types generated successfully!");
+    } catch (error) {
+      console.error("Error generating types:", error);
+      process.exit(1);
+    }
+  });
+
+program.parse(process.argv);
