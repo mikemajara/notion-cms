@@ -12,10 +12,19 @@ alwaysApply: true
 ## Design 
 - Notion users should be able to quickly query fields and use it as a simple database, but also have access to the complex information that notion sends in it's API. This would be structured in 3 levels:
 
-### Database records
-- Notion simple CMS API: Types of a database are accessed in a simple fashion and Notion Types match JS types. Example: Dates in Notion would convert to Date types in JS easily accessible for example with record.updatedAt
-- Notion advanced CMS API: Types of a database are accessed in a simple fashion but contain default converted complex types. Example: Notion Multi Selec tags would convert to a more complex JS type that includes the label, and extra metadata like colors, or sorting. People type in Notion would convert to a more complex JS type that includes the user name, user ID and user email if available.
+### Task list
 
-### Blocks
-- Notion simple CMS API: Blocks would be extracted and downloaded as pure markdown to render them as similarly as possible to notion. Notion API returns blocks in a parent child hierarchy so this would require multiple calls and processing the data in an advanced way. But could work.
-- Notion advanced CMS API: Can be configured to support more advanced fields, blocks and fields if needed. (future support)
+**Notion Simple API**
+
+- [x]  Notion generated types: Types of a database are accessed in a simple fashion and Notion Types match JS types. Example: Dates in Notion would convert to Date types in JS easily accessible for example with record.updatedAt
+    - [ ]  Formula type generate with default if one record exists. If string then string if number, number, etc
+- [ ]  Blocks: Blocks would be extracted and downloaded and converted to markdown to render them as with as much fidelity as possible to Notion’s UI. Notion API returns blocks in a parent-child hierarchy so this would require multiple calls and processing the data in an advanced way. But could work.
+    - [ ]  Markdown support
+    - [ ]  Image rendering: Notion serves images with the AWS url where they are stored, with a short lived token. We need to think how this is going to be designed if we are to support images? Maybe this is out of the scope of the project?
+- [x]  Notion generated functions
+    - [x]  Query API builder
+    - [ ]  
+
+**Notion Advanced API**
+
+- [ ]  **Notion generated types**: Types of a database are accessed in a simple fashion but contain default converted complex types. Example: Notion Multi Select tags would convert to a more complex JS type that includes the label, and extra metadata like colors, or sorting. People type in Notion would convert to a more complex JS type that includes the user name, user ID and user email if available.

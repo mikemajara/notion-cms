@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Package manager
+
+- Pnpm is the default package manager. Use pnpm unless instructed otherwise. 
+- When running commands, first check the corresponding package.json for scripts that already exist and can be useful to your task.
