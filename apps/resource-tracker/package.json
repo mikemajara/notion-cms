@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "a": "npx shadcn add",
-    "generate-types": "source .env && npx notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID"
+    "generate-types": "source .env && npx notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID",
+    "generate-types:force": "source .env && npx notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID -f"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.4",

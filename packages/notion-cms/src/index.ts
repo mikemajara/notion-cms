@@ -9,11 +9,11 @@ import {
   ListBlockChildrenResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import {
-  getPropertyValue,
+  getPropertyValue as generatorGetPropertyValue,
   NotionPropertyType,
-  simplifyNotionRecord,
-  simplifyNotionRecords,
-  DatabaseRecord,
+  simplifyNotionRecord as generatorSimplifyNotionRecord,
+  simplifyNotionRecords as generatorSimplifyNotionRecords,
+  DatabaseRecord as GeneratorDatabaseRecord,
   AdvancedDatabaseRecord,
   advancedNotionRecord,
   advancedNotionRecords,
@@ -30,6 +30,27 @@ import {
   QueryResult,
 } from "./query-builder";
 import { debug } from "./utils/debug";
+import {
+  NotionProperty,
+  DatabaseRecord,
+  getPropertyValue,
+  simplifyNotionRecord,
+  simplifyNotionRecords,
+  createSimplifyFunction,
+  createSimplifyRecordsFunction,
+} from "./utils/property-helpers";
+
+// Re-export utility functions for use in projects
+export {
+  DatabaseRecord,
+  getPropertyValue,
+  simplifyNotionRecord,
+  simplifyNotionRecords,
+  createSimplifyFunction,
+  createSimplifyRecordsFunction,
+};
+
+export type { NotionPropertyType, NotionProperty };
 
 export interface QueryOptions {
   filter?: QueryDatabaseParameters["filter"];
