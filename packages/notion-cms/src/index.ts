@@ -14,6 +14,11 @@ import {
   simplifyNotionRecord,
   simplifyNotionRecords,
   DatabaseRecord,
+  AdvancedDatabaseRecord,
+  advancedNotionRecord,
+  advancedNotionRecords,
+  processNotionRecord,
+  processNotionRecords,
 } from "./generator";
 import {
   QueryBuilder,
@@ -62,6 +67,7 @@ export class NotionCMS {
 
   /**
    * Get all records from a Notion database with pagination, filtering, and sorting
+   * Records include all access levels: simple, advanced, and raw
    * @param databaseId The ID of the Notion database
    * @param options Query options for filtering, sorting, and pagination
    * @returns A promise that resolves to an array of records with pagination metadata
@@ -90,7 +96,8 @@ export class NotionCMS {
       debug.log(`Query returned ${response.results.length} results`);
 
       const pages = response.results as PageObjectResponse[];
-      const results = simplifyNotionRecords(pages) as T[];
+      // Use the unified processing function to get records with all access levels
+      const results = processNotionRecords(pages) as T[];
 
       return {
         results,
@@ -108,6 +115,7 @@ export class NotionCMS {
 
   /**
    * Get a single record from a database by its ID
+   * Record includes all access levels: simple, advanced, and raw
    * @param pageId The ID of the Notion page/record
    * @returns A promise that resolves to the record
    */
@@ -116,12 +124,13 @@ export class NotionCMS {
       page_id: pageId,
     })) as PageObjectResponse;
 
-    // Use the simplifyNotionRecord utility for better type safety
-    return simplifyNotionRecord(page) as T;
+    // Use the unified processing function
+    return processNotionRecord(page) as T;
   }
 
   /**
    * Get all records from a database with automatic pagination
+   * Records include all access levels: simple, advanced, and raw
    * @param databaseId The ID of the Notion database
    * @param options Query options for filtering and sorting
    * @returns A promise that resolves to all records from the database

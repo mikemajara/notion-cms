@@ -14,7 +14,7 @@ program
   .command("generate")
   .description("Generate TypeScript types from a Notion database")
   .requiredOption("-d, --database <id>", "Notion database ID")
-  .option("-o, --output <path>", "Output path", "./types")
+  .option("-o, --output <path>", "Output path", "./notion")
   .requiredOption("-t, --token <token>", "Notion API token")
   .action(async (options) => {
     try {
