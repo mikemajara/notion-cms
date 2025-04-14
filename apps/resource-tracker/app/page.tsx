@@ -63,11 +63,13 @@ export default async function ResourceTrackerPage() {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <Avatar className="size-4">
-                      <AvatarImage src={record.advanced.Owner[0].avatar_url} />
+                      <AvatarImage
+                        src={record.advanced.Owner[0]?.avatar_url || ""}
+                      />
                     </Avatar>
-                    {record.advanced.Owner?.map((person) => person.name).join(
-                      ", "
-                    ) || "N/A"}
+                    {record.advanced.Owner?.map(
+                      (person: { name: string | null }) => person.name
+                    ).join(", ") || "N/A"}
                   </div>
                 </TableCell>
                 <TableCell>

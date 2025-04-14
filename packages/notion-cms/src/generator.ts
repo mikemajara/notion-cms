@@ -336,14 +336,110 @@ function generateDatabaseSpecificFile(
 // Use PropertyItemObjectResponse for property type definitions
 type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`);
 
+    // Helper function to determine advanced property type mapping
+    const advancedPropertyTypeToTS = (
+      propertyType: NotionPropertyType
+    ): string => {
+      switch (propertyType) {
+        case "title":
+        case "rich_text":
+          return "{ content: string; annotations: any; href: string | null; link?: { url: string } | null }[]";
+        case "number":
+          return "number";
+        case "select":
+          return "{ id: string; name: string; color: string } | null";
+        case "multi_select":
+          return "{ id: string; name: string; color: string }[]";
+        case "date":
+          return "{ start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null";
+        case "people":
+          return "{ id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }[]";
+        case "files":
+          return "{ name: string; type: string; external?: { url: string }; file?: { url: string; expiry_time: string } }[]";
+        case "checkbox":
+          return "boolean";
+        case "url":
+          return "string";
+        case "email":
+          return "string";
+        case "phone_number":
+          return "string";
+        case "formula":
+          return "{ type: string; value: any }";
+        case "relation":
+          return "{ id: string }[]";
+        case "rollup":
+          return "{ type: string; function: string; array?: any[]; number?: number; date?: any }";
+        case "created_time":
+        case "last_edited_time":
+          return "{ timestamp: string; date: Date }";
+        case "created_by":
+        case "last_edited_by":
+          return "{ id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }";
+        case "status":
+          return "{ id: string; name: string; color: string } | null";
+        case "unique_id":
+          return "{ prefix: string | null; number: number }";
+        default:
+          return "any";
+      }
+    };
+
+    // First, generate the advanced record interface
+    const baseTypeName = typeName.replace(/Record$/, "");
+    const advancedTypeName = `Advanced${baseTypeName}Record`;
+
+    sourceFile.addInterface({
+      name: advancedTypeName,
+      properties: [
+        {
+          name: "id",
+          type: "string",
+        },
+        ...Object.entries(properties).map(([name, prop]) => ({
+          name: sanitizePropertyName(name),
+          type: advancedPropertyTypeToTS((prop as NotionPropertyConfig).type),
+        })),
+      ],
+      isExported: true,
+    });
+
+    // Generate the raw record interface
+    const rawTypeName = `Raw${baseTypeName}Record`;
+
+    sourceFile.addInterface({
+      name: rawTypeName,
+      properties: [
+        {
+          name: "id",
+          type: "string",
+        },
+        {
+          name: "properties",
+          type: "Record<string, any>",
+        },
+      ],
+      isExported: true,
+    });
+
     // Generate the database-specific type
     sourceFile.addInterface({
       name: typeName,
       extends: ["DatabaseRecord"],
-      properties: Object.entries(properties).map(([name, prop]) => ({
-        name: sanitizePropertyName(name),
-        type: propertyTypeToTS((prop as NotionPropertyConfig).type),
-      })),
+      properties: [
+        ...Object.entries(properties).map(([name, prop]) => ({
+          name: sanitizePropertyName(name),
+          type: propertyTypeToTS((prop as NotionPropertyConfig).type),
+        })),
+        {
+          name: "advanced",
+          type: advancedTypeName,
+        },
+        {
+          name: "raw",
+          type: rawTypeName,
+        },
+      ],
       isExported: true,
     });
 
@@ -760,6 +856,27 @@ export function getAdvancedPropertyValue(
             email: lastEditedBy.person.email,
           }),
       };
+    }
+    case "status": {
+      const statusProp = (property as any).status;
+      // Return full status object with id, name, and color
+      return statusProp
+        ? {
+            id: statusProp.id,
+            name: statusProp.name,
+            color: statusProp.color,
+          }
+        : null;
+    }
+    case "unique_id": {
+      const uniqueIdProp = (property as any).unique_id;
+      // Return the unique ID object with prefix and number
+      return uniqueIdProp
+        ? {
+            prefix: uniqueIdProp.prefix,
+            number: uniqueIdProp.number,
+          }
+        : null;
     }
     default:
       return null;

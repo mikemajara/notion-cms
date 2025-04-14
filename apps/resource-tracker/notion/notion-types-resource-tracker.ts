@@ -10,6 +10,37 @@ import { PropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpo
 // Use PropertyItemObjectResponse for property type definitions
 type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;
 
+export interface AdvancedResourceTrackerRecord {
+    id: string;
+    "Last Review Date": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
+    "Estimated Monthly Cost": number;
+    "Tag Compliance": boolean;
+    Owner: { id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }[];
+    "Last Used Date": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
+    "Service Name": { id: string; name: string; color: string }[];
+    "Linked Project / Jira Ticket": string;
+    "Can Be Deprovisioned": boolean;
+    Environment: { id: string; name: string; color: string } | null;
+    "Auto Shutdown Configured": boolean;
+    "Instance Size / Tier": { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
+    "Estimated Monthly Cost (USD)": number;
+    "Provision Date": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
+    "Resource Type": { id: string; name: string; color: string } | null;
+    Region: { id: string; name: string; color: string } | null;
+    Team: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
+    Notes: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
+    "Is Active": boolean;
+    "Reviewed by DevOps": { id: string; name: string; color: string } | null;
+    "Reason for Keeping": { id: string; name: string; color: string }[];
+    ID: { prefix: string | null; number: number };
+    Title: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
+}
+
+export interface RawResourceTrackerRecord {
+    id: string;
+    properties: Record<string, any>;
+}
+
 export interface ResourceTrackerRecord extends DatabaseRecord {
     "Last Review Date": Date;
     "Estimated Monthly Cost": number;
@@ -33,6 +64,8 @@ export interface ResourceTrackerRecord extends DatabaseRecord {
     "Reason for Keeping": string[];
     ID: any;
     Title: string;
+    advanced: AdvancedResourceTrackerRecord;
+    raw: RawResourceTrackerRecord;
 }
 
 export interface ResourceTrackerRecordProperties {
