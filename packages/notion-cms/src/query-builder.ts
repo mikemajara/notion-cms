@@ -4,6 +4,7 @@ import {
   PageObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatabaseRecord, simplifyNotionRecords } from "./generator";
+import { debug } from "./utils/debug";
 
 export type SortDirection = "ascending" | "descending";
 export type ComparisonOperator =
@@ -305,25 +306,46 @@ export class QueryBuilder<T extends DatabaseRecord>
   async paginate(pageSize: number = 100): Promise<QueryResult<T>> {
     const filter = this.buildFilter();
 
-    const response = await this.client.databases.query({
-      database_id: this.databaseId,
-      filter: filter || undefined,
-      sorts:
-        this.sortOptions && this.sortOptions.length > 0
-          ? this.sortOptions
-          : undefined,
-      page_size: pageSize,
-      start_cursor: this.startCursor,
-    });
+    try {
+      debug.query(this.databaseId, {
+        database_id: this.databaseId,
+        filter: filter || undefined,
+        sorts: this.sortOptions,
+        page_size: pageSize,
+        start_cursor: this.startCursor,
+      });
 
-    const pages = response.results as PageObjectResponse[];
-    const results = simplifyNotionRecords(pages) as T[];
+      const response = await this.client.databases.query({
+        database_id: this.databaseId,
+        filter: filter || undefined,
+        sorts:
+          this.sortOptions && this.sortOptions.length > 0
+            ? this.sortOptions
+            : undefined,
+        page_size: pageSize,
+        start_cursor: this.startCursor,
+      });
 
-    return {
-      results,
-      hasMore: response.has_more,
-      nextCursor: response.next_cursor,
-    };
+      debug.log(`Query returned ${response.results.length} results`);
+
+      const pages = response.results as PageObjectResponse[];
+      const results = simplifyNotionRecords(pages) as T[];
+
+      return {
+        results,
+        hasMore: response.has_more,
+        nextCursor: response.next_cursor,
+      };
+    } catch (error) {
+      debug.error(error, {
+        databaseId: this.databaseId,
+        filter,
+        sorts: this.sortOptions,
+        pageSize,
+        startCursor: this.startCursor,
+      });
+      throw error;
+    }
   }
 
   async all(): Promise<T[]> {

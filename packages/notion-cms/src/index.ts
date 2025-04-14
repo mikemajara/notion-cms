@@ -24,6 +24,7 @@ import {
   FilterCondition,
   QueryResult,
 } from "./query-builder";
+import { debug } from "./utils/debug";
 
 export interface QueryOptions {
   filter?: QueryDatabaseParameters["filter"];
@@ -69,23 +70,40 @@ export class NotionCMS {
     databaseId: string,
     options: QueryOptions = {}
   ): Promise<{ results: T[]; nextCursor: string | null; hasMore: boolean }> {
-    const response = await this.client.databases.query({
-      database_id: databaseId,
-      filter: options.filter,
-      sorts: options.sorts,
-      page_size: options.pageSize,
-      start_cursor: options.startCursor,
-    });
+    try {
+      debug.query(databaseId, {
+        database_id: databaseId,
+        filter: options.filter,
+        sorts: options.sorts,
+        page_size: options.pageSize,
+        start_cursor: options.startCursor,
+      });
 
-    // Use the simplifyNotionRecords utility instead of manual mapping
-    const pages = response.results as PageObjectResponse[];
-    const results = simplifyNotionRecords(pages) as T[];
+      const response = await this.client.databases.query({
+        database_id: databaseId,
+        filter: options.filter,
+        sorts: options.sorts,
+        page_size: options.pageSize,
+        start_cursor: options.startCursor,
+      });
 
-    return {
-      results,
-      nextCursor: response.next_cursor,
-      hasMore: response.has_more,
-    };
+      debug.log(`Query returned ${response.results.length} results`);
+
+      const pages = response.results as PageObjectResponse[];
+      const results = simplifyNotionRecords(pages) as T[];
+
+      return {
+        results,
+        nextCursor: response.next_cursor,
+        hasMore: response.has_more,
+      };
+    } catch (error) {
+      debug.error(error, {
+        databaseId,
+        options,
+      });
+      throw error;
+    }
   }
 
   /**
