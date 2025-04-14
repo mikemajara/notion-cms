@@ -8,29 +8,25 @@ import {
 } from "@/components/ui/table";
 import { ResourceTrackerRecord } from "../notion/notion-types-resource-tracker";
 import { NotionCMS } from "notion-cms";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 async function getResourceTrackerData() {
-  try {
-    const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
-    const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID;
+  const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
+  const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
 
-    if (!databaseId) {
-      throw new Error("Database ID is not configured");
-    }
-
-    const response = await notionCMS.getDatabase<ResourceTrackerRecord>(
-      databaseId,
-      {
-        pageSize: 100,
-        sorts: [{ property: "Title", direction: "ascending" }],
-      }
-    );
-
-    return response;
-  } catch (error) {
-    console.error("Failed to fetch resource tracker data:", error);
-    throw error;
-  }
+  // const response = await notionCMS.getDatabase<ResourceTrackerRecord>(
+  //   databaseId,
+  //   {
+  //     pageSize: 100,
+  //     sorts: [{ property: "Title", direction: "ascending" }],
+  //   }
+  // );
+  const response = await notionCMS
+    .query(databaseId)
+    .sort("Title", "ascending")
+    .all();
+  console.log("response", response[3].Owner);
+  return response;
 }
 
 export default async function ResourceTrackerPage() {
@@ -50,18 +46,29 @@ export default async function ResourceTrackerPage() {
               <TableHead>Owner</TableHead>
               <TableHead>Est. Monthly Cost</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Raw</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.results.map((record) => (
+            {data.map((record) => (
               <TableRow key={record.id}>
                 <TableCell>{record.Title}</TableCell>
-                <TableCell>{record["Resource Type"]}</TableCell>
+                <TableCell
+                  className={`bg-${record.advanced["Resource Type"].color}-100`}
+                >
+                  {record["Resource Type"]}
+                </TableCell>
                 <TableCell>{record.Environment}</TableCell>
                 <TableCell>{record.Team}</TableCell>
                 <TableCell>
-                  {record.Owner?.map((person) => person.name).join(", ") ||
-                    "N/A"}
+                  <div className="flex items-center gap-2">
+                    <Avatar className="size-4">
+                      <AvatarImage src={record.advanced.Owner[0].avatar_url} />
+                    </Avatar>
+                    {record.advanced.Owner?.map((person) => person.name).join(
+                      ", "
+                    ) || "N/A"}
+                  </div>
                 </TableCell>
                 <TableCell>
                   $
@@ -70,6 +77,7 @@ export default async function ResourceTrackerPage() {
                 <TableCell>
                   {record["Is Active"] ? "Active" : "Inactive"}
                 </TableCell>
+                <TableCell>{JSON.stringify(record.advanced)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
