@@ -13,17 +13,17 @@ A simplified API for using Notion as a headless CMS with TypeScript support.
 ## Installation
 
 ```bash
-npm install notion-cms
+npm install @mikemajara/notion-cms
 # or
-yarn add notion-cms
+yarn add @mikemajara/notion-cms
 # or
-pnpm add notion-cms
+pnpm add @mikemajara/notion-cms
 ```
 
 ## Quick Start
 
 ```typescript
-import { NotionCMS } from "notion-cms";
+import { NotionCMS } from "@mikemajara/notion-cms";
 
 // Initialize with your Notion API key
 const notionCms = new NotionCMS("your-notion-api-key");

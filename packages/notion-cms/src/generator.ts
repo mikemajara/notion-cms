@@ -248,7 +248,7 @@ function generateDatabaseSpecificFile(
 
     // Add imports directly from notion-cms
     sourceFile.addImportDeclaration({
-      moduleSpecifier: "notion-cms",
+      moduleSpecifier: "@mikemajara/notion-cms",
       namedImports: ["DatabaseRecord", "NotionPropertyType"],
     });
 
