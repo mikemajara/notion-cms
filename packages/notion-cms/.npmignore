@@ -1,0 +1,29 @@
+# Source files
+src/
+examples/
+tests/
+
+# Build artifacts
+*.tsbuildinfo
+.turbo/
+
+# Development files
+.eslintrc.js
+.gitignore
+jest.config.js
+tsconfig.json
+
+# Editor files
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node.js files
+node_modules/ 
