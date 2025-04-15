@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Naming convention
+
+Types, variables, and others, should follow a top down naming convention where the most generic term comes first.
+
+Examples: We are creating different types of Records:
+
+RIGHT: RecordProduction, RecordStaging
+WRONG: ProductionRecord, StagingRecord
+
+This way the DX improves because it's easier to remember the most common term, and then use Autocomplete from there onwards.
