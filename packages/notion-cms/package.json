@@ -1,5 +1,5 @@
 {
-  "name": "notion-cms",
+  "name": "@mikemajara/notion-cms",
   "version": "0.1.0-beta.1",
   "description": "A TypeScript library for using Notion as a headless CMS",
   "main": "dist/index.js",
@@ -18,7 +18,7 @@
     "lint": "eslint src --ext .ts",
     "check-types": "tsc --noEmit",
     "test": "jest",
-    "prepare": "pnpm run build",
+    "prepare": "pnpm run build:prod",
     "postbuild": "chmod +x dist/cli.js"
   },
   "keywords": [
@@ -27,11 +27,18 @@
     "typescript",
     "headless-cms"
   ],
-  "author": "Miguel Gonzalez",
+  "author": "Miguel Alcalde",
   "license": "MIT",
   "dependencies": {
-    "@notionhq/client": "^2.2.14",
     "commander": "^13.1.0"
+  },
+  "peerDependencies": {
+    "@notionhq/client": "^2.2.14"
+  },
+  "peerDependenciesMeta": {
+    "@notionhq/client": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@types/node": "^20.10.5",
@@ -58,7 +65,6 @@
     ],
     "dts": true,
     "splitting": false,
-    "sourcemap": true,
     "clean": true,
     "treeshake": true
   }
