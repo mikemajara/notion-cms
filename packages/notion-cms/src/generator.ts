@@ -38,11 +38,9 @@ type NotionPropertyConfig = DatabaseObjectResponse["properties"][string];
 // Export interfaces for use in other modules
 export interface DatabaseRecord {
   id: string;
-  [key: string]: any;
-  // New properties for the layered API approach
+  // Instead of [key: string]: any, we'll use a specific property for advanced and raw
   advanced?: {
     id: string;
-    [key: string]: any;
   };
   raw?: {
     id: string;

@@ -28,7 +28,6 @@ export type NotionPropertyType =
 
 export interface DatabaseRecord {
   id: string;
-  [key: string]: any;
 }
 
 export type NotionProperty = PropertyItemObjectResponse;
