@@ -1,6 +1,6 @@
 {
   "name": "notion-cms",
-  "version": "0.1.0",
+  "version": "0.1.0-beta.1",
   "description": "A TypeScript library for using Notion as a headless CMS",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -13,6 +13,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "build:prod": "tsup --minify --no-sourcemap",
     "dev": "tsup --watch",
     "lint": "eslint src --ext .ts",
     "check-types": "tsc --noEmit",
@@ -58,6 +59,7 @@
     "dts": true,
     "splitting": false,
     "sourcemap": true,
-    "clean": true
+    "clean": true,
+    "treeshake": true
   }
 }

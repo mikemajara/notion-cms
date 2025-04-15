@@ -77,7 +77,7 @@ const propertyTypeToTS = (propertyType: NotionPropertyType): string => {
     case "date":
       return "Date";
     case "people":
-      return "{ id: string; name: string | null; avatar_url: string | null; }[]";
+      return "string[]";
     case "files":
       return "{ name: string; url: string; }[]";
     case "checkbox":
@@ -107,8 +107,8 @@ function generateTypeName(name: string): string {
     .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
     .replace(/\s/g, "");
 
-  // Ensure first character is uppercase and add Record suffix
-  return cleanName.charAt(0).toUpperCase() + cleanName.slice(1) + "Record";
+  // Ensure first character is uppercase and prepend Record prefix
+  return "Record" + cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
 }
 
 // Generate a valid file name for a database
@@ -312,8 +312,10 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
     };
 
     // First, generate the advanced record interface
-    const baseTypeName = typeName.replace(/Record$/, "");
-    const advancedTypeName = `Advanced${baseTypeName}Record`;
+    const baseTypeName = typeName;
+    const advancedTypeName = `${baseTypeName}Advanced`;
+    const rawTypeName = `${baseTypeName}Raw`;
+    const propertiesTypeName = `Properties${baseTypeName}`;
 
     sourceFile.addInterface({
       name: advancedTypeName,
@@ -331,8 +333,6 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
     });
 
     // Generate the raw record interface
-    const rawTypeName = `Raw${baseTypeName}Record`;
-
     sourceFile.addInterface({
       name: rawTypeName,
       properties: [
@@ -350,7 +350,7 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
 
     // Generate the database-specific type
     sourceFile.addInterface({
-      name: typeName,
+      name: baseTypeName,
       extends: ["DatabaseRecord"],
       properties: [
         ...Object.entries(properties).map(([name, prop]) => ({
@@ -371,7 +371,7 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
 
     // Generate the database-specific properties type for type checking
     sourceFile.addInterface({
-      name: `${typeName}Properties`,
+      name: propertiesTypeName,
       properties: Object.entries(properties).map(([name, prop]) => ({
         name: sanitizePropertyName(name),
         type: `NotionProperty<'${(prop as NotionPropertyConfig).type}'>`,
@@ -506,11 +506,9 @@ export function getPropertyValue(property: PropertyItemObjectResponse): any {
     case "people": {
       const peopleProp = property as PeoplePropertyItemObjectResponse;
       return Array.isArray(peopleProp.people)
-        ? peopleProp.people.map((person: UserObjectResponse) => ({
-            id: person.id,
-            name: person.name,
-            avatar_url: person.avatar_url,
-          }))
+        ? peopleProp.people.map(
+            (person: UserObjectResponse) => person.name || ""
+          )
         : [];
     }
     case "files": {

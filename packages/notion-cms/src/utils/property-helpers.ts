@@ -58,11 +58,7 @@ export function getPropertyValue(property: NotionProperty): any {
     case "people": {
       const peopleProp = property as any;
       return Array.isArray(peopleProp.people)
-        ? peopleProp.people.map((person: any) => ({
-            id: person.id,
-            name: person.name,
-            avatar_url: person.avatar_url,
-          }))
+        ? peopleProp.people.map((person: any) => person.name || "")
         : [];
     }
     case "files": {
