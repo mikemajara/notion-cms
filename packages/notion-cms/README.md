@@ -135,12 +135,14 @@ const allRecords = await notionCms.getAllDatabaseRecordsAdvanced(
 // Using the query builder
 const results = await notionCms
   .query("your-database-id")
-  .filter("Status", "equals", "Active")
-  .filter("Priority", "greater_than", 3)
+  .filter("Status")
+  .equals("Active")
+  .filter("Priority")
+  .greaterThan(3)
   .sort("CreatedAt", "descending")
   .sort("Title", "ascending")
   .limit(20)
-  .execute();
+  .all();
 ```
 
 ## Working with Page Content

@@ -102,7 +102,7 @@ export class FilterBuilder<T extends DatabaseRecord> {
     return this.parent.or(
       values.map(
         (value) => (q: QueryBuilder<T>) =>
-          q.where(this.property).contains(value)
+          q.filter(this.property).contains(value)
       )
     );
   }
@@ -112,7 +112,7 @@ export class FilterBuilder<T extends DatabaseRecord> {
     return this.parent.and(
       values.map(
         (value) => (q: QueryBuilder<T>) =>
-          q.where(this.property).contains(value)
+          q.filter(this.property).contains(value)
       )
     );
   }
@@ -144,8 +144,14 @@ export class QueryBuilder<T extends DatabaseRecord>
     this.client = client;
     this.databaseId = databaseId;
   }
-
+  /**
+   * @deprecated Use `filter()` instead. This method will be removed in a future version.
+   */
   where(property: keyof T & string): FilterBuilder<T> {
+    return this.filter(property);
+  }
+
+  filter(property: keyof T & string): FilterBuilder<T> {
     return new FilterBuilder<T>(property, this);
   }
 
