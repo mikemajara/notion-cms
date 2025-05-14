@@ -27,6 +27,7 @@ export interface FilterCondition {
   property: string;
   type: string;
   value: any;
+  propertyType?: string; // Property type to use when building Notion filters (e.g., "checkbox", "rich_text", "number")
 }
 
 export interface QueryResult<T extends DatabaseRecord> {
@@ -35,66 +36,109 @@ export interface QueryResult<T extends DatabaseRecord> {
   nextCursor: string | null;
 }
 
-export class FilterBuilder<T extends DatabaseRecord> {
-  constructor(
-    private property: keyof T & string,
-    private parent: QueryBuilder<T>
-  ) {}
+export class FilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string
+> {
+  constructor(private property: K, private parent: QueryBuilder<T>) {}
 
-  equals(value: any): QueryBuilder<T> {
-    return this.addFilter("equals", value);
+  /**
+   * Add an equals filter for the property with the given value.
+   * Automatically determines the correct Notion property type based on the value's type.
+   * For example, boolean values will use the "checkbox" property type.
+   */
+  equals<V extends T[K] extends string ? T[K] : any>(
+    value: V
+  ): QueryBuilder<T> {
+    const propertyType = this.determinePropertyType(value);
+    return this.addFilter("equals", value, propertyType);
   }
 
-  notEquals(value: any): QueryBuilder<T> {
-    return this.addFilter("does_not_equal", value);
+  notEquals<V extends T[K] extends string ? T[K] : any>(
+    value: V
+  ): QueryBuilder<T> {
+    const propertyType = this.determinePropertyType(value);
+    return this.addFilter("does_not_equal", value, propertyType);
   }
 
   contains(value: string): QueryBuilder<T> {
-    return this.addFilter("contains", value);
+    return this.addFilter("contains", value, "rich_text");
   }
 
   notContains(value: string): QueryBuilder<T> {
-    return this.addFilter("does_not_contain", value);
+    return this.addFilter("does_not_contain", value, "rich_text");
   }
 
   startsWith(value: string): QueryBuilder<T> {
-    return this.addFilter("starts_with", value);
+    return this.addFilter("starts_with", value, "rich_text");
   }
 
   endsWith(value: string): QueryBuilder<T> {
-    return this.addFilter("ends_with", value);
+    return this.addFilter("ends_with", value, "rich_text");
   }
 
   greaterThan(value: number | string | Date): QueryBuilder<T> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
-    return this.addFilter("greater_than", processedValue);
+    const propertyType =
+      value instanceof Date
+        ? "date"
+        : typeof value === "number"
+        ? "number"
+        : "rich_text";
+    return this.addFilter("greater_than", processedValue, propertyType);
   }
 
   lessThan(value: number | string | Date): QueryBuilder<T> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
-    return this.addFilter("less_than", processedValue);
+    const propertyType =
+      value instanceof Date
+        ? "date"
+        : typeof value === "number"
+        ? "number"
+        : "rich_text";
+    return this.addFilter("less_than", processedValue, propertyType);
   }
 
   greaterThanOrEqual(value: number | string | Date): QueryBuilder<T> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
-    return this.addFilter("greater_than_or_equal_to", processedValue);
+    const propertyType =
+      value instanceof Date
+        ? "date"
+        : typeof value === "number"
+        ? "number"
+        : "rich_text";
+    return this.addFilter(
+      "greater_than_or_equal_to",
+      processedValue,
+      propertyType
+    );
   }
 
   lessThanOrEqual(value: number | string | Date): QueryBuilder<T> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
-    return this.addFilter("less_than_or_equal_to", processedValue);
+    const propertyType =
+      value instanceof Date
+        ? "date"
+        : typeof value === "number"
+        ? "number"
+        : "rich_text";
+    return this.addFilter(
+      "less_than_or_equal_to",
+      processedValue,
+      propertyType
+    );
   }
 
   isEmpty(): QueryBuilder<T> {
-    return this.addFilter("is_empty", true);
+    return this.addFilter("is_empty", true, "checkbox");
   }
 
   isNotEmpty(): QueryBuilder<T> {
-    return this.addFilter("is_not_empty", true);
+    return this.addFilter("is_not_empty", true, "checkbox");
   }
 
   includes(value: string): QueryBuilder<T> {
-    return this.addFilter("contains", value);
+    return this.addFilter("contains", value, "rich_text");
   }
 
   includesAny(values: string[]): QueryBuilder<T> {
@@ -102,7 +146,7 @@ export class FilterBuilder<T extends DatabaseRecord> {
     return this.parent.or(
       values.map(
         (value) => (q: QueryBuilder<T>) =>
-          q.filter(this.property).contains(value)
+          q.filter(this.property as keyof T & string).contains(value)
       )
     );
   }
@@ -112,16 +156,52 @@ export class FilterBuilder<T extends DatabaseRecord> {
     return this.parent.and(
       values.map(
         (value) => (q: QueryBuilder<T>) =>
-          q.filter(this.property).contains(value)
+          q.filter(this.property as keyof T & string).contains(value)
       )
     );
   }
 
-  private addFilter(type: string, value: any): QueryBuilder<T> {
+  /**
+   * Determines the appropriate Notion property type based on the value type.
+   * This is essential for correctly building filters that match Notion's API expectations:
+   * - boolean values → checkbox property type
+   * - number values → number property type
+   * - Date objects → date property type
+   * - arrays → multi_select property type
+   * - strings → rich_text property type (or select if from an enum)
+   */
+  private determinePropertyType(value: any): string {
+    if (typeof value === "boolean") {
+      return "checkbox";
+    } else if (typeof value === "number") {
+      return "number";
+    } else if (value instanceof Date) {
+      return "date";
+    } else if (Array.isArray(value)) {
+      return "multi_select";
+    } else {
+      console.log("could not determine property type, returning rich_text");
+      console.log("value", value);
+
+      if (typeof value === "string") {
+        // Try to infer if this is a select property based on T and property K
+        // For now, default to rich_text for strings
+        return "rich_text";
+      }
+    }
+    return "rich_text"; // Default fallback
+  }
+
+  private addFilter(
+    type: string,
+    value: any,
+    propertyType?: string
+  ): QueryBuilder<T> {
     this.parent.addCondition({
       property: this.property,
       type,
       value,
+      propertyType,
     });
     return this.parent;
   }
@@ -147,12 +227,14 @@ export class QueryBuilder<T extends DatabaseRecord>
   /**
    * @deprecated Use `filter()` instead. This method will be removed in a future version.
    */
-  where(property: keyof T & string): FilterBuilder<T> {
+  where<K extends keyof T & string>(property: K): FilterBuilder<T, K> {
     return this.filter(property);
   }
 
-  filter(property: keyof T & string): FilterBuilder<T> {
-    return new FilterBuilder<T>(property, this);
+  filter<K extends keyof T & string>(property: K): FilterBuilder<T, K> {
+    console.log("filter", property);
+    console.log("typeof filter", typeof property);
+    return new FilterBuilder<T, K>(property, this);
   }
 
   sort(
@@ -215,16 +297,19 @@ export class QueryBuilder<T extends DatabaseRecord>
 
     // Add simple filters
     this.filterConditions.forEach((condition) => {
-      const { property, type, value } = condition;
+      const { property, type, value, propertyType } = condition;
 
       // Create properly nested filter object based on Notion API requirements
       const filter: any = {
         property,
       };
 
+      // Determine property type (either from condition or from operation type)
+      const notionPropertyType = propertyType || property_type(type, value);
+
       // Add the appropriate property for the filter type
       // Notion expects filters to have a nested structure based on property type
-      filter[property_type(type)] = {
+      filter[notionPropertyType] = {
         [type]: value,
       };
 
@@ -374,9 +459,33 @@ export class QueryBuilder<T extends DatabaseRecord>
   }
 }
 
-// Helper function to map filter type to property type
-function property_type(filterType: string): string {
-  // Map filter operation types to Notion property types
+/**
+ * Helper function to determine the Notion property type to use based on:
+ * 1. The value being filtered (if provided)
+ * 2. The filter operation type as a fallback
+ *
+ * This is critical for correctly constructing Notion API filter objects that
+ * match the expected structure for each property type. For example:
+ * - Boolean values need to use the "checkbox" property type
+ * - Dates need to use the "date" property type
+ * - Numbers need to use the "number" property type
+ */
+function property_type(filterType: string, value?: any): string {
+  // First determine property type from the value if available
+  if (value !== undefined) {
+    if (typeof value === "boolean") {
+      return "checkbox";
+    } else if (typeof value === "number") {
+      return "number";
+    } else if (value instanceof Date) {
+      return "date";
+    } else if (Array.isArray(value)) {
+      return "multi_select";
+    }
+    // If it's a string, we'll fallback to the operation-based mapping below
+  }
+
+  // Map filter operation types to Notion property types as fallback
   switch (filterType) {
     case "equals":
     case "does_not_equal":

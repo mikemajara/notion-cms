@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "a": "npx shadcn add",
-    "generate-types": "source .env && npx notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID",
-    "generate-types:force": "source .env && npx notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID -f"
+    "generate-types": "source .env && npx @mikemajara/notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID",
+    "generate-types:force": "source .env && npx @mikemajara/notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID -f"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.4",
@@ -27,7 +27,7 @@
     "framer-motion": "^11.15.0",
     "lucide-react": "^0.394.0",
     "next": "15.1.1",
-    "notion-cms": "workspace:*",
+    "@mikemajara/notion-cms": "workspace:*",
     "nuqs": "^2.2.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

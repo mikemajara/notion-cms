@@ -58,7 +58,10 @@ function sanitizePropertyName(name: string): string {
   return /[^a-zA-Z0-9_$]/.test(name) ? `"${name}"` : name;
 }
 
-const propertyTypeToTS = (propertyType: NotionPropertyType): string => {
+const propertyTypeToTS = (
+  propertyType: NotionPropertyType,
+  propertyConfig?: NotionPropertyConfig
+): string => {
   switch (propertyType) {
     case "title":
     case "rich_text":
@@ -69,8 +72,35 @@ const propertyTypeToTS = (propertyType: NotionPropertyType): string => {
     case "number":
       return "number";
     case "select":
+      // Extract options from select config if available
+      if (
+        propertyConfig &&
+        "select" in propertyConfig &&
+        propertyConfig.select &&
+        "options" in propertyConfig.select &&
+        Array.isArray(propertyConfig.select.options) &&
+        propertyConfig.select.options.length > 0
+      ) {
+        return propertyConfig.select.options
+          .map((option: { name: string }) => `"${option.name}"`)
+          .join(" | ");
+      }
       return "string";
     case "multi_select":
+      // For multi_select, we'll return an array of the union type
+      if (
+        propertyConfig &&
+        "multi_select" in propertyConfig &&
+        propertyConfig.multi_select &&
+        "options" in propertyConfig.multi_select &&
+        Array.isArray(propertyConfig.multi_select.options) &&
+        propertyConfig.multi_select.options.length > 0
+      ) {
+        const optionsUnion = propertyConfig.multi_select.options
+          .map((option: { name: string }) => `"${option.name}"`)
+          .join(" | ");
+        return `Array<${optionsUnion}>`;
+      }
       return "string[]";
     case "date":
       return "Date";
@@ -353,7 +383,10 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
       properties: [
         ...Object.entries(properties).map(([name, prop]) => ({
           name: sanitizePropertyName(name),
-          type: propertyTypeToTS((prop as NotionPropertyConfig).type),
+          type: propertyTypeToTS(
+            (prop as NotionPropertyConfig).type,
+            prop as NotionPropertyConfig
+          ),
         })),
         {
           name: "advanced",
