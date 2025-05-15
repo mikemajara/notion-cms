@@ -378,7 +378,7 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
   },`);
       } else {
         metadataStatements.push(
-          `  "${propertyName}": { type: ${propertyValue.type} },`
+          `  "${propertyName}": { type: "${propertyValue.type}" },`
         );
       }
     }
