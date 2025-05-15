@@ -23,6 +23,35 @@ export type ComparisonOperator =
 
 export type LogicalOperator = "and" | "or";
 
+// Define all possible Notion field types
+export type NotionFieldType =
+  | "title"
+  | "rich_text"
+  | "number"
+  | "select"
+  | "multi_select"
+  | "date"
+  | "people"
+  | "files"
+  | "checkbox"
+  | "url"
+  | "email"
+  | "phone_number"
+  | "formula"
+  | "relation"
+  | "rollup"
+  | "created_time"
+  | "created_by"
+  | "last_edited_time"
+  | "last_edited_by"
+  | "status"
+  | "unique_id";
+
+// Interface for database field metadata
+export interface DatabaseFieldMetadata {
+  [fieldName: string]: NotionFieldType;
+}
+
 export interface FilterCondition {
   property: string;
   type: string;
@@ -36,11 +65,181 @@ export interface QueryResult<T extends DatabaseRecord> {
   nextCursor: string | null;
 }
 
+// Abstract base class for all filter builders
+export abstract class BaseFilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
+> {
+  constructor(protected property: K, protected parent: QueryBuilder<T, M>) {}
+
+  // Common methods for all field types
+  equals<V extends T[K]>(value: V): QueryBuilder<T, M> {
+    return this.addFilter("equals", value);
+  }
+
+  notEquals<V extends T[K]>(value: V): QueryBuilder<T, M> {
+    return this.addFilter("does_not_equal", value);
+  }
+
+  isEmpty(): QueryBuilder<T, M> {
+    return this.addFilter("is_empty", true);
+  }
+
+  isNotEmpty(): QueryBuilder<T, M> {
+    return this.addFilter("is_not_empty", true);
+  }
+
+  protected addFilter(
+    type: string,
+    value: any,
+    propertyType?: string
+  ): QueryBuilder<T, M> {
+    const determinedType = propertyType || this.determinePropertyType(value);
+    this.parent.addCondition({
+      property: this.property,
+      type,
+      value,
+      propertyType: determinedType,
+    });
+    return this.parent;
+  }
+
+  // Helper method to determine property type from value
+  private determinePropertyType(value: any): string {
+    if (typeof value === "boolean") {
+      return "checkbox";
+    } else if (typeof value === "number") {
+      return "number";
+    } else if (value instanceof Date) {
+      return "date";
+    } else if (Array.isArray(value)) {
+      return "multi_select";
+    } else if (typeof value === "string") {
+      return "rich_text";
+    }
+    return "rich_text"; // Default fallback
+  }
+}
+
+// Text field specific filter builder (for title and rich_text)
+export class TextFilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
+> extends BaseFilterBuilder<T, K, M> {
+  contains(value: string): QueryBuilder<T, M> {
+    return this.addFilter("contains", value, "rich_text");
+  }
+
+  notContains(value: string): QueryBuilder<T, M> {
+    return this.addFilter("does_not_contain", value, "rich_text");
+  }
+
+  startsWith(value: string): QueryBuilder<T, M> {
+    return this.addFilter("starts_with", value, "rich_text");
+  }
+
+  endsWith(value: string): QueryBuilder<T, M> {
+    return this.addFilter("ends_with", value, "rich_text");
+  }
+}
+
+// Number field specific filter builder
+export class NumberFilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
+> extends BaseFilterBuilder<T, K, M> {
+  greaterThan(value: number): QueryBuilder<T, M> {
+    return this.addFilter("greater_than", value, "number");
+  }
+
+  lessThan(value: number): QueryBuilder<T, M> {
+    return this.addFilter("less_than", value, "number");
+  }
+
+  greaterThanOrEqual(value: number): QueryBuilder<T, M> {
+    return this.addFilter("greater_than_or_equal_to", value, "number");
+  }
+
+  lessThanOrEqual(value: number): QueryBuilder<T, M> {
+    return this.addFilter("less_than_or_equal_to", value, "number");
+  }
+}
+
+// Date field specific filter builder
+export class DateFilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
+> extends BaseFilterBuilder<T, K, M> {
+  greaterThan(value: Date): QueryBuilder<T, M> {
+    return this.addFilter("greater_than", value.toISOString(), "date");
+  }
+
+  lessThan(value: Date): QueryBuilder<T, M> {
+    return this.addFilter("less_than", value.toISOString(), "date");
+  }
+
+  greaterThanOrEqual(value: Date): QueryBuilder<T, M> {
+    return this.addFilter(
+      "greater_than_or_equal_to",
+      value.toISOString(),
+      "date"
+    );
+  }
+
+  lessThanOrEqual(value: Date): QueryBuilder<T, M> {
+    return this.addFilter("less_than_or_equal_to", value.toISOString(), "date");
+  }
+
+  // Allow string dates as well (ISO format)
+  onDate(value: string | Date): QueryBuilder<T, M> {
+    const dateString =
+      value instanceof Date ? value.toISOString().split("T")[0] : value;
+    return this.addFilter("equals", dateString, "date");
+  }
+}
+
+// Select field specific filter builder
+export class SelectFilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
+> extends BaseFilterBuilder<T, K, M> {
+  // Only inherits equals, notEquals, isEmpty, isNotEmpty from base class
+  // This specialization ensures we don't expose text methods that would fail
+}
+
+// Multi-select field specific filter builder
+export class MultiSelectFilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
+> extends BaseFilterBuilder<T, K, M> {
+  contains(value: string): QueryBuilder<T, M> {
+    return this.addFilter("contains", value, "multi_select");
+  }
+}
+
+// Checkbox field specific filter builder
+export class CheckboxFilterBuilder<
+  T extends DatabaseRecord,
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
+> extends BaseFilterBuilder<T, K, M> {
+  // Only inherits equals, notEquals, isEmpty, isNotEmpty
+  // This is just for type clarity
+}
+
+// Legacy FilterBuilder to be replaced in Bucket 2
 export class FilterBuilder<
   T extends DatabaseRecord,
-  K extends keyof T & string
+  K extends keyof T & string,
+  M extends DatabaseFieldMetadata = {}
 > {
-  constructor(private property: K, private parent: QueryBuilder<T>) {}
+  constructor(private property: K, private parent: QueryBuilder<T, M>) {}
 
   /**
    * Add an equals filter for the property with the given value.
@@ -49,35 +248,35 @@ export class FilterBuilder<
    */
   equals<V extends T[K] extends string ? T[K] : any>(
     value: V
-  ): QueryBuilder<T> {
+  ): QueryBuilder<T, M> {
     const propertyType = this.determinePropertyType(value);
     return this.addFilter("equals", value, propertyType);
   }
 
   notEquals<V extends T[K] extends string ? T[K] : any>(
     value: V
-  ): QueryBuilder<T> {
+  ): QueryBuilder<T, M> {
     const propertyType = this.determinePropertyType(value);
     return this.addFilter("does_not_equal", value, propertyType);
   }
 
-  contains(value: string): QueryBuilder<T> {
+  contains(value: string): QueryBuilder<T, M> {
     return this.addFilter("contains", value, "rich_text");
   }
 
-  notContains(value: string): QueryBuilder<T> {
+  notContains(value: string): QueryBuilder<T, M> {
     return this.addFilter("does_not_contain", value, "rich_text");
   }
 
-  startsWith(value: string): QueryBuilder<T> {
+  startsWith(value: string): QueryBuilder<T, M> {
     return this.addFilter("starts_with", value, "rich_text");
   }
 
-  endsWith(value: string): QueryBuilder<T> {
+  endsWith(value: string): QueryBuilder<T, M> {
     return this.addFilter("ends_with", value, "rich_text");
   }
 
-  greaterThan(value: number | string | Date): QueryBuilder<T> {
+  greaterThan(value: number | string | Date): QueryBuilder<T, M> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
     const propertyType =
       value instanceof Date
@@ -88,7 +287,7 @@ export class FilterBuilder<
     return this.addFilter("greater_than", processedValue, propertyType);
   }
 
-  lessThan(value: number | string | Date): QueryBuilder<T> {
+  lessThan(value: number | string | Date): QueryBuilder<T, M> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
     const propertyType =
       value instanceof Date
@@ -99,7 +298,7 @@ export class FilterBuilder<
     return this.addFilter("less_than", processedValue, propertyType);
   }
 
-  greaterThanOrEqual(value: number | string | Date): QueryBuilder<T> {
+  greaterThanOrEqual(value: number | string | Date): QueryBuilder<T, M> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
     const propertyType =
       value instanceof Date
@@ -114,7 +313,7 @@ export class FilterBuilder<
     );
   }
 
-  lessThanOrEqual(value: number | string | Date): QueryBuilder<T> {
+  lessThanOrEqual(value: number | string | Date): QueryBuilder<T, M> {
     const processedValue = value instanceof Date ? value.toISOString() : value;
     const propertyType =
       value instanceof Date
@@ -129,35 +328,61 @@ export class FilterBuilder<
     );
   }
 
-  isEmpty(): QueryBuilder<T> {
+  isEmpty(): QueryBuilder<T, M> {
     return this.addFilter("is_empty", true, "checkbox");
   }
 
-  isNotEmpty(): QueryBuilder<T> {
+  isNotEmpty(): QueryBuilder<T, M> {
     return this.addFilter("is_not_empty", true, "checkbox");
   }
 
-  includes(value: string): QueryBuilder<T> {
+  includes(value: string): QueryBuilder<T, M> {
     return this.addFilter("contains", value, "rich_text");
   }
 
-  includesAny(values: string[]): QueryBuilder<T> {
+  includesAny(values: string[]): QueryBuilder<T, M> {
     // Create "or" conditions for each value
     return this.parent.or(
-      values.map(
-        (value) => (q: QueryBuilder<T>) =>
-          q.filter(this.property as keyof T & string).contains(value)
-      )
+      values.map((value) => (q: QueryBuilder<T, M>) => {
+        const filterBuilder = q.filter(this.property as keyof T & string);
+        // Check if this filter builder supports the contains method
+        if (
+          filterBuilder instanceof TextFilterBuilder ||
+          filterBuilder instanceof MultiSelectFilterBuilder
+        ) {
+          return (
+            filterBuilder as TextFilterBuilder<T, typeof this.property, M>
+          ).contains(value);
+        }
+        throw new Error(
+          `Property ${String(
+            this.property
+          )} does not support 'contains' operation`
+        );
+      })
     );
   }
 
-  includesAll(values: string[]): QueryBuilder<T> {
+  includesAll(values: string[]): QueryBuilder<T, M> {
     // Create "and" conditions for each value
     return this.parent.and(
-      values.map(
-        (value) => (q: QueryBuilder<T>) =>
-          q.filter(this.property as keyof T & string).contains(value)
-      )
+      values.map((value) => (q: QueryBuilder<T, M>) => {
+        const filterBuilder = q.filter(this.property as keyof T & string);
+        // Check if this filter builder supports the contains method
+        if (
+          filterBuilder instanceof TextFilterBuilder ||
+          filterBuilder instanceof MultiSelectFilterBuilder
+        ) {
+          return (
+            filterBuilder as TextFilterBuilder<T, typeof this.property, M>
+          ).contains(value);
+        }
+        throw new Error(
+          `Property ${String(
+            this.property
+          )} does not support 'contains' operation`
+        );
+      })
     );
   }
 
@@ -196,7 +421,7 @@ export class FilterBuilder<
     type: string,
     value: any,
     propertyType?: string
-  ): QueryBuilder<T> {
+  ): QueryBuilder<T, M> {
     this.parent.addCondition({
       property: this.property,
       type,
@@ -207,11 +432,14 @@ export class FilterBuilder<
   }
 }
 
-export class QueryBuilder<T extends DatabaseRecord>
-  implements PromiseLike<T[] | T | null>
+export class QueryBuilder<
+  T extends DatabaseRecord,
+  M extends DatabaseFieldMetadata = {}
+> implements PromiseLike<T[] | T | null>
 {
   private client: Client;
   private databaseId: string;
+  private fieldTypes: M;
   private filterConditions: FilterCondition[] = [];
   private logicalOperator: LogicalOperator = "and";
   private nestedFilters: any[] = [];
@@ -220,27 +448,89 @@ export class QueryBuilder<T extends DatabaseRecord>
   private startCursor?: string;
   private singleMode: "required" | "optional" | null = null;
 
-  constructor(client: Client, databaseId: string) {
+  constructor(client: Client, databaseId: string, fieldTypes: M = {} as M) {
     this.client = client;
     this.databaseId = databaseId;
-  }
-  /**
-   * @deprecated Use `filter()` instead. This method will be removed in a future version.
-   */
-  where<K extends keyof T & string>(property: K): FilterBuilder<T, K> {
-    return this.filter(property);
+    this.fieldTypes = fieldTypes;
   }
 
-  filter<K extends keyof T & string>(property: K): FilterBuilder<T, K> {
-    console.log("filter", property);
-    console.log("typeof filter", typeof property);
-    return new FilterBuilder<T, K>(property, this);
+  /**
+   * Creates a filter for the specified property
+   * Returns a specialized filter builder based on the property's type
+   */
+  filter<K extends keyof T & string>(property: K): BaseFilterBuilder<T, K, M> {
+    // Get the field type from metadata or infer it
+    const fieldType = this.getFieldType(property);
+
+    // Create the appropriate filter builder based on field type
+    switch (fieldType) {
+      case "rich_text":
+      case "title":
+        return new TextFilterBuilder<T, K, M>(property, this);
+
+      case "number":
+        return new NumberFilterBuilder<T, K, M>(property, this);
+
+      case "date":
+      case "created_time":
+      case "last_edited_time":
+        return new DateFilterBuilder<T, K, M>(property, this);
+
+      case "select":
+        return new SelectFilterBuilder<T, K, M>(property, this);
+
+      case "multi_select":
+        return new MultiSelectFilterBuilder<T, K, M>(property, this);
+
+      case "checkbox":
+        return new CheckboxFilterBuilder<T, K, M>(property, this);
+
+      default:
+        // Default to text filter for unknown types
+        return new TextFilterBuilder<T, K, M>(property, this);
+    }
+  }
+
+  /**
+   * Get the field type from metadata or infer it
+   * @private
+   */
+  private getFieldType(property: keyof T & string): NotionFieldType {
+    // If we have field metadata, use it
+    if (this.fieldTypes && property in this.fieldTypes) {
+      return this.fieldTypes[property];
+    }
+
+    // Try to infer from common property names
+    if (property === "Title" || property.includes("title")) {
+      return "title";
+    }
+
+    if (
+      property.includes("date") ||
+      property.includes("Date") ||
+      property.includes("time") ||
+      property.includes("Time")
+    ) {
+      return "date";
+    }
+
+    if (
+      property.includes("is") ||
+      property.includes("has") ||
+      property.includes("can")
+    ) {
+      return "checkbox";
+    }
+
+    // Default to rich_text for unknown properties
+    return "rich_text";
   }
 
   sort(
     property: keyof T & string,
     direction: SortDirection = "ascending"
-  ): QueryBuilder<T> {
+  ): QueryBuilder<T, M> {
     (this.sortOptions as any[]).push({
       property,
       direction,
@@ -248,21 +538,25 @@ export class QueryBuilder<T extends DatabaseRecord>
     return this;
   }
 
-  limit(limit: number): QueryBuilder<T> {
+  limit(limit: number): QueryBuilder<T, M> {
     this.pageLimit = limit;
     return this;
   }
 
-  startAfter(cursor: string): QueryBuilder<T> {
+  startAfter(cursor: string): QueryBuilder<T, M> {
     this.startCursor = cursor;
     return this;
   }
 
-  and(builders: ((q: QueryBuilder<T>) => QueryBuilder<T>)[]): QueryBuilder<T> {
+  and(
+    builders: ((q: QueryBuilder<T, M>) => QueryBuilder<T, M>)[]
+  ): QueryBuilder<T, M> {
     return this.logicalGroup("and", builders);
   }
 
-  or(builders: ((q: QueryBuilder<T>) => QueryBuilder<T>)[]): QueryBuilder<T> {
+  or(
+    builders: ((q: QueryBuilder<T, M>) => QueryBuilder<T, M>)[]
+  ): QueryBuilder<T, M> {
     return this.logicalGroup("or", builders);
   }
 
@@ -272,11 +566,15 @@ export class QueryBuilder<T extends DatabaseRecord>
 
   private logicalGroup(
     operator: LogicalOperator,
-    builders: ((q: QueryBuilder<T>) => QueryBuilder<T>)[]
-  ): QueryBuilder<T> {
+    builders: ((q: QueryBuilder<T, M>) => QueryBuilder<T, M>)[]
+  ): QueryBuilder<T, M> {
     const conditions = builders
       .map((builder) => {
-        const subQuery = new QueryBuilder<T>(this.client, this.databaseId);
+        const subQuery = new QueryBuilder<T, M>(
+          this.client,
+          this.databaseId,
+          this.fieldTypes
+        );
         builder(subQuery);
         const filter = subQuery.buildFilter();
         return filter;
@@ -337,7 +635,7 @@ export class QueryBuilder<T extends DatabaseRecord>
    * Sets the query to return exactly one result.
    * Will throw an error if no records are found or if multiple records match.
    */
-  single(): QueryBuilder<T> {
+  single(): QueryBuilder<T, M> {
     this.singleMode = "required";
     // Limit to 2 to check if there are multiple matches
     this.pageLimit = 2;
@@ -348,7 +646,7 @@ export class QueryBuilder<T extends DatabaseRecord>
    * Sets the query to return at most one result.
    * Returns null if no records are found.
    */
-  maybeSingle(): QueryBuilder<T> {
+  maybeSingle(): QueryBuilder<T, M> {
     this.singleMode = "optional";
     // Limit to 1 since we only need the first match
     this.pageLimit = 1;
@@ -456,6 +754,14 @@ export class QueryBuilder<T extends DatabaseRecord>
     }
 
     return allResults;
+  }
+
+  // Temporary method to support legacy FilterBuilder until we remove it completely
+  // This will only be needed temporarily during transition to the new API
+  queryWithLegacyBuilder<K extends keyof T & string>(
+    property: K
+  ): FilterBuilder<T, K, M> {
+    return new FilterBuilder<T, K, M>(property, this);
   }
 }
 
