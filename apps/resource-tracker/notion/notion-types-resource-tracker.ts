@@ -4,13 +4,53 @@
  * 
  * Generated for database: Resource Tracker
  */
-import { DatabaseRecord, NotionPropertyType } from "./notion-types";
+import { DatabaseRecord, NotionPropertyType, NotionCMS, QueryBuilder, NotionFieldType, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
 import { PropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 
 // Use PropertyItemObjectResponse for property type definitions
 type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;
+export const RecordResourceTrackerFieldTypes: DatabaseFieldMetadata = {
+  "Last Review Date": { type: "date" },
+  "Estimated Monthly Cost": { type: "number" },
+  "Tag Compliance": { type: "checkbox" },
+  "Owner": { type: "people" },
+  "Last Used Date": { type: "date" },
+  "Service Name": { 
+    type: "multi_select",
+    options: ["notifications", "analytics", "payment-gateway", "user-service", "auth-service"] 
+  },
+  "Linked Project / Jira Ticket": { type: "url" },
+  "Can Be Deprovisioned": { type: "checkbox" },
+  "Environment": { 
+    type: "select",
+    options: ["Dev", "Staging", "Prod"] 
+  },
+  "Auto Shutdown Configured": { type: "checkbox" },
+  "Instance Size / Tier": { type: "rich_text" },
+  "Estimated Monthly Cost (USD)": { type: "number" },
+  "Provision Date": { type: "date" },
+  "Resource Type": { 
+    type: "select",
+    options: ["EC2", "S3", "Lambda", "RDS", "ECS", "DynamoDB", "ElastiCache", "SNS", "SQS", "EKS"] 
+  },
+  "Region": { 
+    type: "select",
+    options: ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-southeast-1", "ap-southeast-2"] 
+  },
+  "Team": { type: "rich_text" },
+  "Notes": { type: "rich_text" },
+  "Is Active": { type: "checkbox" },
+  "Reviewed by DevOps": { type: "status" },
+  "Reason for Keeping": { 
+    type: "multi_select",
+    options: ["Pending migration", "Critical service"] 
+  },
+  "ID": { type: "unique_id" },
+  "Title": { type: "title" },
+  "id": { type: "text" }
+};
 
-export interface AdvancedResourceTrackerRecord {
+export interface RecordResourceTrackerAdvanced {
     id: string;
     "Last Review Date": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
     "Estimated Monthly Cost": number;
@@ -36,39 +76,40 @@ export interface AdvancedResourceTrackerRecord {
     Title: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
 }
 
-export interface RawResourceTrackerRecord {
+export interface RecordResourceTrackerRaw {
     id: string;
     properties: Record<string, any>;
 }
 
-export interface ResourceTrackerRecord extends DatabaseRecord {
+export interface RecordResourceTracker extends DatabaseRecord {
+    id: string;
     "Last Review Date": Date;
     "Estimated Monthly Cost": number;
     "Tag Compliance": boolean;
-    Owner: { id: string; name: string | null; avatar_url: string | null; }[];
+    Owner: string[];
     "Last Used Date": Date;
-    "Service Name": string[];
+    "Service Name": Array<"notifications" | "analytics" | "payment-gateway" | "user-service" | "auth-service">;
     "Linked Project / Jira Ticket": string;
     "Can Be Deprovisioned": boolean;
-    Environment: string;
+    Environment: "Dev" | "Staging" | "Prod";
     "Auto Shutdown Configured": boolean;
     "Instance Size / Tier": string;
     "Estimated Monthly Cost (USD)": number;
     "Provision Date": Date;
-    "Resource Type": string;
-    Region: string;
+    "Resource Type": "EC2" | "S3" | "Lambda" | "RDS" | "ECS" | "DynamoDB" | "ElastiCache" | "SNS" | "SQS" | "EKS";
+    Region: "us-east-1" | "us-east-2" | "us-west-1" | "us-west-2" | "eu-west-1" | "eu-central-1" | "ap-southeast-1" | "ap-southeast-2";
     Team: string;
     Notes: string;
     "Is Active": boolean;
     "Reviewed by DevOps": any;
-    "Reason for Keeping": string[];
+    "Reason for Keeping": Array<"Pending migration" | "Critical service">;
     ID: any;
     Title: string;
-    advanced: AdvancedResourceTrackerRecord;
-    raw: RawResourceTrackerRecord;
+    advanced: RecordResourceTrackerAdvanced;
+    raw: RecordResourceTrackerRaw;
 }
 
-export interface ResourceTrackerRecordProperties {
+export interface PropertiesRecordResourceTracker {
     "Last Review Date": NotionProperty<'date'>;
     "Estimated Monthly Cost": NotionProperty<'number'>;
     "Tag Compliance": NotionProperty<'checkbox'>;
@@ -92,3 +133,14 @@ export interface ResourceTrackerRecordProperties {
     ID: NotionProperty<'unique_id'>;
     Title: NotionProperty<'title'>;
 }
+
+/**
+ * Type-safe query function for the Resource Tracker database
+ * @param notionCMS NotionCMS instance 
+ * @param databaseId The ID of the database to query
+ * @returns A type-safe QueryBuilder for the RecordResourceTracker record type
+ */
+export function query(notionCMS: NotionCMS, databaseId: string): QueryBuilder<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes> {
+  return notionCMS.queryWithTypes<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes>(databaseId, RecordResourceTrackerFieldTypes);
+}
+
