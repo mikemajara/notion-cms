@@ -37,7 +37,9 @@ type NotionPropertyConfig = DatabaseObjectResponse["properties"][string];
 
 // Export interfaces for use in other modules
 export interface DatabaseRecord {
-  id: string;
+  // Make id optional to accommodate different naming conventions like 'ID'
+  id?: string;
+  [key: string]: any;
   // Instead of [key: string]: any, we'll use a specific property for advanced and raw
   advanced?: {
     id: string;
@@ -280,6 +282,9 @@ function generateDatabaseSpecificFile(
       namedImports: [
         "DatabaseRecord",
         "NotionPropertyType",
+        "NotionCMS",
+        "QueryBuilder",
+        "NotionFieldType",
         "DatabaseFieldMetadata",
       ],
     });
@@ -300,6 +305,7 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
     ): string => {
       switch (propertyType) {
         case "title":
+          return "{ content: string; annotations: any; href: string | null; link?: { url: string } | null }[]";
         case "rich_text":
           return "{ content: string; annotations: any; href: string | null; link?: { url: string } | null }[]";
         case "number":
@@ -329,11 +335,12 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
         case "rollup":
           return "{ type: string; function: string; array?: any[]; number?: number; date?: any }";
         case "created_time":
-        case "last_edited_time":
           return "{ timestamp: string; date: Date }";
         case "created_by":
         case "last_edited_by":
           return "{ id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }";
+        case "last_edited_time":
+          return "{ timestamp: string; date: Date }";
         case "status":
           return "{ id: string; name: string; color: string } | null";
         case "unique_id":
@@ -343,12 +350,110 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
       }
     };
 
+    // Generate metadata for field types
+    const metadataStatements: string[] = [];
+    metadataStatements.push(
+      `export const ${typeName}FieldTypes: DatabaseFieldMetadata = {`
+    );
+
+    for (const [propertyName, propertyValue] of Object.entries(properties)) {
+      let fieldType: string;
+
+      switch (propertyValue.type) {
+        case "title":
+          fieldType = "NotionFieldType.Title";
+          break;
+        case "rich_text":
+          fieldType = "NotionFieldType.Text";
+          break;
+        case "number":
+          fieldType = "NotionFieldType.Number";
+          break;
+        case "select":
+          fieldType = "NotionFieldType.Select";
+          break;
+        case "multi_select":
+          fieldType = "NotionFieldType.MultiSelect";
+          break;
+        case "date":
+          fieldType = "NotionFieldType.Date";
+          break;
+        case "people":
+          fieldType = "NotionFieldType.People";
+          break;
+        case "files":
+          fieldType = "NotionFieldType.Files";
+          break;
+        case "checkbox":
+          fieldType = "NotionFieldType.Checkbox";
+          break;
+        case "url":
+          fieldType = "NotionFieldType.Url";
+          break;
+        case "email":
+          fieldType = "NotionFieldType.Email";
+          break;
+        case "phone_number":
+          fieldType = "NotionFieldType.PhoneNumber";
+          break;
+        case "formula":
+          fieldType = "NotionFieldType.Formula";
+          break;
+        case "relation":
+          fieldType = "NotionFieldType.Relation";
+          break;
+        case "rollup":
+          fieldType = "NotionFieldType.Rollup";
+          break;
+        case "created_by":
+          fieldType = "NotionFieldType.CreatedBy";
+          break;
+        case "created_time":
+          fieldType = "NotionFieldType.CreatedTime";
+          break;
+        case "last_edited_by":
+          fieldType = "NotionFieldType.LastEditedBy";
+          break;
+        case "last_edited_time":
+          fieldType = "NotionFieldType.LastEditedTime";
+          break;
+        default:
+          fieldType = "NotionFieldType.Unknown";
+      }
+
+      // For select and multi_select, add options data
+      if (
+        propertyValue.type === "select" ||
+        propertyValue.type === "multi_select"
+      ) {
+        const options = (
+          propertyValue.type === "select"
+            ? propertyValue.select.options
+            : propertyValue.multi_select.options
+        )
+          .map((option: { name: string }) => `"${option.name}"`)
+          .join(", ");
+
+        metadataStatements.push(`  "${propertyName}": { 
+    type: ${fieldType},
+    options: [${options}] 
+  },`);
+      } else {
+        metadataStatements.push(`  "${propertyName}": { type: ${fieldType} },`);
+      }
+    }
+
+    // Add id field explicitly
+    metadataStatements.push(`  "id": { type: NotionFieldType.Text }`);
+    metadataStatements.push(`};`);
+
+    sourceFile.addStatements(metadataStatements.join("\n"));
+
     // First, generate the advanced record interface
     const baseTypeName = typeName;
     const advancedTypeName = `${baseTypeName}Advanced`;
     const rawTypeName = `${baseTypeName}Raw`;
     const propertiesTypeName = `Properties${baseTypeName}`;
-    const fieldTypesName = `${baseTypeName}FieldTypes`;
 
     sourceFile.addInterface({
       name: advancedTypeName,
@@ -386,6 +491,10 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
       name: baseTypeName,
       extends: ["DatabaseRecord"],
       properties: [
+        {
+          name: "id",
+          type: "string",
+        },
         ...Object.entries(properties).map(([name, prop]) => ({
           name: sanitizePropertyName(name),
           type: propertyTypeToTS(
@@ -415,26 +524,20 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
       isExported: true,
     });
 
-    // Generate field type metadata as a constant
-    const fieldTypeEntries = Object.entries(properties)
-      .map(([name, prop]) => {
-        const sanitizedName = sanitizePropertyName(name);
-        const propType = (prop as NotionPropertyConfig).type;
-        return `  ${sanitizedName}: "${propType}"`;
-      })
-      .join(",\n");
-
+    // Generate the wrapper query function
     sourceFile.addStatements(`
 /**
- * Field type metadata for the ${databaseName} database.
- * This is used by the type-safe query builder to determine appropriate filtering operations.
+ * Type-safe query function for the ${databaseName} database
+ * @param notionCMS NotionCMS instance 
+ * @param databaseId The ID of the database to query
+ * @returns A type-safe QueryBuilder for the ${typeName} record type
  */
-export const ${fieldTypesName}: DatabaseFieldMetadata = {
-${fieldTypeEntries}
-} as const;`);
+export function query(notionCMS: NotionCMS, databaseId: string): QueryBuilder<${typeName}, typeof ${typeName}FieldTypes> {
+  return notionCMS.queryWithTypes<${typeName}, typeof ${typeName}FieldTypes>(databaseId, ${typeName}FieldTypes);
+}
+`);
   } catch (error) {
     console.error("Error generating database-specific types:", error);
-    throw error;
   }
 }
 
