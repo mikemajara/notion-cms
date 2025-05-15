@@ -359,68 +359,6 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
     for (const [propertyName, propertyValue] of Object.entries(properties)) {
       let fieldType: string;
 
-      switch (propertyValue.type) {
-        case "title":
-          fieldType = "NotionFieldType.Title";
-          break;
-        case "rich_text":
-          fieldType = "NotionFieldType.Text";
-          break;
-        case "number":
-          fieldType = "NotionFieldType.Number";
-          break;
-        case "select":
-          fieldType = "NotionFieldType.Select";
-          break;
-        case "multi_select":
-          fieldType = "NotionFieldType.MultiSelect";
-          break;
-        case "date":
-          fieldType = "NotionFieldType.Date";
-          break;
-        case "people":
-          fieldType = "NotionFieldType.People";
-          break;
-        case "files":
-          fieldType = "NotionFieldType.Files";
-          break;
-        case "checkbox":
-          fieldType = "NotionFieldType.Checkbox";
-          break;
-        case "url":
-          fieldType = "NotionFieldType.Url";
-          break;
-        case "email":
-          fieldType = "NotionFieldType.Email";
-          break;
-        case "phone_number":
-          fieldType = "NotionFieldType.PhoneNumber";
-          break;
-        case "formula":
-          fieldType = "NotionFieldType.Formula";
-          break;
-        case "relation":
-          fieldType = "NotionFieldType.Relation";
-          break;
-        case "rollup":
-          fieldType = "NotionFieldType.Rollup";
-          break;
-        case "created_by":
-          fieldType = "NotionFieldType.CreatedBy";
-          break;
-        case "created_time":
-          fieldType = "NotionFieldType.CreatedTime";
-          break;
-        case "last_edited_by":
-          fieldType = "NotionFieldType.LastEditedBy";
-          break;
-        case "last_edited_time":
-          fieldType = "NotionFieldType.LastEditedTime";
-          break;
-        default:
-          fieldType = "NotionFieldType.Unknown";
-      }
-
       // For select and multi_select, add options data
       if (
         propertyValue.type === "select" ||
@@ -435,16 +373,18 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
           .join(", ");
 
         metadataStatements.push(`  "${propertyName}": { 
-    type: ${fieldType},
+    type: ${propertyValue.type},
     options: [${options}] 
   },`);
       } else {
-        metadataStatements.push(`  "${propertyName}": { type: ${fieldType} },`);
+        metadataStatements.push(
+          `  "${propertyName}": { type: ${propertyValue.type} },`
+        );
       }
     }
 
     // Add id field explicitly
-    metadataStatements.push(`  "id": { type: NotionFieldType.Text }`);
+    metadataStatements.push(`  "id": { type: "text" }`);
     metadataStatements.push(`};`);
 
     sourceFile.addStatements(metadataStatements.join("\n"));

@@ -22,7 +22,6 @@ import {
 } from "./generator";
 import {
   QueryBuilder,
-  FilterBuilder,
   SortDirection,
   ComparisonOperator,
   LogicalOperator,
@@ -733,7 +732,6 @@ export * from "./generator";
 // Re-export query builder types and classes
 export {
   QueryBuilder,
-  FilterBuilder,
   SortDirection,
   ComparisonOperator,
   LogicalOperator,
