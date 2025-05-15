@@ -28,6 +28,15 @@ import {
   LogicalOperator,
   FilterCondition,
   QueryResult,
+  NotionFieldType,
+  DatabaseFieldMetadata,
+  BaseFilterBuilder,
+  TextFilterBuilder,
+  NumberFilterBuilder,
+  DateFilterBuilder,
+  SelectFilterBuilder,
+  MultiSelectFilterBuilder,
+  CheckboxFilterBuilder,
 } from "./query-builder";
 import { debug } from "./utils/debug";
 import {
@@ -48,6 +57,19 @@ export {
   simplifyNotionRecords,
   createSimplifyFunction,
   createSimplifyRecordsFunction,
+};
+
+// Re-export query-builder types
+export {
+  NotionFieldType,
+  DatabaseFieldMetadata,
+  BaseFilterBuilder,
+  TextFilterBuilder,
+  NumberFilterBuilder,
+  DateFilterBuilder,
+  SelectFilterBuilder,
+  MultiSelectFilterBuilder,
+  CheckboxFilterBuilder,
 };
 
 export type { NotionPropertyType, NotionProperty };
@@ -84,6 +106,19 @@ export class NotionCMS {
    */
   query<T extends DatabaseRecord>(databaseId: string): QueryBuilder<T> {
     return new QueryBuilder<T>(this.client, databaseId);
+  }
+
+  /**
+   * Creates a type-aware query builder for a Notion database
+   * @param databaseId The ID of the Notion database
+   * @param fieldTypes Metadata about field types for type-safe operations
+   * @returns A query builder instance with field type awareness
+   */
+  queryWithTypes<
+    T extends DatabaseRecord,
+    M extends DatabaseFieldMetadata = {}
+  >(databaseId: string, fieldTypes: M): QueryBuilder<T, M> {
+    return new QueryBuilder<T, M>(this.client, databaseId, fieldTypes);
   }
 
   /**

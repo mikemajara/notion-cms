@@ -277,7 +277,11 @@ function generateDatabaseSpecificFile(
     // Add imports directly from notion-cms
     sourceFile.addImportDeclaration({
       moduleSpecifier: "@mikemajara/notion-cms",
-      namedImports: ["DatabaseRecord", "NotionPropertyType"],
+      namedImports: [
+        "DatabaseRecord",
+        "NotionPropertyType",
+        "DatabaseFieldMetadata",
+      ],
     });
 
     sourceFile.addImportDeclaration({
@@ -344,6 +348,7 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
     const advancedTypeName = `${baseTypeName}Advanced`;
     const rawTypeName = `${baseTypeName}Raw`;
     const propertiesTypeName = `Properties${baseTypeName}`;
+    const fieldTypesName = `${baseTypeName}FieldTypes`;
 
     sourceFile.addInterface({
       name: advancedTypeName,
@@ -409,6 +414,24 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
       })),
       isExported: true,
     });
+
+    // Generate field type metadata as a constant
+    const fieldTypeEntries = Object.entries(properties)
+      .map(([name, prop]) => {
+        const sanitizedName = sanitizePropertyName(name);
+        const propType = (prop as NotionPropertyConfig).type;
+        return `  ${sanitizedName}: "${propType}"`;
+      })
+      .join(",\n");
+
+    sourceFile.addStatements(`
+/**
+ * Field type metadata for the ${databaseName} database.
+ * This is used by the type-safe query builder to determine appropriate filtering operations.
+ */
+export const ${fieldTypesName}: DatabaseFieldMetadata = {
+${fieldTypeEntries}
+} as const;`);
   } catch (error) {
     console.error("Error generating database-specific types:", error);
     throw error;
