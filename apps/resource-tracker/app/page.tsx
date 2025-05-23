@@ -20,7 +20,7 @@ async function getResourceTrackerData(): Promise<RecordResourceTracker[]> {
   const response = notionCMS
     .queryResourceTracker(databaseId)
     .filter("Can Be Deprovisioned", "equals", true)
-    .sort("Is Active", "descending")
+    .sort("Title")
     .sort("Last Review Date", "descending")
     .all();
 
@@ -76,11 +76,7 @@ export default async function ResourceTrackerPage() {
                     {record.id}
                   </Link>
                 </TableCell>
-                <TableCell>
-                  {record.ID?.prefix
-                    ? `${record.ID.prefix}-${record.ID.number}`
-                    : record.ID?.number || "N/A"}
-                </TableCell>
+                <TableCell>{record.ID || "N/A"}</TableCell>
                 <TableCell>{record.Title}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">

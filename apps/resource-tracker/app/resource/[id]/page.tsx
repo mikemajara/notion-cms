@@ -10,9 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import "@/notion/notion-types-resource-tracker";
 
+interface ResourceWithContent {
+  resource: RecordResourceTracker;
+  content: string;
+  hasContent: boolean;
+}
+
 async function getResourceById(
   id: string
-): Promise<RecordResourceTracker | null> {
+): Promise<ResourceWithContent | null> {
   try {
     const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
     const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
@@ -22,7 +28,28 @@ async function getResourceById(
       (record: RecordResourceTracker) => record.id === id
     );
 
-    return resource || null;
+    if (!resource) {
+      return null;
+    }
+
+    // Fetch page content
+    let content = "";
+    let hasContent = false;
+
+    try {
+      const blocks = await notionCMS.getPageContent(resource.id, true);
+      content = notionCMS.blocksToMarkdown(blocks, { includeImageUrls: true });
+      hasContent = blocks.length > 0 && content.trim().length > 0;
+    } catch (contentError) {
+      console.warn("Could not fetch page content:", contentError);
+      // Don't fail the whole request if content fetching fails
+    }
+
+    return {
+      resource,
+      content,
+      hasContent,
+    };
   } catch (error) {
     console.error("Error fetching resource:", error);
     return null;
@@ -34,11 +61,13 @@ export default async function ResourceDetailPage({
 }: {
   params: { id: string };
 }) {
-  const resource = await getResourceById(params.id);
+  const result = await getResourceById(params.id);
 
-  if (!resource) {
+  if (!result) {
     notFound();
   }
+
+  const { resource, content, hasContent } = result;
 
   return (
     <div className="container mx-auto py-8 max-w-4xl">
@@ -365,6 +394,73 @@ export default async function ResourceDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Content Section */}
+      {hasContent && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <span>Page Content</span>
+              <Badge variant="secondary" className="text-xs">
+                From Notion
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="prose prose-sm max-w-none">
+              {content.split("\n").map((line, index) => {
+                if (line.trim() === "") {
+                  return <br key={index} />;
+                }
+
+                // Handle different markdown elements
+                if (line.startsWith("# ")) {
+                  return (
+                    <h1 key={index} className="text-2xl font-bold mt-6 mb-4">
+                      {line.slice(2)}
+                    </h1>
+                  );
+                }
+                if (line.startsWith("## ")) {
+                  return (
+                    <h2 key={index} className="text-xl font-semibold mt-5 mb-3">
+                      {line.slice(3)}
+                    </h2>
+                  );
+                }
+                if (line.startsWith("### ")) {
+                  return (
+                    <h3 key={index} className="text-lg font-medium mt-4 mb-2">
+                      {line.slice(4)}
+                    </h3>
+                  );
+                }
+                if (line.startsWith("- ")) {
+                  return (
+                    <li key={index} className="ml-4 list-disc">
+                      {line.slice(2)}
+                    </li>
+                  );
+                }
+                if (line.match(/^\d+\. /)) {
+                  return (
+                    <li key={index} className="ml-4 list-decimal">
+                      {line.replace(/^\d+\. /, "")}
+                    </li>
+                  );
+                }
+
+                // Regular paragraph
+                return (
+                  <p key={index} className="mb-3 leading-relaxed">
+                    {line}
+                  </p>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
