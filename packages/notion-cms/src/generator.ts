@@ -340,9 +340,7 @@ function generateDatabaseSpecificFile(
 
     // Generate metadata for field types
     const metadataStatements: string[] = [];
-    metadataStatements.push(
-      `export const ${typeName}FieldTypes: DatabaseFieldMetadata = {`
-    );
+    metadataStatements.push(`export const ${typeName}FieldTypes = {`);
 
     for (const [propertyName, propertyValue] of Object.entries(properties)) {
       let fieldType: string;
@@ -362,7 +360,7 @@ function generateDatabaseSpecificFile(
 
         metadataStatements.push(`  "${propertyName}": { 
     type: "${propertyValue.type}",
-    options: [${options}] 
+    options: [${options}] as const
   },`);
       } else {
         metadataStatements.push(
@@ -371,7 +369,7 @@ function generateDatabaseSpecificFile(
       }
     }
 
-    metadataStatements.push(`};`);
+    metadataStatements.push(`} as const satisfies DatabaseFieldMetadata;`);
 
     sourceFile.addStatements(metadataStatements.join("\n"));
 

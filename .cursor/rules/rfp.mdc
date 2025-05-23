@@ -1,0 +1,237 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Notion CMS Library - Comprehensive Project Guide
+
+## Project Overview
+
+This is **@mikemajara/notion-cms** - a TypeScript library that transforms Notion into a type-safe, developer-friendly headless CMS. The primary goal is simplifying the Notion API while enabling compile-time type awareness and IntelliSense support for database operations.
+
+## Core Mission
+
+Enable developers to use Notion databases as a CMS with:
+
+1. **Full Type Safety**: Auto-generated TypeScript types from Notion database schemas
+2. **Intelligent IntelliSense**: Property-specific method suggestions (e.g., Date fields show date-specific operators)
+3. **Multiple API Levels**: Simple, Advanced, and Raw access to Notion data
+4. **Query Builder**: Fluent, type-safe database querying
+5. **Content Processing**: Block-to-Markdown/HTML conversion for rich content
+
+## Architecture & Design Philosophy
+
+### Three-Tier Data Access Model
+
+The library provides three levels of data access for maximum flexibility:
+
+#### 1. Simple API (Primary Focus - ✅ Implemented)
+
+- **Direct Property Access**: `record.publishedAt` returns a `Date` object
+- **Type Conversion**: Notion types automatically convert to JavaScript types
+- **Clean Interface**: Hide Notion API complexity behind intuitive properties
+- **Generated Types**: Each database gets its own TypeScript interface
+
+#### 2. Advanced API (Planned)
+
+- **Rich Metadata**: Access to colors, sorting, user details, etc.
+- **Complex Types**: Multi-select with colors, People with avatars/emails
+- **Notion Features**: Full access to Notion-specific functionality
+
+#### 3. Raw API (Fallback)
+
+- **Direct Notion Response**: Unprocessed API data for edge cases
+- **Complete Access**: Every field and property Notion returns
+
+### Type Generation System
+
+**Core Innovation**: CLI tool that introspects Notion databases and generates:
+
+- **Database-Specific Types**: `BlogRecord`, `WorkRecord`, etc.
+- **Property Metadata**: Type mapping for query builder validation
+- **Utility Functions**: Simplification and conversion helpers
+- **Client Extensions**: Type-safe query methods
+
+## Technical Implementation
+
+### File Structure & Responsibilities
+
+#### Core Library (`packages/notion-cms/src/`)
+
+- **`index.ts`** (759 lines): Main `NotionCMS` class with database operations, content processing
+- **`generator.ts`** (1016 lines): Type generation engine, record processing, CLI backend
+- **`query-builder.ts`** (426 lines): Fluent, type-safe query interface
+- **`cli.ts`** (89 lines): CLI tool for type generation
+- **`utils/`**: Helper functions for property handling, type mapping, validation
+
+#### Key Classes & Functions
+
+##### `NotionCMS` Class (Main API)
+
+```typescript
+class NotionCMS {
+  // Type-safe database querying
+  query<T>(
+    databaseId: string,
+    metadata: { propertyTypes: Record<string, string> }
+  ): QueryBuilder<T>;
+
+  // Database operations with pagination
+  getDatabase<T>(
+    databaseId: string,
+    options?: QueryOptions
+  ): Promise<{ results: T[]; nextCursor: string | null; hasMore: boolean }>;
+
+  // Single record retrieval
+  getRecord<T>(pageId: string): Promise<T>;
+
+  // Content processing
+  getPageContent(pageId: string, recursive?: boolean): Promise<SimpleBlock[]>;
+  blocksToMarkdown(blocks: SimpleBlock[]): string;
+  blocksToHtml(blocks: SimpleBlock[]): string;
+}
+```
+
+##### `QueryBuilder<T>` Class (Type-Safe Querying)
+
+TBD
+
+##### Type Generation Engine
+
+```typescript
+// CLI command: notion-cms generate -d DATABASE_ID -t TOKEN -o ./types
+async function generateTypes(
+  databaseId: string,
+  outputPath: string,
+  token: string
+): Promise<void>;
+
+// Generates:
+// - {database-name}.ts: TypeScript interface for records
+// - metadata.ts: Property type mapping for query builder
+// - client.ts: Extended NotionCMS class with typed methods
+```
+
+### Type System Design
+
+#### Property Type Mapping
+
+Notion types are mapped to appropriate TypeScript types:
+
+```typescript
+'title' | 'rich_text' | 'url' | 'email' | 'phone_number' → string
+'number' → number
+'date' | 'created_time' | 'last_edited_time' → Date
+'checkbox' → boolean
+'select' → union type of options ("option1" | "option2")
+'multi_select' → Array<union type>
+'people' | 'relation' → string[] (IDs)
+'files' → { name: string; url: string; }[]
+```
+
+#### Generated Type Example
+
+```typescript
+export interface BlogRecord extends DatabaseRecord {
+  name: string; // title property
+  publishedAt: Date; // date property
+  isPublished: boolean; // checkbox property
+  type: "new" | "upgrade"; // select property
+  tags: Array<"Tech" | "Design" | "Business">; // multi_select with specific options
+  author: string; // rich_text property
+  likes: number; // number property
+}
+```
+
+### Query Builder Type Safety
+
+#### Operator Validation
+
+TBD
+
+#### Usage Example
+
+✅ Correct examples
+```typescript
+const cms = new NotionCMS(token);
+
+// Type-safe querying with IntelliSense
+const publishedPosts = await cms
+  .query<BlogRecord>(databaseId, blogMetadata)
+  .filter("isPublished", "eq", true) // boolean operators only
+  .filter("publishedAt", "after", new Date("2024-01-01")) // date operators only
+  .filter("type", "equals", "new") // select operators only
+  .filter("tags", "contains", "Tech") // multi-select operators only
+  .sort("publishedAt", "descending")
+  .limit(10);
+```
+
+❌ Incorrect examples
+```typescript
+const cms = new NotionCMS(token);
+
+// Type-safe querying with IntelliSense
+const publishedPosts = await cms
+  .query<BlogRecord>(databaseId, blogMetadata)
+  .filter("isPublished", "contains", true) // boolean operators only
+  .filter("type", "contains", "new") // select operators only
+  .limit(10);
+```
+
+
+## Development Workflow
+
+### CLI Usage
+
+1. **Generate Types**: `notion-cms generate -d DATABASE_ID -t NOTION_TOKEN`
+2. **Import & Use**: Import generated types and metadata in your application
+3. **Type-Safe Queries**: Use QueryBuilder with full IntelliSense support
+
+### Package Structure
+
+- **Monorepo**: Turborepo with apps (examples) and packages (core library)
+- **Package Manager**: pnpm (specified in package.json)
+- **Build System**: tsup for library bundling
+- **Testing**: Jest for unit tests
+
+### Current Implementation Status
+
+#### ✅ Completed Features
+
+- **Type Generation**: Full database schema introspection and TypeScript generation
+- **Simple API**: Direct property access with type conversion
+- **CLI Tool**: Database type generation command
+- **Multiple Access Levels**: Simple, Advanced, Raw record processing
+
+#### 🚧 In Progress / Planned
+
+- **Query Builder**: Type-safe filtering, sorting, pagination [WIP]
+- **Content Processing**: Block extraction, Markdown/HTML conversion
+- **Formula Type Detection**: Infer formula result types from sample data
+- **Image Handling**: AWS token refresh for Notion-hosted images
+- **Advanced API**: Rich metadata access (colors, user details, etc.)
+- **Block Processing Improvements**: Better Markdown fidelity
+
+## Naming Conventions & Code Standards
+
+### Naming Philosophy: Top-Down Hierarchy
+
+Generic → Specific ordering for better developer experience:
+
+```typescript
+// ✅ CORRECT: Generic term first
+RecordBlog, RecordWork, RecordTask;
+QueryBuilderDate, QueryBuilderNumber;
+
+// ❌ WRONG: Specific term first
+BlogRecord, WorkRecord, TaskRecord;
+DateQueryBuilder, NumberQueryBuilder;
+```
+
+### File & Type Naming
+
+- **Types**: `Record{DatabaseName}` (e.g., `RecordBlog`)
+- **Files**: `notion-types-{database-slug}.ts`
+- **Properties**: Sanitized for TypeScript (quoted if containing special chars)
+
+This library represents a significant evolution in how developers interact with Notion as a CMS, prioritizing type safety, developer experience, and seamless integration over API completeness.

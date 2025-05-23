@@ -4,12 +4,8 @@
  * 
  * Generated for database: Resource Tracker
  */
-import { DatabaseRecord, NotionPropertyType, NotionCMS, QueryBuilder, NotionFieldType, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
-import { PropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpoints";
-
-// Use PropertyItemObjectResponse for property type definitions
-type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;
-export const RecordResourceTrackerFieldTypes: DatabaseFieldMetadata = {
+import { DatabaseRecord, NotionCMS, QueryBuilder, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
+export const RecordResourceTrackerFieldTypes = {
   "Last Review Date": { type: "date" },
   "Estimated Monthly Cost": { type: "number" },
   "Tag Compliance": { type: "checkbox" },
@@ -17,13 +13,13 @@ export const RecordResourceTrackerFieldTypes: DatabaseFieldMetadata = {
   "Last Used Date": { type: "date" },
   "Service Name": { 
     type: "multi_select",
-    options: ["notifications", "analytics", "payment-gateway", "user-service", "auth-service"] 
+    options: ["notifications", "analytics", "payment-gateway", "user-service", "auth-service"] as const
   },
   "Linked Project / Jira Ticket": { type: "url" },
   "Can Be Deprovisioned": { type: "checkbox" },
   "Environment": { 
     type: "select",
-    options: ["Dev", "Staging", "Prod"] 
+    options: ["Dev", "Staging", "Prod"] as const
   },
   "Auto Shutdown Configured": { type: "checkbox" },
   "Instance Size / Tier": { type: "rich_text" },
@@ -31,11 +27,11 @@ export const RecordResourceTrackerFieldTypes: DatabaseFieldMetadata = {
   "Provision Date": { type: "date" },
   "Resource Type": { 
     type: "select",
-    options: ["EC2", "S3", "Lambda", "RDS", "ECS", "DynamoDB", "ElastiCache", "SNS", "SQS", "EKS"] 
+    options: ["EC2", "S3", "Lambda", "RDS", "ECS", "DynamoDB", "ElastiCache", "SNS", "SQS", "EKS"] as const
   },
   "Region": { 
     type: "select",
-    options: ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-southeast-1", "ap-southeast-2"] 
+    options: ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-southeast-1", "ap-southeast-2"] as const
   },
   "Team": { type: "rich_text" },
   "Notes": { type: "rich_text" },
@@ -43,12 +39,11 @@ export const RecordResourceTrackerFieldTypes: DatabaseFieldMetadata = {
   "Reviewed by DevOps": { type: "status" },
   "Reason for Keeping": { 
     type: "multi_select",
-    options: ["Pending migration", "Critical service"] 
+    options: ["Pending migration", "Critical service"] as const
   },
   "ID": { type: "unique_id" },
   "Title": { type: "title" },
-  "id": { type: "text" }
-};
+} as const satisfies DatabaseFieldMetadata;
 
 export interface RecordResourceTrackerAdvanced {
     id: string;
@@ -107,31 +102,6 @@ export interface RecordResourceTracker extends DatabaseRecord {
     Title: string;
     advanced: RecordResourceTrackerAdvanced;
     raw: RecordResourceTrackerRaw;
-}
-
-export interface PropertiesRecordResourceTracker {
-    "Last Review Date": NotionProperty<'date'>;
-    "Estimated Monthly Cost": NotionProperty<'number'>;
-    "Tag Compliance": NotionProperty<'checkbox'>;
-    Owner: NotionProperty<'people'>;
-    "Last Used Date": NotionProperty<'date'>;
-    "Service Name": NotionProperty<'multi_select'>;
-    "Linked Project / Jira Ticket": NotionProperty<'url'>;
-    "Can Be Deprovisioned": NotionProperty<'checkbox'>;
-    Environment: NotionProperty<'select'>;
-    "Auto Shutdown Configured": NotionProperty<'checkbox'>;
-    "Instance Size / Tier": NotionProperty<'rich_text'>;
-    "Estimated Monthly Cost (USD)": NotionProperty<'number'>;
-    "Provision Date": NotionProperty<'date'>;
-    "Resource Type": NotionProperty<'select'>;
-    Region: NotionProperty<'select'>;
-    Team: NotionProperty<'rich_text'>;
-    Notes: NotionProperty<'rich_text'>;
-    "Is Active": NotionProperty<'checkbox'>;
-    "Reviewed by DevOps": NotionProperty<'status'>;
-    "Reason for Keeping": NotionProperty<'multi_select'>;
-    ID: NotionProperty<'unique_id'>;
-    Title: NotionProperty<'title'>;
 }
 
 /**

@@ -6,31 +6,17 @@ import {
   TableRow,
   TableCell,
 } from "@/components/ui/table";
-import { NotionCMS } from "@mikemajara/notion-cms";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { query, RecordResourceTracker } from "@/notion";
+import { NotionCMS } from "@mikemajara/notion-cms";
+import { query } from "@/notion";
 
 async function getResourceTrackerData() {
   const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
   const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
 
-  // Use the NotionCMS query method until we run the generator to create the type-safe query
-  // const response = await notionCMS
-  //   .query<RecordResourceTracker>(databaseId)
-  //   .filter("Resource Type")
-  //   .equals("EC2")
-  //   .all();
-
-  // FIX: Example not working
-  // const response = await query(notionCMS, databaseId)
-  //   .filter("Reason for Keeping")
-  //   .equals(["Critical service"])
-  //   .all();
-
-  const response = await query(notionCMS, databaseId)
-    .filter("Reason for Keeping")
-    .contains("Critical service")
-    .all();
+  const response = query(notionCMS, databaseId)
+    .filter("Reason for Keeping", "contains", "Critical service")
+    .filter("Environment", "equals", "Prod");
 
   // console.log("response", response[3].Owner);
   return response;
@@ -57,13 +43,11 @@ export default async function ResourceTrackerPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.map((record: RecordResourceTracker) => (
-              <TableRow key={record.ID}>
+            {data.map((record) => (
+              <TableRow key={record.id}>
                 <TableCell>{record.Title}</TableCell>
                 <TableCell
-                  className={`bg-${
-                    record.advanced["Resource Type"]?.color || "gray"
-                  }-100`}
+                  className={`bg-${record.advanced["Resource Type"].color}-100`}
                 >
                   {record["Resource Type"]}
                 </TableCell>
@@ -73,7 +57,7 @@ export default async function ResourceTrackerPage() {
                   <div className="flex items-center gap-2">
                     <Avatar className="size-4">
                       <AvatarImage
-                        src={record.advanced.Owner?.[0]?.avatar_url || ""}
+                        src={record.advanced.Owner[0]?.avatar_url || ""}
                       />
                     </Avatar>
                     {record.advanced.Owner?.map(

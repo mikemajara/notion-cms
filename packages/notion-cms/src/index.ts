@@ -23,19 +23,19 @@ import {
 import {
   QueryBuilder,
   SortDirection,
-  ComparisonOperator,
   LogicalOperator,
   FilterCondition,
   QueryResult,
   NotionFieldType,
   DatabaseFieldMetadata,
-  BaseFilterBuilder,
-  TextFilterBuilder,
-  NumberFilterBuilder,
-  DateFilterBuilder,
-  SelectFilterBuilder,
-  MultiSelectFilterBuilder,
-  CheckboxFilterBuilder,
+  OperatorMap,
+  OPERATOR_MAP,
+  FieldTypeFor,
+  OperatorsFor,
+  SelectOptionsFor,
+  ValueTypeFor,
+  ValueTypeMap,
+  TypeSafeFilterCondition,
 } from "./query-builder";
 import { debug } from "./utils/debug";
 import {
@@ -60,15 +60,21 @@ export {
 
 // Re-export query-builder types
 export {
+  QueryBuilder,
+  SortDirection,
+  LogicalOperator,
+  FilterCondition,
+  QueryResult,
   NotionFieldType,
   DatabaseFieldMetadata,
-  BaseFilterBuilder,
-  TextFilterBuilder,
-  NumberFilterBuilder,
-  DateFilterBuilder,
-  SelectFilterBuilder,
-  MultiSelectFilterBuilder,
-  CheckboxFilterBuilder,
+  OperatorMap,
+  OPERATOR_MAP,
+  FieldTypeFor,
+  OperatorsFor,
+  SelectOptionsFor,
+  ValueTypeFor,
+  ValueTypeMap,
+  TypeSafeFilterCondition,
 };
 
 export type { NotionPropertyType, NotionProperty };
@@ -728,13 +734,3 @@ export class NotionCMS {
 
 // Re-export types and utilities
 export * from "./generator";
-
-// Re-export query builder types and classes
-export {
-  QueryBuilder,
-  SortDirection,
-  ComparisonOperator,
-  LogicalOperator,
-  FilterCondition,
-  QueryResult,
-};
