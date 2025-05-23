@@ -281,23 +281,11 @@ function generateDatabaseSpecificFile(
       moduleSpecifier: "@mikemajara/notion-cms",
       namedImports: [
         "DatabaseRecord",
-        "NotionPropertyType",
         "NotionCMS",
         "QueryBuilder",
-        "NotionFieldType",
         "DatabaseFieldMetadata",
       ],
     });
-
-    sourceFile.addImportDeclaration({
-      moduleSpecifier: "@notionhq/client/build/src/api-endpoints",
-      namedImports: ["PropertyItemObjectResponse"],
-    });
-
-    // Add type definition for NotionProperty specific to this file
-    sourceFile.addStatements(`
-// Use PropertyItemObjectResponse for property type definitions
-type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`);
 
     // Helper function to determine advanced property type mapping
     const advancedPropertyTypeToTS = (
@@ -383,8 +371,6 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
       }
     }
 
-    // Add id field explicitly
-    metadataStatements.push(`  "id": { type: "text" }`);
     metadataStatements.push(`};`);
 
     sourceFile.addStatements(metadataStatements.join("\n"));
@@ -393,7 +379,6 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
     const baseTypeName = typeName;
     const advancedTypeName = `${baseTypeName}Advanced`;
     const rawTypeName = `${baseTypeName}Raw`;
-    const propertiesTypeName = `Properties${baseTypeName}`;
 
     sourceFile.addInterface({
       name: advancedTypeName,
@@ -451,16 +436,6 @@ type NotionProperty<T extends NotionPropertyType> = PropertyItemObjectResponse;`
           type: rawTypeName,
         },
       ],
-      isExported: true,
-    });
-
-    // Generate the database-specific properties type for type checking
-    sourceFile.addInterface({
-      name: propertiesTypeName,
-      properties: Object.entries(properties).map(([name, prop]) => ({
-        name: sanitizePropertyName(name),
-        type: `NotionProperty<'${(prop as NotionPropertyConfig).type}'>`,
-      })),
       isExported: true,
     });
 
