@@ -110,7 +110,8 @@ export class NotionCMS {
    * In the future, users should use the generated query functions in their types files
    * @param databaseId The ID of the Notion database
    * @returns A query builder instance for the specified database
-   * @deprecated Use the generated query function in your types file instead
+   * @deprecated Use the generated query function in your types file instead. This method lacks type-safe filtering.
+   * Example: import { query } from './notion/notion-types-your-database.ts'; then use query(notionCMS, databaseId)
    */
   query<T extends DatabaseRecord>(databaseId: string): QueryBuilder<T> {
     return new QueryBuilder<T>(this.client, databaseId);
@@ -232,12 +233,18 @@ export class NotionCMS {
    * @param type The type of filter to apply
    * @param value The filter value
    * @returns A properly formatted filter object
+   * @deprecated This method uses old filter patterns. Use the new QueryBuilder.filter(property, operator, value) method instead.
+   * The new method provides type-safe field names, operators, and values with IntelliSense support.
    */
   createFilter(
     property: string,
     type: string,
     value: any
   ): QueryDatabaseParameters["filter"] {
+    console.warn(
+      "createFilter() is deprecated. Use the new type-safe filter method: queryBuilder.filter(property, operator, value)"
+    );
+
     const filter: any = {
       property: property,
     };

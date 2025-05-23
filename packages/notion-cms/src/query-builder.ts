@@ -3,7 +3,7 @@ import {
   QueryDatabaseParameters,
   PageObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
-import { DatabaseRecord, simplifyNotionRecords } from "./generator";
+import { DatabaseRecord, processNotionRecords } from "./generator";
 import { debug } from "./utils/debug";
 
 export type SortDirection = "ascending" | "descending";
@@ -398,11 +398,18 @@ export type ValueTypeMap = {
 export type ValueTypeFor<
   K extends keyof M,
   M extends DatabaseFieldMetadata,
-  T extends DatabaseRecord = DatabaseRecord
-> = FieldTypeFor<K, M> extends "select"
+  T extends DatabaseRecord = DatabaseRecord,
+  O extends OperatorsFor<K, M> = OperatorsFor<K, M>
+> = O extends "is_empty" | "is_not_empty"
+  ? any // is_empty and is_not_empty operators ignore the value
+  : FieldTypeFor<K, M> extends "select"
   ? SelectOptionsFor<K, M>
   : FieldTypeFor<K, M> extends "multi_select"
   ? SelectOptionsFor<K, M> // Single option value for contains/does_not_contain operations
+  : FieldTypeFor<K, M> extends "people" | "relation"
+  ? O extends "contains" | "does_not_contain"
+    ? string // People and relation contains/does_not_contain expect single ID
+    : ValueTypeMap[FieldTypeFor<K, M>]
   : FieldTypeFor<K, M> extends keyof ValueTypeMap
   ? ValueTypeMap[FieldTypeFor<K, M>]
   : any;
@@ -476,10 +483,10 @@ export class QueryBuilder<
    * @param value - Value matching the field type constraints
    * @returns QueryBuilder for chaining
    */
-  filter<K extends keyof M & keyof T & string>(
+  filter<K extends keyof M & keyof T & string, O extends OperatorsFor<K, M>>(
     property: K,
-    operator: OperatorsFor<K, M>,
-    value: ValueTypeFor<K, M, T>
+    operator: O,
+    value: ValueTypeFor<K, M, T, O>
   ): QueryBuilder<T, M> {
     // Validate that the operator is valid for the field type
     if (!this.isValidOperatorForField(property, operator as string)) {
@@ -699,7 +706,7 @@ export class QueryBuilder<
       debug.log(`Query returned ${response.results.length} results`);
 
       const pages = response.results as PageObjectResponse[];
-      const results = simplifyNotionRecords(pages) as T[];
+      const results = processNotionRecords(pages) as T[];
 
       return {
         results,
