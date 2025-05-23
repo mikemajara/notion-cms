@@ -1,0 +1,2 @@
+- [x] allow multiple databases to be introspected: this would allow having one single huge file with all types and methods augmenting notionCMS
+- [ ] Implement sort

@@ -8,17 +8,19 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { NotionCMS } from "@mikemajara/notion-cms";
-import { query, RecordResourceTracker } from "@/notion";
+import { RecordResourceTracker } from "@/notion";
+// Import the generated file to register the queryResourceTracker method
+import "@/notion/notion-types-resource-tracker";
 
 async function getResourceTrackerData(): Promise<RecordResourceTracker[]> {
   const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
   const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
 
-  const response = query(notionCMS, databaseId)
+  const response = notionCMS
+    .queryResourceTracker(databaseId)
     .filter("Can Be Deprovisioned", "equals", true)
     .filter("Estimated Monthly Cost (USD)", "greater_than", 200)
     .filter("Is Active", "equals", false)
-    .filter("Auto Shutdown Configured", "equals", false)
     .all();
 
   // console.log("response", response[3].Owner);

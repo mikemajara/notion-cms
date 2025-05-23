@@ -33,7 +33,7 @@ export const RecordResourceTrackerFieldTypes = {
     type: "select",
     options: ["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-southeast-1", "ap-southeast-2"] as const
   },
-  "Team": { type: "rich_text" },
+  "Team": { type: "relation" },
   "Notes": { type: "rich_text" },
   "Is Active": { type: "checkbox" },
   "Reviewed by DevOps": { type: "status" },
@@ -62,7 +62,7 @@ export interface RecordResourceTrackerAdvanced {
     "Provision Date": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
     "Resource Type": { id: string; name: string; color: string } | null;
     Region: { id: string; name: string; color: string } | null;
-    Team: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
+    Team: { id: string }[];
     Notes: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
     "Is Active": boolean;
     "Reviewed by DevOps": { id: string; name: string; color: string } | null;
@@ -93,7 +93,7 @@ export interface RecordResourceTracker extends DatabaseRecord {
     "Provision Date": Date;
     "Resource Type": "EC2" | "S3" | "Lambda" | "RDS" | "ECS" | "DynamoDB" | "ElastiCache" | "SNS" | "SQS" | "EKS";
     Region: "us-east-1" | "us-east-2" | "us-west-1" | "us-west-2" | "eu-west-1" | "eu-central-1" | "ap-southeast-1" | "ap-southeast-2";
-    Team: string;
+    Team: string[];
     Notes: string;
     "Is Active": boolean;
     "Reviewed by DevOps": any;
@@ -104,13 +104,21 @@ export interface RecordResourceTracker extends DatabaseRecord {
     raw: RecordResourceTrackerRaw;
 }
 
-/**
- * Type-safe query function for the Resource Tracker database
- * @param notionCMS NotionCMS instance 
- * @param databaseId The ID of the database to query
- * @returns A type-safe QueryBuilder for the RecordResourceTracker record type
- */
-export function query(notionCMS: NotionCMS, databaseId: string): QueryBuilder<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes> {
-  return notionCMS.queryWithTypes<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes>(databaseId, RecordResourceTrackerFieldTypes);
+// Extend NotionCMS class with database-specific method
+/* eslint-disable */
+declare module "@mikemajara/notion-cms" {
+  interface NotionCMS {
+    /**
+     * Type-safe query method for the Resource Tracker database
+     * @param databaseId The ID of the database to query
+     * @returns A type-safe QueryBuilder for the RecordResourceTracker record type
+     */
+    queryResourceTracker(databaseId: string): QueryBuilder<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes>;
+  }
 }
+
+// Implement the method on the NotionCMS prototype
+NotionCMS.prototype.queryResourceTracker = function(databaseId: string): QueryBuilder<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes> {
+  return this.query<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes>(databaseId, RecordResourceTrackerFieldTypes);
+};
 

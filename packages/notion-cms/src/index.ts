@@ -106,29 +106,19 @@ export class NotionCMS {
 
   /**
    * Creates a query builder for a Notion database with type safety
-   * This method will be used as a fallback for projects that haven't yet generated type-safe queries
-   * In the future, users should use the generated query functions in their types files
    * @param databaseId The ID of the Notion database
+   * @param fieldMetadata Optional metadata about field types for type-safe operations
    * @returns A query builder instance for the specified database
-   * @deprecated Use the generated query function in your types file instead. This method lacks type-safe filtering.
-   * Example: import { query } from './notion/notion-types-your-database.ts'; then use query(notionCMS, databaseId)
    */
-  query<T extends DatabaseRecord>(databaseId: string): QueryBuilder<T> {
-    return new QueryBuilder<T>(this.client, databaseId);
-  }
-
-  /**
-   * Creates a type-aware query builder for a Notion database
-   * This is the preferred method for creating query builders and is used by the generated query functions
-   * @param databaseId The ID of the Notion database
-   * @param fieldTypes Metadata about field types for type-safe operations
-   * @returns A query builder instance with field type awareness
-   */
-  queryWithTypes<
-    T extends DatabaseRecord,
-    M extends DatabaseFieldMetadata = {}
-  >(databaseId: string, fieldTypes: M): QueryBuilder<T, M> {
-    return new QueryBuilder<T, M>(this.client, databaseId, fieldTypes);
+  query<T extends DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
+    databaseId: string,
+    fieldMetadata?: M
+  ): QueryBuilder<T, M> {
+    if (fieldMetadata) {
+      return new QueryBuilder<T, M>(this.client, databaseId, fieldMetadata);
+    } else {
+      return new QueryBuilder<T, M>(this.client, databaseId, {} as M);
+    }
   }
 
   /**
