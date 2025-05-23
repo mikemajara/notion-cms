@@ -342,6 +342,9 @@ function generateDatabaseSpecificFile(
     const metadataStatements: string[] = [];
     metadataStatements.push(`export const ${typeName}FieldTypes = {`);
 
+    // Add the native Notion page ID first
+    metadataStatements.push(`  "id": { type: "string" },`);
+
     for (const [propertyName, propertyValue] of Object.entries(properties)) {
       let fieldType: string;
 
@@ -1002,6 +1005,10 @@ export async function generateMultipleDatabaseTypes(
 
       // Generate metadata for field types
       sourceFile.addStatements(`export const ${typeName}FieldTypes = {`);
+
+      // Add the native Notion page ID first
+      sourceFile.addStatements(`  "id": { type: "string" },`);
+
       for (const [propertyName, propertyValue] of Object.entries(properties)) {
         if (
           propertyValue.type === "select" ||
