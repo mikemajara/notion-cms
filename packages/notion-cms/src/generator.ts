@@ -343,7 +343,7 @@ function generateDatabaseSpecificFile(
     metadataStatements.push(`export const ${typeName}FieldTypes = {`);
 
     // Add the native Notion page ID first
-    metadataStatements.push(`  "id": { type: "string" },`);
+    metadataStatements.push(`  "id": { type: "unique_id" },`);
 
     for (const [propertyName, propertyValue] of Object.entries(properties)) {
       let fieldType: string;
