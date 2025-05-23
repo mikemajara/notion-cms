@@ -9,6 +9,7 @@ import {
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { NotionCMS } from "@mikemajara/notion-cms";
 import { RecordResourceTracker } from "@/notion";
+import Link from "next/link";
 // Import the generated file to register the queryResourceTracker method
 import "@/notion/notion-types-resource-tracker";
 
@@ -19,8 +20,8 @@ async function getResourceTrackerData(): Promise<RecordResourceTracker[]> {
   const response = notionCMS
     .queryResourceTracker(databaseId)
     .filter("Can Be Deprovisioned", "equals", true)
-    .filter("Estimated Monthly Cost (USD)", "greater_than", 200)
-    .filter("Is Active", "equals", false)
+    .sort("Is Active", "descending")
+    .sort("Last Review Date", "descending")
     .all();
 
   // console.log("response", response[3].Owner);
@@ -37,6 +38,7 @@ export default async function ResourceTrackerPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>id</TableHead>
               <TableHead>ID</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Resource Type</TableHead>
@@ -62,7 +64,18 @@ export default async function ResourceTrackerPage() {
           </TableHeader>
           <TableBody>
             {data.map((record) => (
-              <TableRow key={record.id}>
+              <TableRow
+                key={record.id}
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+              >
+                <TableCell>
+                  <Link
+                    className="hover:underline"
+                    href={`/resource/${record.id}`}
+                  >
+                    {record.id}
+                  </Link>
+                </TableCell>
                 <TableCell>
                   {record.ID?.prefix
                     ? `${record.ID.prefix}-${record.ID.number}`

@@ -91,13 +91,7 @@ export default function RootLayout({
         )}
       >
         <NuqsAdapter>
-          <SidebarProvider>
-            <AppSidebar />
-            <main className="w-full h-min-screen">
-              <SidebarTrigger />
-              {children}
-            </main>
-          </SidebarProvider>
+          <main className="w-full h-min-screen">{children}</main>
         </NuqsAdapter>
       </body>
     </html>

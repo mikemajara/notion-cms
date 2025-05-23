@@ -6,6 +6,7 @@
  */
 import { DatabaseRecord, NotionCMS, QueryBuilder, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
 export const RecordResourceTrackerFieldTypes = {
+  "id": { type: "unique_id" },
   "Last Review Date": { type: "date" },
   "Estimated Monthly Cost": { type: "number" },
   "Tag Compliance": { type: "checkbox" },
