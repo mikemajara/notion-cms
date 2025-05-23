@@ -79,7 +79,7 @@ export async function demonstrateTargetAPI() {
   // Step 3: Type value → TypeScript validates the value type and select options
 
   const results = await cms
-    .queryWithTypes<ResourceTrackerRecord, typeof ResourceTrackerFieldTypes>(
+    .query<ResourceTrackerRecord, typeof ResourceTrackerFieldTypes>(
       databaseId,
       ResourceTrackerFieldTypes
     )

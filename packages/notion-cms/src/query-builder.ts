@@ -608,14 +608,64 @@ export class QueryBuilder<
 
   /**
    * Add sorting to the query with type-safe field name suggestions
-   * @param property - Field name to sort by (with IntelliSense suggestions)
-   * @param direction - Sort direction (ascending or descending)
-   * @returns QueryBuilder for chaining
+   *
+   * Supports both single and multiple (nested) sorting. When multiple sorts are applied,
+   * the first sort takes precedence, then the second, and so on.
+   *
+   * All field types support sorting in Notion, including:
+   * - Text fields (title, rich_text, url, email, phone_number)
+   * - Number fields
+   * - Date fields (date, created_time, last_edited_time)
+   * - Select and multi-select fields
+   * - Checkbox fields
+   * - People and relation fields
+   * - Status fields
+   * - Formula and rollup fields
+   *
+   * @param property - Field name to sort by (with IntelliSense suggestions from database schema)
+   * @param direction - Sort direction: "ascending" (default) or "descending"
+   * @returns QueryBuilder for method chaining
+   *
+   * @example
+   * ```typescript
+   * // Single sort
+   * query(cms, databaseId)
+   *   .sort("Created Date", "descending")
+   *
+   * // Multiple (nested) sorts - priority order matters
+   * query(cms, databaseId)
+   *   .sort("Priority", "descending")    // Primary sort
+   *   .sort("Created Date", "ascending") // Secondary sort
+   *   .sort("Name", "ascending")         // Tertiary sort
+   *
+   * // Sort by different field types
+   * query(cms, databaseId)
+   *   .sort("Environment", "ascending")           // Select field
+   *   .sort("Estimated Cost", "descending")       // Number field
+   *   .sort("Is Active", "descending")            // Checkbox field
+   * ```
    */
   sort(
     property: keyof M & keyof T & string,
     direction: SortDirection = "ascending"
   ): QueryBuilder<T, M> {
+    // Validate that the property exists in the field metadata
+    if (!this.isValidSortField(property)) {
+      throw new Error(
+        `Invalid sort property "${property}". Property not found in database schema. ` +
+          `Available fields: ${Object.keys(this.fieldTypes).join(", ")}`
+      );
+    }
+
+    // Validate sort direction
+    if (direction !== "ascending" && direction !== "descending") {
+      throw new Error(
+        `Invalid sort direction "${direction}". Must be "ascending" or "descending".`
+      );
+    }
+
+    debug.log(`Adding sort: ${property} ${direction}`);
+
     (this.sortOptions as any[]).push({
       property,
       direction,
@@ -878,5 +928,13 @@ export class QueryBuilder<
     // TODO: Implement comprehensive value validation
     // This will be expanded in Phase 2 with proper runtime validation
     return true;
+  }
+
+  /**
+   * Type guard to validate if a sort property is valid in the field metadata
+   */
+  private isValidSortField(property: keyof M & string): boolean {
+    const fieldType = this.getFieldTypeForFilter(property);
+    return fieldType !== undefined;
   }
 }

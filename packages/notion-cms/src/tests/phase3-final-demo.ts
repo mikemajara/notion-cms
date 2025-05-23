@@ -134,7 +134,7 @@ function query(
   notionCMS: NotionCMS,
   databaseId: string
 ): QueryBuilder<RecordResourceTracker, typeof RecordResourceTrackerFieldTypes> {
-  return notionCMS.queryWithTypes<
+  return notionCMS.query<
     RecordResourceTracker,
     typeof RecordResourceTrackerFieldTypes
   >(databaseId, RecordResourceTrackerFieldTypes);
