@@ -280,12 +280,12 @@ export class NotionCMS {
   /**
    * Retrieve the content blocks of a Notion page
    * @param pageId The ID of the Notion page
-   * @param recursive Whether to recursively fetch nested blocks (default: false)
+   * @param recursive Whether to recursively fetch nested blocks (default: true)
    * @returns A promise that resolves to an array of simplified blocks
    */
   async getPageContent(
     pageId: string,
-    recursive: boolean = false
+    recursive: boolean = true
   ): Promise<SimpleBlock[]> {
     const blocks = await this.getBlocks(pageId);
 
@@ -297,7 +297,8 @@ export class NotionCMS {
         }
       }
     }
-
+    console.debug(`getPageContent`);
+    console.debug(`blocks`, blocks);
     return blocks;
   }
 

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import ReactMarkdown from "react-markdown";
 import "@/notion/notion-types-resource-tracker";
 
 interface ResourceWithContent {
@@ -407,56 +408,8 @@ export default async function ResourceDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none">
-              {content.split("\n").map((line, index) => {
-                if (line.trim() === "") {
-                  return <br key={index} />;
-                }
-
-                // Handle different markdown elements
-                if (line.startsWith("# ")) {
-                  return (
-                    <h1 key={index} className="text-2xl font-bold mt-6 mb-4">
-                      {line.slice(2)}
-                    </h1>
-                  );
-                }
-                if (line.startsWith("## ")) {
-                  return (
-                    <h2 key={index} className="text-xl font-semibold mt-5 mb-3">
-                      {line.slice(3)}
-                    </h2>
-                  );
-                }
-                if (line.startsWith("### ")) {
-                  return (
-                    <h3 key={index} className="text-lg font-medium mt-4 mb-2">
-                      {line.slice(4)}
-                    </h3>
-                  );
-                }
-                if (line.startsWith("- ")) {
-                  return (
-                    <li key={index} className="ml-4 list-disc">
-                      {line.slice(2)}
-                    </li>
-                  );
-                }
-                if (line.match(/^\d+\. /)) {
-                  return (
-                    <li key={index} className="ml-4 list-decimal">
-                      {line.replace(/^\d+\. /, "")}
-                    </li>
-                  );
-                }
-
-                // Regular paragraph
-                return (
-                  <p key={index} className="mb-3 leading-relaxed">
-                    {line}
-                  </p>
-                );
-              })}
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown>{content}</ReactMarkdown>
             </div>
           </CardContent>
         </Card>
