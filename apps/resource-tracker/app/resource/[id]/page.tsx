@@ -22,11 +22,11 @@ async function getResourceById(
   try {
     const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
     const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
-
-    const response = await notionCMS.queryResourceTracker(databaseId).all();
-    const resource = response.find(
-      (record: RecordResourceTracker) => record.id === id
-    );
+    console.debug(`id`, id);
+    const resource = await notionCMS
+      .queryResourceTracker(databaseId)
+      .filter("ID", "equals", parseInt(id))
+      .single();
 
     if (!resource) {
       return null;

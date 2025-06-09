@@ -7,3 +7,4 @@
 # Tasks
 
 - [x] We're missing the native id from each record in the type generation: we need to add that.
+- [ ] When building a query appending filter... sort... .single(), the types don't match correctly to a single ResourceRecord.

@@ -390,7 +390,7 @@ export type ValueTypeMap = {
   last_edited_time: Date | string;
   last_edited_by: string; // User ID
   status: string;
-  unique_id: number | string;
+  unique_id: number;
   unknown: any;
 };
 
