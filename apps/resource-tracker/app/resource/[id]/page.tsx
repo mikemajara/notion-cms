@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "@/notion/notion-types-resource-tracker";
 
 interface ResourceWithContent {
@@ -45,7 +46,7 @@ async function getResourceById(
       console.warn("Could not fetch page content:", contentError);
       // Don't fail the whole request if content fetching fails
     }
-
+    console.debug(`content`, content);
     return {
       resource,
       content,
@@ -60,9 +61,10 @@ async function getResourceById(
 export default async function ResourceDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const result = await getResourceById(params.id);
+  const id = (await params).id;
+  const result = await getResourceById(id);
 
   if (!result) {
     notFound();
@@ -409,7 +411,35 @@ export default async function ResourceDetailPage({
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <ReactMarkdown>{content}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {`
+### RES-45
+
+> ⚠️ Review pending before month end.
+
+Background
+
+This resource supports experimental feature logging for high-traffic services.
+
+- Tracks anonymized events.
+  1. cookies
+  2. biscuits
+- Recently migrated from legacy infrastructure.
+- Tagged incorrectly; needs compliance update.
+
+1. This is a numbered list
+  1. That uses both numbers,
+  2. And nested, uses letters
+
+Next Steps
+
+- [ ] Review tag compliance.
+
+- [ ] Validate linked analytics events.
+
+  * Ensure alignment with new dashboard metrics.
+                `}
+              </ReactMarkdown>
             </div>
           </CardContent>
         </Card>
