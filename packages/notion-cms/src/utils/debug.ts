@@ -56,4 +56,7 @@ export const debug = {
   },
 };
 
-console.log("Debug enabled:", process.env.NEXT_PUBLIC_NOTION_CMS_DEBUG);
+console.log(
+  "Debug enabled:",
+  process.env.NEXT_PUBLIC_NOTION_CMS_DEBUG || "false"
+);

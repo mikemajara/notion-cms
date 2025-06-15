@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 @source inline("{hover:,}bg-{gray,red,yellow,orange,green,blue,purple,pink}-{50,{100..900..100},950}");
 
 @custom-variant dark (&:is(.dark *));

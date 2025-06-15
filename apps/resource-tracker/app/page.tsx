@@ -38,8 +38,6 @@ export default async function ResourceTrackerPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>id</TableHead>
-              <TableHead>ID</TableHead>
               <TableHead>Title</TableHead>
               <TableHead>Resource Type</TableHead>
               <TableHead>Environment</TableHead>
@@ -71,13 +69,11 @@ export default async function ResourceTrackerPage() {
                 <TableCell>
                   <Link
                     className="hover:underline"
-                    href={`/resource/${record.id}`}
+                    href={`/resource/${record.ID}`}
                   >
-                    {record.id}
+                    {record.Title}
                   </Link>
                 </TableCell>
-                <TableCell>{record.ID || "N/A"}</TableCell>
-                <TableCell>{record.Title}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {record.advanced["Resource Type"] && (

@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "@/notion/notion-types-resource-tracker";
 
 interface ResourceWithContent {
@@ -22,11 +24,11 @@ async function getResourceById(
   try {
     const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
     const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
-
-    const response = await notionCMS.queryResourceTracker(databaseId).all();
-    const resource = response.find(
-      (record: RecordResourceTracker) => record.id === id
-    );
+    console.debug(`id`, id);
+    const resource = (await notionCMS
+      .queryResourceTracker(databaseId)
+      .filter("ID", "equals", parseInt(id))
+      .single()) as RecordResourceTracker;
 
     if (!resource) {
       return null;
@@ -59,9 +61,10 @@ async function getResourceById(
 export default async function ResourceDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const result = await getResourceById(params.id);
+  const id = (await params).id;
+  const result = await getResourceById(id);
 
   if (!result) {
     notFound();
@@ -70,7 +73,7 @@ export default async function ResourceDetailPage({
   const { resource, content, hasContent } = result;
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
+    <div className="container max-w-4xl py-8 mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="sm" asChild>
@@ -113,7 +116,7 @@ export default async function ResourceDetailPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -268,7 +271,7 @@ export default async function ResourceDetailPage({
               <label className="text-sm font-medium text-muted-foreground">
                 Owner
               </label>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-1">
                 {resource.advanced.Owner?.[0]?.avatar_url && (
                   <Avatar className="size-6">
                     <AvatarImage src={resource.advanced.Owner[0].avatar_url} />
@@ -304,7 +307,7 @@ export default async function ResourceDetailPage({
               <label className="text-sm font-medium text-muted-foreground">
                 Reason for Keeping
               </label>
-              <div className="mt-1 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {resource.advanced["Reason for Keeping"]?.length > 0 ? (
                   resource.advanced["Reason for Keeping"].map(
                     (reason, index) => (
@@ -335,7 +338,7 @@ export default async function ResourceDetailPage({
               <label className="text-sm font-medium text-muted-foreground">
                 Service Names
               </label>
-              <div className="mt-1 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {resource.advanced["Service Name"]?.length > 0 ? (
                   resource.advanced["Service Name"].map((service, index) => (
                     <Badge
@@ -407,56 +410,10 @@ export default async function ResourceDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none">
-              {content.split("\n").map((line, index) => {
-                if (line.trim() === "") {
-                  return <br key={index} />;
-                }
-
-                // Handle different markdown elements
-                if (line.startsWith("# ")) {
-                  return (
-                    <h1 key={index} className="text-2xl font-bold mt-6 mb-4">
-                      {line.slice(2)}
-                    </h1>
-                  );
-                }
-                if (line.startsWith("## ")) {
-                  return (
-                    <h2 key={index} className="text-xl font-semibold mt-5 mb-3">
-                      {line.slice(3)}
-                    </h2>
-                  );
-                }
-                if (line.startsWith("### ")) {
-                  return (
-                    <h3 key={index} className="text-lg font-medium mt-4 mb-2">
-                      {line.slice(4)}
-                    </h3>
-                  );
-                }
-                if (line.startsWith("- ")) {
-                  return (
-                    <li key={index} className="ml-4 list-disc">
-                      {line.slice(2)}
-                    </li>
-                  );
-                }
-                if (line.match(/^\d+\. /)) {
-                  return (
-                    <li key={index} className="ml-4 list-decimal">
-                      {line.replace(/^\d+\. /, "")}
-                    </li>
-                  );
-                }
-
-                // Regular paragraph
-                return (
-                  <p key={index} className="mb-3 leading-relaxed">
-                    {line}
-                  </p>
-                );
-              })}
+            <div className="prose-sm prose max-w-none dark:prose-invert">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {content}
+              </ReactMarkdown>
             </div>
           </CardContent>
         </Card>

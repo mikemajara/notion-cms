@@ -97,6 +97,16 @@ export interface SimpleBlock {
   hasChildren: boolean;
 }
 
+/**
+ * Context for tracking list state during markdown conversion
+ */
+interface ListContext {
+  type: "bullet" | "numbered" | null;
+  level: number;
+  numbering: number[]; // Track numbering at each level
+  bulletStyles: string[]; // Different bullet styles for different levels
+}
+
 export class NotionCMS {
   private client: Client;
 
@@ -280,12 +290,12 @@ export class NotionCMS {
   /**
    * Retrieve the content blocks of a Notion page
    * @param pageId The ID of the Notion page
-   * @param recursive Whether to recursively fetch nested blocks (default: false)
+   * @param recursive Whether to recursively fetch nested blocks (default: true)
    * @returns A promise that resolves to an array of simplified blocks
    */
   async getPageContent(
     pageId: string,
-    recursive: boolean = false
+    recursive: boolean = true
   ): Promise<SimpleBlock[]> {
     const blocks = await this.getBlocks(pageId);
 
@@ -297,7 +307,8 @@ export class NotionCMS {
         }
       }
     }
-
+    // console.debug(`getPageContent`);
+    // console.debug(`blocks`, blocks);
     return blocks;
   }
 
@@ -463,102 +474,228 @@ export class NotionCMS {
   ): string {
     if (!blocks || !Array.isArray(blocks)) return "";
 
-    const markdown = blocks
-      .map((block) => this.blockToMarkdown(block, options))
-      .join("\n\n");
-    return markdown;
+    const context: ListContext = {
+      type: null,
+      level: 0,
+      numbering: [],
+      bulletStyles: ["-", "*", "+", "-"], // Cycle through different bullet styles
+    };
+
+    return this.processBlocksGroup(blocks, options, context);
+  }
+
+  /**
+   * Process a group of blocks, handling list grouping and proper spacing
+   * @param blocks Array of blocks to process
+   * @param options Conversion options
+   * @param context Current list context
+   * @returns Processed markdown string
+   */
+  private processBlocksGroup(
+    blocks: SimpleBlock[],
+    options: { includeImageUrls?: boolean } = {},
+    context: ListContext
+  ): string {
+    if (!blocks || blocks.length === 0) return "";
+
+    const result: string[] = [];
+    let i = 0;
+
+    while (i < blocks.length) {
+      const block = blocks[i];
+
+      if (this.isListItem(block.type)) {
+        // Process consecutive list items as a group
+        const listGroup = this.extractListGroup(blocks, i);
+        const listMarkdown = this.processListGroup(
+          listGroup.blocks,
+          options,
+          context
+        );
+        result.push(listMarkdown);
+        i = listGroup.nextIndex;
+      } else {
+        // Process single non-list block
+        const blockMarkdown = this.blockToMarkdown(block, options, context);
+        if (blockMarkdown.trim()) {
+          result.push(blockMarkdown);
+        }
+        i++;
+      }
+    }
+
+    return result.join("\n\n");
+  }
+
+  /**
+   * Check if a block type is a list item
+   */
+  private isListItem(type: string): boolean {
+    return type === "bulleted_list_item" || type === "numbered_list_item";
+  }
+
+  /**
+   * Extract consecutive list items of the same type
+   */
+  private extractListGroup(
+    blocks: SimpleBlock[],
+    startIndex: number
+  ): { blocks: SimpleBlock[]; nextIndex: number } {
+    const firstBlock = blocks[startIndex];
+    const listType = firstBlock.type;
+    const listBlocks: SimpleBlock[] = [];
+    let i = startIndex;
+
+    while (i < blocks.length && blocks[i].type === listType) {
+      listBlocks.push(blocks[i]);
+      i++;
+    }
+
+    return { blocks: listBlocks, nextIndex: i };
+  }
+
+  /**
+   * Process a group of list items with proper numbering and indentation
+   */
+  private processListGroup(
+    blocks: SimpleBlock[],
+    options: { includeImageUrls?: boolean } = {},
+    parentContext: ListContext
+  ): string {
+    if (blocks.length === 0) return "";
+
+    const firstBlock = blocks[0];
+    const listType =
+      firstBlock.type === "bulleted_list_item" ? "bullet" : "numbered";
+
+    // Create new context for this list level
+    const context: ListContext = {
+      type: listType,
+      level: parentContext.level,
+      numbering: [...parentContext.numbering],
+      bulletStyles: parentContext.bulletStyles,
+    };
+
+    // Initialize numbering for this level if it's a numbered list
+    if (listType === "numbered") {
+      if (context.numbering.length <= context.level) {
+        context.numbering[context.level] = 1;
+      }
+    }
+
+    const result: string[] = [];
+
+    blocks.forEach((block) => {
+      const blockMarkdown = this.blockToMarkdown(block, options, context);
+      if (blockMarkdown.trim()) {
+        result.push(blockMarkdown);
+      }
+
+      // Increment numbering for numbered lists
+      if (listType === "numbered" && context.numbering.length > context.level) {
+        context.numbering[context.level]++;
+      }
+    });
+
+    return result.join("\n");
   }
 
   /**
    * Convert a single block to Markdown
    * @param block The block to convert
    * @param options Options for conversion
-   * @param level Nesting level for recursive calls
+   * @param context Current list context and nesting information
    * @returns Markdown string
    */
   private blockToMarkdown(
     block: SimpleBlock,
     options: { includeImageUrls?: boolean } = {},
-    level: number = 0
+    context: ListContext
   ): string {
     const { type, content, children } = block;
     const { includeImageUrls = true } = options;
-    const indent = "  ".repeat(level);
 
+    // Calculate proper indentation based on context
+    const baseIndent = "  ".repeat(context.level);
     let markdown = "";
 
     switch (type) {
       case "paragraph":
-        markdown = `${indent}${content.text}`;
+        markdown = `${baseIndent}${content.text}`;
         break;
 
       case "heading_1":
-        markdown = `${indent}# ${content.text}`;
+        markdown = `${baseIndent}# ${content.text}`;
         break;
 
       case "heading_2":
-        markdown = `${indent}## ${content.text}`;
+        markdown = `${baseIndent}## ${content.text}`;
         break;
 
       case "heading_3":
-        markdown = `${indent}### ${content.text}`;
+        markdown = `${baseIndent}### ${content.text}`;
         break;
 
       case "bulleted_list_item":
-        markdown = `${indent}- ${content.text}`;
+        const bulletStyle =
+          context.bulletStyles[context.level % context.bulletStyles.length];
+        markdown = `${baseIndent}${bulletStyle} ${content.text}`;
         break;
 
       case "numbered_list_item":
-        markdown = `${indent}1. ${content.text}`;
+        const number = context.numbering[context.level] || 1;
+        markdown = `${baseIndent}${number}. ${content.text}`;
         break;
 
       case "to_do":
         const checkbox = content.checked ? "[x]" : "[ ]";
-        markdown = `${indent}- ${checkbox} ${content.text}`;
+        markdown = `${baseIndent}- ${checkbox} ${content.text}`;
         break;
 
       case "toggle":
-        markdown = `${indent}<details>\n${indent}<summary>${content.text}</summary>\n\n`;
+        markdown = `${baseIndent}<details>\n${baseIndent}<summary>${content.text}</summary>\n\n`;
         if (children && children.length > 0) {
-          markdown += children
-            .map((child) => this.blockToMarkdown(child, options, level + 1))
-            .join("\n\n");
+          const childContext: ListContext = {
+            ...context,
+            level: context.level + 1,
+          };
+          markdown += this.processBlocksGroup(children, options, childContext);
         }
-        markdown += `\n${indent}</details>`;
+        markdown += `\n${baseIndent}</details>`;
         break;
 
       case "code":
-        markdown = `${indent}\`\`\`${content.language || ""}\n${
+        markdown = `${baseIndent}\`\`\`${content.language || ""}\n${
           content.text
-        }\n${indent}\`\`\``;
+        }\n${baseIndent}\`\`\``;
         break;
 
       case "quote":
-        markdown = `${indent}> ${content.text}`;
+        markdown = `${baseIndent}> ${content.text}`;
         break;
 
       case "divider":
-        markdown = `${indent}---`;
+        markdown = `${baseIndent}---`;
         break;
 
       case "image":
         const imageCaption = content.caption ? ` "${content.caption}"` : "";
-        markdown = `${indent}![Image${imageCaption}](${content.url})`;
+        markdown = `${baseIndent}![Image${imageCaption}](${content.url})`;
         if (includeImageUrls) {
-          markdown += `\n${indent}<!-- ${content.url} -->`;
+          markdown += `\n${baseIndent}<!-- ${content.url} -->`;
         }
         break;
 
       case "bookmark":
       case "embed":
       case "link_preview":
-        markdown = `${indent}[${content.caption || content.url}](${
+        markdown = `${baseIndent}[${content.caption || content.url}](${
           content.url
         })`;
         break;
 
       case "callout":
-        markdown = `${indent}> **${content.icon?.emoji || ""}** ${
+        markdown = `${baseIndent}> **${content.icon?.emoji || ""}** ${
           content.text
         }`;
         break;
@@ -566,19 +703,43 @@ export class NotionCMS {
       default:
         // For unsupported blocks, try to extract text if possible
         if (content && content.text) {
-          markdown = `${indent}${content.text}`;
+          markdown = `${baseIndent}${content.text}`;
         } else {
-          markdown = `${indent}<!-- Unsupported block type: ${type} -->`;
+          markdown = `${baseIndent}<!-- Unsupported block type: ${type} -->`;
         }
     }
 
-    // Add children recursively for blocks that weren't handled specially
+    // Add children recursively for list items with proper nesting
     if (children && children.length > 0 && type !== "toggle") {
-      markdown +=
-        "\n\n" +
-        children
-          .map((child) => this.blockToMarkdown(child, options, level + 1))
-          .join("\n\n");
+      if (this.isListItem(type)) {
+        // For list items, children should be indented and maintain list context
+        const childContext: ListContext = {
+          ...context,
+          level: context.level + 1,
+        };
+        const childrenMarkdown = this.processBlocksGroup(
+          children,
+          options,
+          childContext
+        );
+        if (childrenMarkdown.trim()) {
+          markdown += "\n" + childrenMarkdown;
+        }
+      } else {
+        // For non-list items, add children with normal spacing
+        const childContext: ListContext = {
+          ...context,
+          level: context.level + 1,
+        };
+        const childrenMarkdown = this.processBlocksGroup(
+          children,
+          options,
+          childContext
+        );
+        if (childrenMarkdown.trim()) {
+          markdown += "\n\n" + childrenMarkdown;
+        }
+      }
     }
 
     return markdown;

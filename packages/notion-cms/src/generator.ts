@@ -25,6 +25,7 @@ import {
   UserObjectResponse,
   PageObjectResponse,
   GetDatabaseResponse,
+  UniqueIdPropertyItemObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import * as fs from "fs";
 import * as path from "path";
@@ -564,6 +565,10 @@ export function advancedNotionRecords(
 // Export the helper function directly
 export function getPropertyValue(property: PropertyItemObjectResponse): any {
   switch (property.type) {
+    case "unique_id": {
+      const idProp = property as UniqueIdPropertyItemObjectResponse;
+      return idProp.unique_id.number;
+    }
     case "title": {
       const titleProp = property as TitlePropertyItemObjectResponse;
       const richText = titleProp.title as unknown as Array<{
