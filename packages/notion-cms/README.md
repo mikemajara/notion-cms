@@ -1,198 +1,95 @@
 # Notion CMS
 
-A simplified API for using Notion as a headless CMS with TypeScript support.
+A TypeScript-first library for using Notion as a headless CMS with a powerful layered API architecture.
 
-## Features
+## Why Notion CMS?
 
-- 🔄 **Simple Data Access**: Get simplified database records with JavaScript-friendly types
-- 🧰 **Layered API**: Access data at different levels of detail (simple, advanced, raw)
-- 🔍 **Type Safe Queries**: Build type-safe database queries with filter and sort
-- 📃 **Pagination Support**: Automatically handle pagination for large datasets
-- 📝 **Content Blocks**: Fetch and transform Notion content blocks to Markdown or HTML
+Transform your Notion databases into a powerful, type-safe CMS that works perfectly for blogs, documentation sites, dashboards, and more. Get the simplicity of Notion with the flexibility of a modern API.
 
-## Installation
+## Key Features
 
-```bash
-npm install @mikemajara/notion-cms
-# or
-yarn add @mikemajara/notion-cms
-# or
-pnpm add @mikemajara/notion-cms
-```
+- 🎯 **Layered API**: Access data at three levels - Simple (clean JS types), Advanced (rich metadata), or Raw (complete Notion response)
+- 🔍 **Type-Safe Queries**: Build complex, type-safe database queries with filters, sorting, and pagination
+- ⚡ **Automatic Type Generation**: Generate TypeScript types directly from your Notion databases
+- 📝 **Content Transformation**: Convert Notion blocks to Markdown or HTML with high fidelity
+- 🚀 **Zero Configuration**: Works out of the box with minimal setup
 
 ## Quick Start
+
+```bash
+pnpm add @mikemajara/notion-cms
+```
 
 ```typescript
 import { NotionCMS } from "@mikemajara/notion-cms";
 
-// Initialize with your Notion API key
 const notionCms = new NotionCMS("your-notion-api-key");
 
-// Fetch all records from a database
+// Simple API - clean, JavaScript-friendly data
 const { results } = await notionCms.getDatabase("your-database-id");
+console.log(results[0].Title); // "My Blog Post"
+console.log(results[0].Tags); // ["react", "typescript"]
 
-// Work with the simplified records
-console.log(results[0].Title); // Directly access a title property
-console.log(results[0].Tags); // Access a multi-select property (as string[])
+// Query Builder - type-safe filtering and sorting
+const posts = await notionCms
+  .query("blog-database-id")
+  .where("Status")
+  .equals("Published")
+  .sort("Created", "descending")
+  .execute();
 ```
 
-## Layered API Approach
+## Documentation
 
-Notion CMS provides a layered API to access database records at different levels of detail:
+Get started quickly with our comprehensive guides:
 
-### 1. Simple API (Default)
+- **[📚 Getting Started](./docs/getting-started.md)** - Your first steps with Notion CMS
+- **[⚙️ Installation Guide](./docs/installation.md)** - Detailed setup and configuration
+- **[🧠 Core Concepts](./docs/core-concepts.md)** - Understand the layered API architecture
+- **[📖 API Reference](./docs/api-reference/)** - Complete API documentation
+- **[💡 Examples](./docs/examples/)** - Real-world usage patterns and code samples
 
-The simple API converts Notion's complex property types into simple JavaScript types:
+## Layered API Preview
+
+Access your data at the level of detail you need:
 
 ```typescript
-// Using the simple API (backward compatible)
 const { results } = await notionCms.getDatabase(databaseId);
 const record = results[0];
 
-// Access properties directly
-console.log(record.Title); // "My Page Title" (string)
-console.log(record["Resource Type"]); // "EC2" (string)
-console.log(record.Tags); // ["api", "database"] (string[])
-console.log(record.CreatedAt); // JavaScript Date object
+// 🎯 Simple API - Clean JavaScript types
+record.Title; // "My Blog Post"
+record.Tags; // ["react", "typescript"]
+record.PublishDate; // Date object
+
+// 🔍 Advanced API - Rich metadata preserved
+record.advanced.Tags;
+// [{ id: "tag1", name: "react", color: "blue" }, ...]
+
+// ⚡ Raw API - Complete Notion response
+record.raw.properties.Title;
+// Full Notion API response for debugging/advanced use
 ```
 
-### 2. Advanced API
+## Type Generation
 
-The advanced API preserves more metadata from Notion properties while still providing a clean interface:
+Generate TypeScript types directly from your Notion databases:
+
+```bash
+npx notion-cms generate --database-id your-database-id
+```
 
 ```typescript
-// Using the advanced API
-const { results } = await notionCms.getDatabaseAdvanced(databaseId);
-const record = results[0];
+import { BlogPostRecord } from "./generated-types";
 
-// Simple access still works
-console.log(record.Title); // "My Page Title"
-
-// Advanced access provides more details
-console.log(record.advanced.Title);
-// [{ content: "My Page Title", annotations: {...}, href: null, ... }]
-
-console.log(record.advanced["Resource Type"]);
-// { id: "t|O@", name: "EC2", color: "yellow" }
-
-console.log(record.advanced.Tags);
-// [{ id: "abc123", name: "api", color: "blue" }, { id: "def456", name: "database", color: "green" }]
+// Fully typed database operations
+const posts = await notionCms
+  .query<BlogPostRecord>(databaseId)
+  .where("Status")
+  .equals("Published")
+  .sort("PublishDate", "descending")
+  .execute();
 ```
-
-### 3. Raw API
-
-For complete access to Notion's API response:
-
-```typescript
-// Using the advanced API
-const { results } = await notionCms.getDatabaseAdvanced(databaseId);
-const record = results[0];
-
-// Access the raw Notion API response for a property
-console.log(record.raw.properties.Title);
-// The complete unmodified Notion API response for this property
-```
-
-## Database Queries
-
-### Simple Queries
-
-```typescript
-// Get all records from a database
-const { results } = await notionCms.getDatabase("your-database-id");
-
-// With pagination
-const { results, nextCursor, hasMore } = await notionCms.getDatabase(
-  "your-database-id",
-  { pageSize: 10 }
-);
-
-// Get all records with automatic pagination
-const allRecords = await notionCms.getAllDatabaseRecords("your-database-id");
-```
-
-### Advanced Queries (with Layered API)
-
-```typescript
-// Get records with the advanced layered API
-const { results } = await notionCms.getDatabaseAdvanced("your-database-id");
-
-// With pagination
-const { results, nextCursor, hasMore } = await notionCms.getDatabaseAdvanced(
-  "your-database-id",
-  { pageSize: 10 }
-);
-
-// Get all records with automatic pagination
-const allRecords = await notionCms.getAllDatabaseRecordsAdvanced(
-  "your-database-id"
-);
-```
-
-### Advanced Filtering & Sorting
-
-```typescript
-// Using the query builder
-const results = await notionCms
-  .query("your-database-id")
-  .filter("Status")
-  .equals("Active")
-  .filter("Priority")
-  .greaterThan(3)
-  .sort("CreatedAt", "descending")
-  .sort("Title", "ascending")
-  .limit(20)
-  .all();
-```
-
-## Working with Page Content
-
-```typescript
-// Get page content blocks
-const blocks = await notionCms.getPageContent("your-page-id");
-
-// Convert blocks to Markdown
-const markdown = notionCms.blocksToMarkdown(blocks);
-
-// Convert blocks to HTML
-const html = notionCms.blocksToHtml(blocks);
-```
-
-## Example: Multi-Select & Rich Text Properties
-
-```typescript
-// Using the advanced API
-const record = await notionCms.getRecordAdvanced("your-page-id");
-
-// Multi-Select example
-console.log(record["Resource Type"]); // "EC2" (simple string value)
-
-console.log(record.advanced["Resource Type"]);
-// {
-//   id: "t|O@",
-//   name: "EC2",
-//   color: "yellow"
-// }
-
-// Rich Text example
-console.log(record.Description);
-// "A dark green leafy vegetable" (as Markdown)
-
-console.log(record.advanced.Description);
-// [
-//   { content: "A dark ", annotations: { bold: false, ... }, href: null },
-//   { content: "green", annotations: { color: "green", ... }, href: null },
-//   { content: " leafy vegetable", annotations: { ... }, href: null }
-// ]
-
-// Raw Notion data
-console.log(record.raw.properties.Description);
-// Full raw Notion API response
-```
-
-## API Reference
-
-See [API Documentation](docs/api.md) for full details.
 
 ## License
 
