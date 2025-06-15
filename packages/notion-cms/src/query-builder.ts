@@ -32,6 +32,7 @@ export type NotionFieldType =
   | "last_edited_by"
   | "status"
   | "unique_id"
+  | "verification"
   | "unknown";
 
 // ============================================================================
@@ -165,6 +166,7 @@ export type OperatorMap = {
     | "less_than"
     | "greater_than_or_equal_to"
     | "less_than_or_equal_to";
+  verification: "equals" | "before" | "after" | "on_or_before" | "on_or_after";
 
   // Fallback
   unknown: "equals" | "does_not_equal" | "is_empty" | "is_not_empty";
@@ -324,7 +326,13 @@ export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
     "greater_than_or_equal_to",
     "less_than_or_equal_to",
   ] as const,
-
+  verification: [
+    "equals",
+    "before",
+    "after",
+    "on_or_before",
+    "on_or_after",
+  ] as const,
   // Fallback
   unknown: ["equals", "does_not_equal", "is_empty", "is_not_empty"] as const,
 } as const;
