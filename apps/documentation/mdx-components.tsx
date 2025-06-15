@@ -108,33 +108,34 @@ export const components: Record<string, FC<any>> = {
     return <code className="inline" {...props} />;
   },
   Image,
-  img: async ({ src, alt, title }) => {
-    let img: React.ReactNode;
+  // FIX: Module not found: Can't resolve './assets/images'
+  // img: async ({ src, alt, title }) => {
+  //   let img: React.ReactNode;
 
-    if (src.startsWith("https://")) {
-      img = (
-        <Image
-          className="mt-7"
-          src={src}
-          alt={alt}
-          quality={95}
-          placeholder="blur"
-          draggable={false}
-        />
-      );
-    } else {
-      const image = await import("./assets/images/" + src);
-      img = (
-        <Image
-          className="mt-7"
-          src={image.default}
-          alt={alt}
-          quality={95}
-          placeholder="blur"
-          draggable={false}
-        />
-      );
-    }
+  //   if (src.startsWith("https://")) {
+  //     img = (
+  //       <Image
+  //         className="mt-7"
+  //         src={src}
+  //         alt={alt}
+  //         quality={95}
+  //         placeholder="blur"
+  //         draggable={false}
+  //       />
+  //     );
+  //   } else {
+  //     const image = await import("./assets/images/" + src);
+  //     img = (
+  //       <Image
+  //         className="mt-7"
+  //         src={image.default}
+  //         alt={alt}
+  //         quality={95}
+  //         placeholder="blur"
+  //         draggable={false}
+  //       />
+  //     );
+  //   }
 
     if (title) {
       return <BlockSideTitle title={title}>{img}</BlockSideTitle>;
