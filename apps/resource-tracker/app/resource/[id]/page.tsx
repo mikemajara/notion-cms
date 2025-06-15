@@ -25,10 +25,10 @@ async function getResourceById(
     const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
     const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
     console.debug(`id`, id);
-    const resource = await notionCMS
+    const resource = (await notionCMS
       .queryResourceTracker(databaseId)
       .filter("ID", "equals", parseInt(id))
-      .single();
+      .single()) as RecordResourceTracker;
 
     if (!resource) {
       return null;
@@ -46,7 +46,7 @@ async function getResourceById(
       console.warn("Could not fetch page content:", contentError);
       // Don't fail the whole request if content fetching fails
     }
-    console.debug(`content`, content);
+
     return {
       resource,
       content,
@@ -73,7 +73,7 @@ export default async function ResourceDetailPage({
   const { resource, content, hasContent } = result;
 
   return (
-    <div className="container mx-auto py-8 max-w-4xl">
+    <div className="container max-w-4xl py-8 mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="sm" asChild>
@@ -116,7 +116,7 @@ export default async function ResourceDetailPage({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -271,7 +271,7 @@ export default async function ResourceDetailPage({
               <label className="text-sm font-medium text-muted-foreground">
                 Owner
               </label>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="flex items-center gap-2 mt-1">
                 {resource.advanced.Owner?.[0]?.avatar_url && (
                   <Avatar className="size-6">
                     <AvatarImage src={resource.advanced.Owner[0].avatar_url} />
@@ -307,7 +307,7 @@ export default async function ResourceDetailPage({
               <label className="text-sm font-medium text-muted-foreground">
                 Reason for Keeping
               </label>
-              <div className="mt-1 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {resource.advanced["Reason for Keeping"]?.length > 0 ? (
                   resource.advanced["Reason for Keeping"].map(
                     (reason, index) => (
@@ -338,7 +338,7 @@ export default async function ResourceDetailPage({
               <label className="text-sm font-medium text-muted-foreground">
                 Service Names
               </label>
-              <div className="mt-1 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {resource.advanced["Service Name"]?.length > 0 ? (
                   resource.advanced["Service Name"].map((service, index) => (
                     <Badge
@@ -410,35 +410,9 @@ export default async function ResourceDetailPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert">
+            <div className="prose-sm prose max-w-none dark:prose-invert">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {`
-### RES-45
-
-> ⚠️ Review pending before month end.
-
-Background
-
-This resource supports experimental feature logging for high-traffic services.
-
-- Tracks anonymized events.
-  1. cookies
-  2. biscuits
-- Recently migrated from legacy infrastructure.
-- Tagged incorrectly; needs compliance update.
-
-1. This is a numbered list
-  1. That uses both numbers,
-  2. And nested, uses letters
-
-Next Steps
-
-- [ ] Review tag compliance.
-
-- [ ] Validate linked analytics events.
-
-  * Ensure alignment with new dashboard metrics.
-                `}
+                {content}
               </ReactMarkdown>
             </div>
           </CardContent>
