@@ -307,8 +307,8 @@ export class NotionCMS {
         }
       }
     }
-    console.debug(`getPageContent`);
-    console.debug(`blocks`, blocks);
+    // console.debug(`getPageContent`);
+    // console.debug(`blocks`, blocks);
     return blocks;
   }
 
