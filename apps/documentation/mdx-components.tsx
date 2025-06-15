@@ -137,12 +137,12 @@ export const components: Record<string, FC<any>> = {
   //     );
   //   }
 
-    if (title) {
-      return <BlockSideTitle title={title}>{img}</BlockSideTitle>;
-    }
+  //   if (title) {
+  //     return <BlockSideTitle title={title}>{img}</BlockSideTitle>;
+  //   }
 
-    return img;
-  },
+  //   return img;
+  // },
   hr: (props) => <hr className="w-24 my-14 border-rurikon-border" {...props} />,
   BlockSideTitle,
   InlineMath,
