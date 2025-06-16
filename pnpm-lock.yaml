@@ -20,9 +20,6 @@ importers:
 
   apps/documentation:
     dependencies:
-      '@heroicons/react':
-        specifier: ^2.1.5
-        version: 2.2.0(react@0.0.0-experimental-e1e74071-20250321)
       '@mdx-js/loader':
         specifier: ^3.0.1
         version: 3.1.0(acorn@8.14.1)
@@ -50,6 +47,9 @@ importers:
       katex:
         specifier: ^0.16.11
         version: 0.16.22
+      lucide:
+        specifier: ^0.515.0
+        version: 0.515.0
       next:
         specifier: 15.3.0-canary.19
         version: 15.3.0-canary.19(react-dom@0.0.0-experimental-e1e74071-20250321)(react@0.0.0-experimental-e1e74071-20250321)
@@ -888,14 +888,6 @@ packages:
 
   /@floating-ui/utils@0.2.9:
     resolution: {integrity: sha512-MDWhGtE+eHw5JW7lq4qhc5yRLS11ERl1c7Z6Xd0a58DozHES6EnNNwUWbMiG4J9Cgj053Bhk8zvlhFYKVhULwg==}
-    dev: false
-
-  /@heroicons/react@2.2.0(react@0.0.0-experimental-e1e74071-20250321):
-    resolution: {integrity: sha512-LMcepvRaS9LYHJGsF0zzmgKCUim/X3N/DQKc4jepAXJ7l8QxJ1PmxJzqplF2Z3FE4PqBAIGyJAQ/w4B5dsqbtQ==}
-    peerDependencies:
-      react: '>= 16 || ^19.0.0-rc'
-    dependencies:
-      react: 0.0.0-experimental-e1e74071-20250321
     dev: false
 
   /@humanwhocodes/config-array@0.13.0:
@@ -6561,6 +6553,10 @@ packages:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0
     dependencies:
       react: 18.3.1
+    dev: false
+
+  /lucide@0.515.0:
+    resolution: {integrity: sha512-n7tFK3R1HdsxwM5rMOa6twAi/4RGZCysc7dmk7Cr2GiOUcnHX0+MX9xw3xynpbekXCgS4+o9HeIWhBl3rZHIAA==}
     dev: false
 
   /magic-string@0.30.17:
