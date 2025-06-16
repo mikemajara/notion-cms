@@ -94,3 +94,14 @@ const posts = await notionCms
 ## License
 
 MIT
+
+## Roadmap
+
+- [ ] blocksToMarkdown should add the markdown language. Currently blocksToMarkdown receives a SimpleBlock, but more context should be added, using the Advanced or Raw layers
+- [ ] Functions should support the type and be part of the schema pull when `generate-types` is run.
+- [ ] Table is currently unsupported. Should be supported. Easy add
+
+## Issues
+
+- [ ] Numbered list, with nested bullet list is not correctly parsed from Notion. Not sure if this is Markdown rendering issue or `blocksToMarkdown` not generating the right indentation
+- [ ]
