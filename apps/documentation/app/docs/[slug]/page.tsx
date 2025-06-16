@@ -82,7 +82,7 @@ export default async function Page({
   return (
     <div className="w-full py-8">
       <div className="flex flex-row gap-4">
-        <div className="max-w-lg space-y-10 lg:max-w-2xl ">
+        <div className="max-w-lg space-y-2 lg:max-w-2xl ">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
             {content}
           </ReactMarkdown>
@@ -91,7 +91,7 @@ export default async function Page({
               "-",
               ""
             )}`}
-            className="flex items-center gap-2 hover:underline"
+            className="flex items-center gap-2 hover:underline mt-10"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -101,9 +101,9 @@ export default async function Page({
           </Link>
         </div>
         <div className="flex-col hidden gap-2 text-sm lg:flex min-w-xs">
-          {getPageIndex(content)?.map((heading) => (
+          {getPageIndex(content)?.map((heading, idx) => (
             <Link
-              key={heading.text}
+              key={idx}
               href={`#${heading.text.replaceAll(" ", "-")}`}
               className={cn("hover:underline")}
               style={{ paddingLeft: `${heading.level}rem` }}

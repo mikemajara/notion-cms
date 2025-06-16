@@ -52,13 +52,13 @@ export const components: Record<string, FC<any>> = {
   ),
   ul: (props) => (
     <ul
-      className="pl-5 list-disc list-outside mt-7 marker:text-primary"
+      className="pl-5 list-disc list-outside mt-2 marker:text-primary"
       {...props}
     />
   ),
   ol: (props) => (
     <ol
-      className="pl-5 list-decimal list-outside mt-7 marker:text-primary"
+      className="pl-5 list-decimal list-outside mt-2 marker:text-primary"
       {...props}
     />
   ),
@@ -80,7 +80,7 @@ export const components: Record<string, FC<any>> = {
     );
   },
   strong: (props) => <strong className="font-bold" {...props} />,
-  p: (props) => <p className="mt-7" {...props} />,
+  p: (props) => <p className="mt-2" {...props} />,
   blockquote: (props) => (
     <blockquote
       className="pl-6 -ml-6 sm:pl-10 sm:-ml-10 md:pl-14 md:-ml-14 not-mobile:text-primary"
@@ -88,10 +88,12 @@ export const components: Record<string, FC<any>> = {
     />
   ),
   pre: (props) => (
-    <pre
-      className="whitespace-pre bg-transparent border rounded-md border-secondary p-4 mt-7 md:whitespace-pre-wrap py-6"
-      {...props}
-    />
+    <div className="relative">
+      <pre
+        className=" bg-transparent border rounded-md border-secondary p-4 px-8 mt-7  py-6 overflow-hidden overflow-x-scroll max-w-[90%] sm:max-w-full"
+        {...props}
+      />
+    </div>
   ),
   code: async (props) => {
     if (typeof props.children === "string") {
@@ -121,16 +123,16 @@ export const components: Record<string, FC<any>> = {
       });
 
       return (
-        <div className="relative">
+        <>
           <code
             className="inline shiki css-variables text-[0.805rem] sm:text-[13.8px] md:text-[0.92rem]"
             dangerouslySetInnerHTML={{ __html: code }}
           />
           <CopyButton
             textToCopy={props.children}
-            className="absolute w-3 h-3 top-0 right-0"
+            className="absolute w-3 h-3 top-2 right-2"
           />
-        </div>
+        </>
       );
     }
 

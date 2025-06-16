@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CheckIcon, Clipboard, CopyIcon } from "lucide-react";
 
 interface CopyButtonProps {
   textToCopy: string;
@@ -30,7 +30,7 @@ const CopyButton: React.FC<CopyButtonProps> = ({ textToCopy, className }) => {
       {copied ? (
         <CheckIcon className="w-4 h-4" />
       ) : (
-        <CopyIcon className="w-4 h-4" />
+        <Clipboard className="w-4 h-4" />
       )}
     </button>
   );
