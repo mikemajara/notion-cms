@@ -1,0 +1,19 @@
+{
+  "files": [
+    {
+      "path": "dist/index.js",
+      "maxSize": "25kb",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/index.mjs",
+      "maxSize": "25kb",
+      "compression": "gzip"
+    },
+    {
+      "path": "dist/cli.js",
+      "maxSize": "5kb",
+      "compression": "gzip"
+    }
+  ]
+}

@@ -13,13 +13,18 @@
   ],
   "scripts": {
     "build": "tsup",
-    "build:prod": "tsup --minify --no-sourcemap",
-    "dev": "tsup --watch",
+    "build:prod": "tsup --minify",
+    "build:fast": "tsup --no-dts --no-splitting",
+    "build:dev": "tsup --no-dts --no-splitting --no-minify --watch",
+    "dev": "tsup --watch --no-dts",
     "lint": "eslint src --ext .ts",
     "check-types": "tsc --noEmit",
     "test": "jest",
     "prepare": "pnpm run build:prod",
-    "postbuild": "chmod +x dist/cli.js"
+    "postbuild": "chmod +x dist/cli.js",
+    "clean": "rm -rf dist .tsbuildinfo",
+    "analyze": "tsup --analyze",
+    "size": "bundlesize"
   },
   "keywords": [
     "notion",
@@ -68,8 +73,16 @@
       "esm"
     ],
     "dts": true,
-    "splitting": false,
+    "splitting": true,
     "clean": true,
-    "treeshake": true
+    "treeshake": true,
+    "external": [
+      "@notionhq/client"
+    ],
+    "minify": false,
+    "sourcemap": false,
+    "target": "es2020",
+    "bundle": true,
+    "skipNodeModulesBundle": true
   }
 }

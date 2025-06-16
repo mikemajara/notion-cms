@@ -1,22 +1,13 @@
 import { Client } from "@notionhq/client";
 import {
-  DatabaseObjectResponse,
   PageObjectResponse,
   PropertyItemObjectResponse,
   QueryDatabaseParameters,
-  GetPageResponse,
   BlockObjectResponse,
-  ListBlockChildrenResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import {
-  getPropertyValue as generatorGetPropertyValue,
   NotionPropertyType,
-  simplifyNotionRecord as generatorSimplifyNotionRecord,
-  simplifyNotionRecords as generatorSimplifyNotionRecords,
-  DatabaseRecord as GeneratorDatabaseRecord,
   AdvancedDatabaseRecord,
-  advancedNotionRecord,
-  advancedNotionRecords,
   processNotionRecord,
   processNotionRecords,
 } from "./generator";
@@ -48,19 +39,19 @@ import {
   createSimplifyRecordsFunction,
 } from "./utils/property-helpers";
 
-// Re-export utility functions for use in projects
+// Re-export utility functions and types for use in projects
 export {
-  DatabaseRecord,
   getPropertyValue,
   simplifyNotionRecord,
   simplifyNotionRecords,
   createSimplifyFunction,
   createSimplifyRecordsFunction,
 };
+export type { DatabaseRecord };
 
-// Re-export query-builder types
-export {
-  QueryBuilder,
+// Re-export query-builder types and values
+export { QueryBuilder, OPERATOR_MAP };
+export type {
   SortDirection,
   LogicalOperator,
   FilterCondition,
@@ -68,7 +59,6 @@ export {
   NotionFieldType,
   DatabaseFieldMetadata,
   OperatorMap,
-  OPERATOR_MAP,
   FieldTypeFor,
   OperatorsFor,
   SelectOptionsFor,

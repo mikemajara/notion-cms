@@ -5,6 +5,7 @@ tests/
 
 # Build artifacts
 *.tsbuildinfo
+.tsbuildinfo
 .turbo/
 
 # Development files
