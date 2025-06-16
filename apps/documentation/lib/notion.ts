@@ -1,5 +1,5 @@
 import { NotionCMS } from "@mikemajara/notion-cms";
-import { RecordNoCMS } from "@/notion";
+import { RecordNotionCMS } from "@/notion";
 // // Import to ensure prototype extensions are executed
 // import "@/notion/notion-types-notion-cms";
 
@@ -10,9 +10,9 @@ export const notion = new NotionCMS(process.env.NOTION_API_KEY!);
 export const NOTION_CMS_DATABASE_ID = process.env.NOTION_CMS_DATABASE_ID!;
 
 // Helper function to get all documentation pages
-export async function getAllDocPages(): Promise<RecordNoCMS[]> {
+export async function getAllDocPages(): Promise<RecordNotionCMS[]> {
   const result = await notion
-    .queryNoCMS(NOTION_CMS_DATABASE_ID)
+    .queryNotionCMS(NOTION_CMS_DATABASE_ID)
     .sort("Order", "ascending")
     .paginate();
 
@@ -20,10 +20,10 @@ export async function getAllDocPages(): Promise<RecordNoCMS[]> {
 }
 
 // Helper function to get a specific page by ID
-export async function getDocPage(id: string): Promise<RecordNoCMS | null> {
+export async function getDocPage(id: string): Promise<RecordNotionCMS | null> {
   // Use the notion.getRecord method for getting by ID
   try {
-    const record = await notion.getRecord<RecordNoCMS>(id);
+    const record = await notion.getRecord<RecordNotionCMS>(id);
     return record;
   } catch (error) {
     return null;
@@ -33,9 +33,9 @@ export async function getDocPage(id: string): Promise<RecordNoCMS | null> {
 // Helper function to get a page by name/slug
 export async function getDocPageBySlug(
   slug: string
-): Promise<RecordNoCMS | null> {
+): Promise<RecordNotionCMS | null> {
   const result = await notion
-    .queryNoCMS(NOTION_CMS_DATABASE_ID)
+    .queryNotionCMS(NOTION_CMS_DATABASE_ID)
     .filter("Name", "equals", slug)
     .paginate(1);
 
@@ -43,7 +43,9 @@ export async function getDocPageBySlug(
 }
 
 // Helper function to build hierarchical structure
-export function buildDocumentationTree(pages: RecordNoCMS[]): RecordNoCMS[] {
+export function buildDocumentationTree(
+  pages: RecordNotionCMS[]
+): RecordNotionCMS[] {
   // For now, just return sorted by order
   // Later we can implement hierarchical grouping using Parent item and Sub-item relations
   return pages.sort((a, b) => (a.Order || 0) - (b.Order || 0));

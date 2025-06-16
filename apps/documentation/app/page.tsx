@@ -1,5 +1,5 @@
 import { getAllDocPages, buildDocumentationTree } from "@/lib/notion";
-import { RecordNoCMS } from "@/notion";
+import { RecordNotionCMS } from "@/notion";
 import Link from "next/link";
 
 export const metadata = {
@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 // Create page component for individual documentation items
-function DocumentationItem({ page }: { page: RecordNoCMS }) {
+function DocumentationItem({ page }: { page: RecordNotionCMS }) {
   const slug = page.slug;
 
   return (

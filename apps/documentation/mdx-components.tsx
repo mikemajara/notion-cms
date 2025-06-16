@@ -3,32 +3,52 @@ import type { FC } from "react";
 import { codeToHtml, createCssVariablesTheme } from "shiki";
 import Link from "next/link";
 import Image from "next/image";
+import { LinkIcon } from "lucide-react";
 
 // @ts-ignore
 import { InlineMath, BlockMath } from "react-katex";
 
 import { BlockSideTitle } from "@/components/block-sidetitle";
+import CopyButton from "@/components/copy-button";
 
 const cssVariablesTheme = createCssVariablesTheme({});
 
 export const components: Record<string, FC<any>> = {
   h1: (props) => (
-    <h1
-      className="font-semibold mb-7 text-rurikon-600 text-balance"
-      {...props}
-    />
+    <div className="flex items-center gap-2 pt-2 mb-6">
+      <h1
+        className="text-2xl font-bold text-rurikon-800 text-balance"
+        id={props.children.replaceAll(" ", "-")}
+        {...props}
+      />
+      <Link href={`#${props.children.replaceAll(" ", "-")}`}>
+        <LinkIcon className="w-4 h-4" />
+      </Link>
+    </div>
   ),
   h2: (props) => (
-    <h2
-      className="font-semibold mt-14 mb-7 text-rurikon-600 text-balance"
-      {...props}
-    />
+    <div className="flex items-center gap-2 mb-6 pt-7">
+      <h2
+        className="text-xl font-semibold text-rurikon-600 text-balance"
+        id={props.children.replaceAll(" ", "-")}
+        {...props}
+      />
+      <Link href={`#${props.children.replaceAll(" ", "-")}`}>
+        <LinkIcon className="w-4 h-4" />
+      </Link>
+    </div>
   ),
   h3: (props) => (
-    <h3
-      className="font-semibold mt-14 mb-7 text-rurikon-600 text-balance"
-      {...props}
-    />
+    <div className="flex items-center gap-2 mb-6 pt-7">
+      <h3
+        className="text-lg font-regular text-rurikon-400 text-balance"
+        id={props.children.replaceAll(" ", "-")}
+        {...props}
+      />
+      <Link href={`#${props.children.replaceAll(" ", "-")}`}>
+        <LinkIcon className="w-4 h-4" />
+      </Link>
+    </div>
   ),
   ul: (props) => (
     <ul
@@ -68,7 +88,10 @@ export const components: Record<string, FC<any>> = {
     />
   ),
   pre: (props) => (
-    <pre className="whitespace-pre mt-7 md:whitespace-pre-wrap" {...props} />
+    <pre
+      className="whitespace-pre bg-transparent border rounded-md border-rurikon-200 mt-7 md:whitespace-pre-wrap"
+      {...props}
+    />
   ),
   code: async (props) => {
     if (typeof props.children === "string") {
@@ -98,51 +121,22 @@ export const components: Record<string, FC<any>> = {
       });
 
       return (
-        <code
-          className="inline shiki css-variables text-[0.805rem] sm:text-[13.8px] md:text-[0.92rem]"
-          dangerouslySetInnerHTML={{ __html: code }}
-        />
+        <div>
+          <code
+            className="inline shiki css-variables text-[0.805rem] sm:text-[13.8px] md:text-[0.92rem]"
+            dangerouslySetInnerHTML={{ __html: code }}
+          />
+          <CopyButton
+            textToCopy={props.children}
+            className="absolute w-4 h-4 top-2 right-2"
+          />
+        </div>
       );
     }
 
     return <code className="inline" {...props} />;
   },
   Image,
-  // FIX: Module not found: Can't resolve './assets/images'
-  // img: async ({ src, alt, title }) => {
-  //   let img: React.ReactNode;
-
-  //   if (src.startsWith("https://")) {
-  //     img = (
-  //       <Image
-  //         className="mt-7"
-  //         src={src}
-  //         alt={alt}
-  //         quality={95}
-  //         placeholder="blur"
-  //         draggable={false}
-  //       />
-  //     );
-  //   } else {
-  //     const image = await import("./assets/images/" + src);
-  //     img = (
-  //       <Image
-  //         className="mt-7"
-  //         src={image.default}
-  //         alt={alt}
-  //         quality={95}
-  //         placeholder="blur"
-  //         draggable={false}
-  //       />
-  //     );
-  //   }
-
-  //   if (title) {
-  //     return <BlockSideTitle title={title}>{img}</BlockSideTitle>;
-  //   }
-
-  //   return img;
-  // },
   hr: (props) => <hr className="w-24 my-14 border-rurikon-border" {...props} />,
   BlockSideTitle,
   InlineMath,

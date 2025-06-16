@@ -10,7 +10,7 @@ import Navbar from "@/components/navbar";
 import "./globals.css";
 import { NotionCMS } from "@mikemajara/notion-cms";
 // Import the generated file to register the queryNotionCMS method
-import "@/notion/notion-types-nocms";
+import "@/notion/notion-types-notion-cms";
 
 export const metadata: Metadata = {
   title: {
@@ -86,7 +86,7 @@ export default async function RootLayout({
 }>) {
   const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!);
   const pages = await notionCMS
-    .queryNoCMS(process.env.NOTION_CMS_DATABASE_ID!)
+    .queryNotionCMS(process.env.NOTION_CMS_DATABASE_ID!)
     .sort("Order", "ascending")
     .all();
   return (
@@ -102,7 +102,7 @@ export default async function RootLayout({
         <div className="fixed top-0 left-0 z-30 w-full h-6 pointer-events-none sm:hidden sm:h-10 md:h-14 content-fade-out" />
         <div className="flex flex-col mobile:flex-row">
           <Navbar pages={pages} />
-          <main className="relative flex-1 max-w-2xl [contain:inline-size]">
+          <main className="relative flex-1 [contain:inline-size]">
             <div className="absolute right-0 w-full h-px opacity-50 bg-rurikon-border mobile:right-auto mobile:left-0 mobile:w-px mobile:h-full mobile:opacity-100" />
             <ViewTransition name="crossfade">
               <article className="pt-6 pl-0 mobile:pt-0 mobile:pl-6 sm:pl-10 md:pl-14">
