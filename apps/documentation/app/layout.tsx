@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
 
 // @ts-expect-error types are not available yet?
 import { unstable_ViewTransition as ViewTransition } from "react";
@@ -7,10 +8,19 @@ import cn from "clsx";
 import "katex/dist/katex.min.css";
 
 import Navbar from "@/components/navbar";
-import "./globals.css";
+import "@/styles/globals.css";
 import { NotionCMS } from "@mikemajara/notion-cms";
 // Import the generated file to register the queryNotionCMS method
 import "@/notion/notion-types-notion-cms";
+
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+});
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+});
 
 export const metadata: Metadata = {
   title: {
@@ -93,19 +103,18 @@ export default async function RootLayout({
     <html lang="en" className="overflow-x-hidden touch-manipulation">
       <body
         className={cn(
-          "w-full p-y-6 p-x-2",
-          "text-sm leading-6 sm:text-[15px] sm:leading-7 md:text-base md:leading-7",
-          "text-rurikon-500",
-          "antialiased"
+          "w-full",
+          "text-neutral-500",
+          "antialiased",
+          geist.variable,
+          geistMono.variable
         )}
       >
-        <div className="fixed top-0 left-0 z-30 w-full h-6 pointer-events-none sm:hidden sm:h-10 md:h-14 content-fade-out" />
-        <div className="flex flex-col mobile:flex-row">
+        <div className="flex flex-col sm:flex-row">
           <Navbar pages={pages} />
-          <main className="relative flex-1 [contain:inline-size]">
-            <div className="absolute right-0 w-full h-px opacity-50 bg-rurikon-border mobile:right-auto mobile:left-0 mobile:w-px mobile:h-full mobile:opacity-100" />
+          <main className="relative flex-1 border-l">
             <ViewTransition name="crossfade">
-              <article className="pt-6 pl-0 mobile:pt-0 mobile:pl-6 sm:pl-10 md:pl-14">
+              <article className="pt-6 pl-6 sm:pt-0 sm:pl-10 md:pl-14">
                 {children}
               </article>
             </ViewTransition>

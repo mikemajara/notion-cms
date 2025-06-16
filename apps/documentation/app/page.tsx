@@ -12,26 +12,26 @@ function DocumentationItem({ page }: { page: RecordNotionCMS }) {
   const slug = page.slug;
 
   return (
-    <div className="block group">
+    <div className="block group last:border-b border-secondary">
       <Link
         href={`/docs/${slug}`}
-        className="flex items-center justify-between p-4 transition-all duration-200 border border-gray-200 rounded-lg hover:border-gray-300 hover:bg-gray-50"
+        className="flex items-center justify-between p-4 transition-all duration-200 rounded-lg hover:bg-primary-50 border border-secondary border-b-0"
       >
         <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg">
-            <span className="text-sm font-semibold text-blue-600">
+          <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg bg-secondary-100">
+            <span className="text-sm font-semibold text-secondary-600">
               {page.Order || "•"}
             </span>
           </div>
           <div>
-            <h3 className="font-medium text-gray-900 transition-colors group-hover:text-blue-600">
+            <h3 className="font-medium text-primary-900 transition-colors group-hover:text-secondary-600">
               {page.Name}
             </h3>
           </div>
         </div>
         <div className="flex-shrink-0">
           <svg
-            className="w-5 h-5 text-gray-400 transition-colors group-hover:text-blue-600"
+            className="w-5 h-5 text-primary-400 transition-colors group-hover:text-secondary-600"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -56,10 +56,10 @@ export default async function HomePage() {
   return (
     <div className="max-w-4xl">
       <header className="mb-12">
-        <h1 className="mb-4 text-4xl font-bold text-gray-900">
+        <h1 className="mb-4 text-4xl font-bold text-primary-900">
           Notion CMS Documentation
         </h1>
-        <p className="text-lg leading-7 text-gray-600">
+        <p className="text-lg leading-7 text-primary-600">
           Welcome to the comprehensive documentation for Notion CMS. This
           library simplifies the Notion API to facilitate developer experience
           with Notion as a content management system.
@@ -69,25 +69,25 @@ export default async function HomePage() {
       <div className="space-y-8">
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-gray-900">
+            <h2 className="text-2xl font-semibold text-primary-900">
               Documentation Pages
             </h2>
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-primary-500">
               {sortedPages.length} page{sortedPages.length !== 1 ? "s" : ""}
             </span>
           </div>
 
           {sortedPages.length > 0 ? (
-            <div className="grid gap-3">
+            <div className="grid -gap-1">
               {sortedPages.map((page) => (
                 <DocumentationItem key={page.id} page={page} />
               ))}
             </div>
           ) : (
-            <div className="py-12 text-center rounded-lg bg-gray-50">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-gray-200 rounded-lg">
+            <div className="py-12 text-center rounded-lg bg-primary-50">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-primary-200 rounded-lg">
                 <svg
-                  className="w-6 h-6 text-gray-400"
+                  className="w-6 h-6 text-primary-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -100,27 +100,27 @@ export default async function HomePage() {
                   />
                 </svg>
               </div>
-              <p className="mb-2 text-lg text-gray-500">
+              <p className="mb-2 text-lg text-primary-500">
                 No documentation pages found
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-primary-400">
                 Add some pages to your Notion database to get started.
               </p>
             </div>
           )}
         </section>
 
-        <section className="p-6 rounded-lg bg-blue-50">
-          <h3 className="mb-2 text-lg font-semibold text-blue-900">
+        <section className="p-6 rounded-lg bg-secondary-50">
+          <h3 className="mb-2 text-lg font-semibold text-secondary-900">
             Getting Started
           </h3>
-          <p className="mb-4 text-blue-700">
+          <p className="mb-4 text-secondary-700">
             This documentation is powered by Notion CMS. All content is managed
             through a Notion database and automatically synchronized with this
             documentation site.
           </p>
           <div className="flex flex-wrap gap-4">
-            <div className="flex items-center text-sm text-blue-600">
+            <div className="flex items-center text-sm text-secondary-600">
               <svg
                 className="w-4 h-4 mr-2"
                 fill="none"
@@ -136,7 +136,7 @@ export default async function HomePage() {
               </svg>
               Real-time updates
             </div>
-            <div className="flex items-center text-sm text-blue-600">
+            <div className="flex items-center text-sm text-secondary-600">
               <svg
                 className="w-4 h-4 mr-2"
                 fill="none"
@@ -152,7 +152,7 @@ export default async function HomePage() {
               </svg>
               Type-safe queries
             </div>
-            <div className="flex items-center text-sm text-blue-600">
+            <div className="flex items-center text-sm text-secondary-600">
               <svg
                 className="w-4 h-4 mr-2"
                 fill="none"

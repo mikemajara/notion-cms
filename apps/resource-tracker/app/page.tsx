@@ -32,9 +32,9 @@ export default async function ResourceTrackerPage() {
   const data = await getResourceTrackerData();
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="text-2xl font-bold mb-6">Resource Tracker</h1>
-      <div className="rounded-md border overflow-x-auto">
+    <div className="container py-10 mx-auto">
+      <h1 className="mb-6 text-2xl font-bold">Resource Tracker</h1>
+      <div className="overflow-x-auto border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
@@ -64,7 +64,7 @@ export default async function ResourceTrackerPage() {
             {data.map((record) => (
               <TableRow
                 key={record.id}
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                className="transition-colors cursor-pointer hover:bg-muted/50"
               >
                 <TableCell>
                   <Link

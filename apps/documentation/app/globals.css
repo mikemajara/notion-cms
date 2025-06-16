@@ -32,19 +32,19 @@
 }
 
 @theme {
-  --color-rurikon-50: #ebedef;
-  --color-rurikon-100: #d8dbdf;
-  --color-rurikon-200: #b3b9c1;
-  --color-rurikon-300: #8c95a1;
-  --color-rurikon-400: #697381;
-  --color-rurikon-500: #4a515b;
-  --color-rurikon-600: #3b4149;
-  --color-rurikon-700: #2b3035;
-  --color-rurikon-800: #1e2125;
-  --color-rurikon-900: #0e0f11;
-  --color-rurikon-950: #07080a;
+  --color-neutral-50: #ebedef;
+  --color-neutral-100: #d8dbdf;
+  --color-neutral-200: #b3b9c1;
+  --color-neutral-300: #8c95a1;
+  --color-neutral-400: #697381;
+  --color-neutral-500: #4a515b;
+  --color-neutral-600: #3b4149;
+  --color-neutral-700: #2b3035;
+  --color-neutral-800: #1e2125;
+  --color-neutral-900: #0e0f11;
+  --color-neutral-950: #07080a;
 
-  --color-rurikon-border: #d8dbdfb3;
+  --color-neutral-border: #d8dbdfb3;
 
   --font-family-sans: Geist, -apple-system, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -109,12 +109,12 @@ del {
 }
 
 blockquote {
-  box-shadow: 1px 0 0 var(--color-rurikon-500) inset;
+  box-shadow: 1px 0 0 var(--color-neutral-500) inset;
 }
 @media screen and (max-width: 420px) {
   blockquote {
     /* Make it wider on mobile with a lighter color */
-    box-shadow: 2px 0 0 var(--color-rurikon-300) inset;
+    box-shadow: 2px 0 0 var(--color-neutral-300) inset;
   }
 }
 
@@ -134,7 +134,7 @@ pre {
   /* margin: 1.75rem 0; */
   overflow-x: auto;
   /* border-radius: 0.75rem; */
-  /* background-color: var(--color-rurikon-50); */
+  /* background-color: var(--color-neutral-50); */
   padding: 0.875rem 1.25rem;
   -webkit-font-smoothing: auto;
 }
@@ -150,7 +150,7 @@ code {
     Consolas, "Liberation Mono", "Courier New", monospace;
   word-spacing: -0.15em;
 
-  /* background: var(--color-rurikon-50); */
+  /* background: var(--color-neutral-50); */
   padding: 0.15em 0.2em;
   /* margin: 0 1px; */
   /* border-radius: 2px; */
@@ -194,18 +194,18 @@ article {
   .framed > figure > span:first-child {
     padding: var(--frame-padding, 0.875rem);
     background: var(--frame-background, #fff);
-    border: 1px solid var(--color-rurikon-border);
+    border: 1px solid var(--color-neutral-border);
   }
   iframe {
     width: 100%;
-    border: 1px solid var(--color-rurikon-border);
+    border: 1px solid var(--color-neutral-border);
     background-color: #fff;
   }
   details {
     margin-top: 1.75rem;
     padding: 0.5rem 0;
-    border-top: 1px solid var(--color-rurikon-border);
-    border-bottom: 1px solid var(--color-rurikon-border);
+    border-top: 1px solid var(--color-neutral-border);
+    border-bottom: 1px solid var(--color-neutral-border);
   }
   details summary {
     font-variation-settings: "wght" 600, var(--sans-variation);

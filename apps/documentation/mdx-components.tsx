@@ -17,7 +17,7 @@ export const components: Record<string, FC<any>> = {
   h1: (props) => (
     <div className="flex items-center gap-2 pt-2 mb-6">
       <h1
-        className="text-2xl font-bold text-rurikon-800 text-balance"
+        className="text-2xl font-bold text-primary text-balance"
         id={props.children.replaceAll(" ", "-")}
         {...props}
       />
@@ -29,7 +29,7 @@ export const components: Record<string, FC<any>> = {
   h2: (props) => (
     <div className="flex items-center gap-2 mb-6 pt-7">
       <h2
-        className="text-xl font-semibold text-rurikon-600 text-balance"
+        className="text-xl font-semibold text-primary text-balance"
         id={props.children.replaceAll(" ", "-")}
         {...props}
       />
@@ -41,7 +41,7 @@ export const components: Record<string, FC<any>> = {
   h3: (props) => (
     <div className="flex items-center gap-2 mb-6 pt-7">
       <h3
-        className="text-lg font-regular text-rurikon-400 text-balance"
+        className="text-lg font-regular text-primary text-balance"
         id={props.children.replaceAll(" ", "-")}
         {...props}
       />
@@ -52,13 +52,13 @@ export const components: Record<string, FC<any>> = {
   ),
   ul: (props) => (
     <ul
-      className="pl-5 list-disc list-outside mt-7 marker:text-rurikon-200"
+      className="pl-5 list-disc list-outside mt-7 marker:text-primary"
       {...props}
     />
   ),
   ol: (props) => (
     <ol
-      className="pl-5 list-decimal list-outside mt-7 marker:text-rurikon-200"
+      className="pl-5 list-decimal list-outside mt-7 marker:text-primary"
       {...props}
     />
   ),
@@ -66,7 +66,7 @@ export const components: Record<string, FC<any>> = {
   a: ({ href, ...props }) => {
     return (
       <Link
-        className="underline break-words decoration-from-font underline-offset-2 decoration-rurikon-300 hover:decoration-rurikon-600 focus:outline-none focus-visible:rounded-xs focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-opacity-50 focus-visible:ring-offset-2"
+        className="underline break-words decoration-from-font underline-offset-2 decoration-secondary hover:decoration-primary focus:outline-none focus-visible:rounded-xs focus-visible:ring-2 focus-visible:ring-current focus-visible:ring-opacity-50 focus-visible:ring-offset-2"
         href={href}
         draggable={false}
         {...(href?.startsWith("https://")
@@ -83,13 +83,13 @@ export const components: Record<string, FC<any>> = {
   p: (props) => <p className="mt-7" {...props} />,
   blockquote: (props) => (
     <blockquote
-      className="pl-6 -ml-6 sm:pl-10 sm:-ml-10 md:pl-14 md:-ml-14 not-mobile:text-rurikon-400"
+      className="pl-6 -ml-6 sm:pl-10 sm:-ml-10 md:pl-14 md:-ml-14 not-mobile:text-primary"
       {...props}
     />
   ),
   pre: (props) => (
     <pre
-      className="whitespace-pre bg-transparent border rounded-md border-rurikon-200 mt-7 md:whitespace-pre-wrap"
+      className="whitespace-pre bg-transparent border rounded-md border-secondary p-4 mt-7 md:whitespace-pre-wrap py-6"
       {...props}
     />
   ),
@@ -121,14 +121,14 @@ export const components: Record<string, FC<any>> = {
       });
 
       return (
-        <div>
+        <div className="relative">
           <code
             className="inline shiki css-variables text-[0.805rem] sm:text-[13.8px] md:text-[0.92rem]"
             dangerouslySetInnerHTML={{ __html: code }}
           />
           <CopyButton
             textToCopy={props.children}
-            className="absolute w-4 h-4 top-2 right-2"
+            className="absolute w-3 h-3 top-0 right-0"
           />
         </div>
       );
@@ -137,7 +137,7 @@ export const components: Record<string, FC<any>> = {
     return <code className="inline" {...props} />;
   },
   Image,
-  hr: (props) => <hr className="w-24 my-14 border-rurikon-border" {...props} />,
+  hr: (props) => <hr className="w-24 my-14 border-secondary" {...props} />,
   BlockSideTitle,
   InlineMath,
   BlockMath,
