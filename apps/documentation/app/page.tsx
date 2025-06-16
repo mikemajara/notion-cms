@@ -12,26 +12,26 @@ function DocumentationItem({ page }: { page: RecordNotionCMS }) {
   const slug = page.slug;
 
   return (
-    <div className="block group last:border-b border-secondary">
+    <div className="block group">
       <Link
         href={`/docs/${slug}`}
-        className="flex items-center justify-between p-4 transition-all duration-200 rounded-lg hover:bg-primary-50 border border-secondary border-b-0"
+        className="flex items-center justify-between p-4 transition-all duration-200"
       >
         <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg bg-secondary-100">
-            <span className="text-sm font-semibold text-secondary-600">
+          <div className="flex items-center justify-center flex-shrink-0 w-8 h-8">
+            <span className="text-sm font-semibold text-primary">
               {page.Order || "•"}
             </span>
           </div>
           <div>
-            <h3 className="font-medium text-primary-900 transition-colors group-hover:text-secondary-600">
+            <h3 className="font-light text-primary transition-colors group-hover:text-primary group-hover:font-medium">
               {page.Name}
             </h3>
           </div>
         </div>
         <div className="flex-shrink-0">
           <svg
-            className="w-5 h-5 text-primary-400 transition-colors group-hover:text-secondary-600"
+            className="w-5 h-5 text-primary transition-colors group-hover:text-primary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -54,12 +54,12 @@ export default async function HomePage() {
   const sortedPages = buildDocumentationTree(pages);
 
   return (
-    <div className="max-w-4xl">
+    <div className="max-w-[90%]">
       <header className="mb-12">
-        <h1 className="mb-4 text-4xl font-bold text-primary-900">
+        <h1 className="mb-4 text-4xl font-bold text-primary">
           Notion CMS Documentation
         </h1>
-        <p className="text-lg leading-7 text-primary-600">
+        <p className="text-lg leading-7 text-primary">
           Welcome to the comprehensive documentation for Notion CMS. This
           library simplifies the Notion API to facilitate developer experience
           with Notion as a content management system.
@@ -69,10 +69,10 @@ export default async function HomePage() {
       <div className="space-y-8">
         <section>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-semibold text-primary-900">
+            <h2 className="text-2xl font-semibold text-primary">
               Documentation Pages
             </h2>
-            <span className="text-sm text-primary-500">
+            <span className="text-sm text-primary">
               {sortedPages.length} page{sortedPages.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -84,10 +84,10 @@ export default async function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="py-12 text-center rounded-lg bg-primary-50">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-primary-200 rounded-lg">
+            <div className="py-12 text-center rounded-lg bg-secondary">
+              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-secondary rounded-lg">
                 <svg
-                  className="w-6 h-6 text-primary-400"
+                  className="w-6 h-6 text-secondary"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -100,10 +100,10 @@ export default async function HomePage() {
                   />
                 </svg>
               </div>
-              <p className="mb-2 text-lg text-primary-500">
+              <p className="mb-2 text-lg text-primary">
                 No documentation pages found
               </p>
-              <p className="text-sm text-primary-400">
+              <p className="text-sm text-primary">
                 Add some pages to your Notion database to get started.
               </p>
             </div>
