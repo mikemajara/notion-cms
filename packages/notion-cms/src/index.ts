@@ -47,7 +47,14 @@ export {
   createSimplifyFunction,
   createSimplifyRecordsFunction,
 };
-export type { DatabaseRecord };
+export type {
+  DatabaseRecord,
+  TableBlockContent,
+  TableRowCell,
+  TableRowBlockContent,
+  SimpleTableBlock,
+  SimpleTableRowBlock,
+};
 
 // Re-export query-builder types and values
 export { QueryBuilder, OPERATOR_MAP };
@@ -85,6 +92,47 @@ export interface SimpleBlock {
   content: any;
   children?: SimpleBlock[];
   hasChildren: boolean;
+}
+
+/**
+ * Table block content structure
+ */
+interface TableBlockContent {
+  tableWidth: number;
+  hasColumnHeader: boolean;
+  hasRowHeader: boolean;
+}
+
+/**
+ * Table row cell content structure
+ */
+interface TableRowCell {
+  plainText: string;
+  richText: any[];
+}
+
+/**
+ * Table row block content structure
+ */
+interface TableRowBlockContent {
+  cells: TableRowCell[];
+}
+
+/**
+ * Simplified representation of a table block
+ */
+interface SimpleTableBlock extends SimpleBlock {
+  type: "table";
+  content: TableBlockContent;
+  children: SimpleTableRowBlock[];
+}
+
+/**
+ * Simplified representation of a table row block
+ */
+interface SimpleTableRowBlock extends SimpleBlock {
+  type: "table_row";
+  content: TableRowBlockContent;
 }
 
 /**
@@ -432,6 +480,14 @@ export class NotionCMS {
           hasRowHeader: typeData.has_row_header,
         };
 
+      case "table_row":
+        return {
+          cells: typeData.cells.map((cell: any[]) => ({
+            plainText: this.extractRichText(cell),
+            richText: cell,
+          })),
+        };
+
       case "column_list":
       case "column":
         // These are container blocks and their content is in children
@@ -690,6 +746,15 @@ export class NotionCMS {
         }`;
         break;
 
+      case "table":
+        markdown = this.tableToMarkdown(block as SimpleTableBlock, baseIndent);
+        break;
+
+      case "table_row":
+        // Table rows are handled within table conversion, skip individual processing
+        markdown = "";
+        break;
+
       default:
         // For unsupported blocks, try to extract text if possible
         if (content && content.text) {
@@ -733,6 +798,43 @@ export class NotionCMS {
     }
 
     return markdown;
+  }
+
+  /**
+   * Convert a table block to Markdown format
+   * @param tableBlock The table block to convert
+   * @param baseIndent Base indentation to apply
+   * @returns Markdown string
+   */
+  private tableToMarkdown(
+    tableBlock: SimpleTableBlock,
+    baseIndent: string
+  ): string {
+    const { content, children } = tableBlock;
+
+    if (!children || children.length === 0) {
+      return `${baseIndent}<!-- Empty table -->`;
+    }
+
+    const rows = children as SimpleTableRowBlock[];
+    const tableRows: string[] = [];
+
+    // Process each row
+    rows.forEach((row, rowIndex) => {
+      const cells = row.content.cells.map((cell) => cell.plainText || "");
+      const markdownRow = `${baseIndent}| ${cells.join(" | ")} |`;
+      tableRows.push(markdownRow);
+
+      // Add header separator after first row (required for valid Markdown tables)
+      if (rowIndex === 0) {
+        const separator = `${baseIndent}|${cells
+          .map(() => " --- ")
+          .join("|")}|`;
+        tableRows.push(separator);
+      }
+    });
+
+    return tableRows.join("\n");
   }
 
   /**
@@ -849,6 +951,15 @@ export class NotionCMS {
         html = `<div class="callout">${icon}<div class="callout-content">${content.text}</div></div>`;
         break;
 
+      case "table":
+        html = this.tableToHtml(block as SimpleTableBlock);
+        break;
+
+      case "table_row":
+        // Table rows are handled within table conversion, skip individual processing
+        html = "";
+        break;
+
       default:
         // For unsupported blocks, try to extract text if possible
         if (content && content.text) {
@@ -877,6 +988,51 @@ export class NotionCMS {
     }
 
     return html;
+  }
+
+  /**
+   * Convert a table block to HTML format
+   * @param tableBlock The table block to convert
+   * @returns HTML string
+   */
+  private tableToHtml(tableBlock: SimpleTableBlock): string {
+    const { content, children } = tableBlock;
+
+    if (!children || children.length === 0) {
+      return `<!-- Empty table -->`;
+    }
+
+    const rows = children as SimpleTableRowBlock[];
+    let tableHtml = "<table>";
+
+    rows.forEach((row, rowIndex) => {
+      const isHeaderRow = rowIndex === 0 && content.hasColumnHeader;
+      const cellTag = isHeaderRow ? "th" : "td";
+
+      const cells = row.content.cells
+        .map((cell) => `<${cellTag}>${cell.plainText || ""}</${cellTag}>`)
+        .join("");
+
+      const rowHtml = `<tr>${cells}</tr>`;
+
+      // Wrap header row in thead, body rows in tbody
+      if (isHeaderRow) {
+        tableHtml += `<thead>${rowHtml}</thead>`;
+        if (rows.length > 1) {
+          tableHtml += "<tbody>";
+        }
+      } else {
+        tableHtml += rowHtml;
+      }
+    });
+
+    // Close tbody if we opened it
+    if (content.hasColumnHeader && rows.length > 1) {
+      tableHtml += "</tbody>";
+    }
+
+    tableHtml += "</table>";
+    return tableHtml;
   }
 }
 
