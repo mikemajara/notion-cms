@@ -140,6 +140,34 @@ export const components: Record<string, FC<any>> = {
   },
   Image,
   hr: (props) => <hr className="w-24 my-14 border-secondary" {...props} />,
+  table: (props) => (
+    <div className="overflow-x-auto my-6">
+      <table
+        className="w-full border-collapse border border-secondary rounded-md"
+        {...props}
+      />
+    </div>
+  ),
+  thead: (props) => <thead className="bg-muted/50" {...props} />,
+  tbody: (props) => <tbody {...props} />,
+  tr: (props) => (
+    <tr
+      className="border-b border-secondary hover:bg-muted/30 transition-colors"
+      {...props}
+    />
+  ),
+  th: (props) => (
+    <th
+      className="p-3 text-left font-semibold text-primary border-r border-secondary last:border-r-0"
+      {...props}
+    />
+  ),
+  td: (props) => (
+    <td
+      className="p-3 text-sm border-r border-secondary last:border-r-0"
+      {...props}
+    />
+  ),
   BlockSideTitle,
   InlineMath,
   BlockMath,
