@@ -6,7 +6,7 @@
   - [x] Simple table: not supported
   - [ ] Formula: Can't parse based in simple layer based on type. Should be able to.
   - [ ] Images: not sure if supported. Need to implement proper cache handling and availability from bucket.
-  - [ ]
+  - [ ] Code: language attribute pass as parameter.
 
 # Tasks
 
