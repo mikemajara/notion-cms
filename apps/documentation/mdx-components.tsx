@@ -1,9 +1,13 @@
 import type { MDXComponents } from "mdx/types";
 import type { FC } from "react";
-import { codeToHtml, createCssVariablesTheme } from "shiki";
+import { codeToHtml } from "shiki";
 import Link from "next/link";
 import Image from "next/image";
 import { LinkIcon } from "lucide-react";
+import {
+  transformerNotationDiff,
+  transformerNotationHighlight,
+} from "@shikijs/transformers";
 
 // @ts-ignore
 import { InlineMath, BlockMath } from "react-katex";
@@ -98,8 +102,8 @@ export const components: Record<string, FC<any>> = {
   code: async (props) => {
     if (typeof props.children === "string") {
       const code = await codeToHtml(props.children, {
-        lang: "jsx",
-        theme: cssVariablesTheme,
+        lang: props.className?.replace("language-", "") || "text",
+        theme: "github-light",
         // theme: 'min-light',
         // theme: 'snazzy-light',
         transformers: [
@@ -119,6 +123,8 @@ export const components: Record<string, FC<any>> = {
               return html.replace(/^<code>|<\/code>$/g, "");
             },
           },
+          transformerNotationHighlight(),
+          transformerNotationDiff(),
         ],
       });
 
