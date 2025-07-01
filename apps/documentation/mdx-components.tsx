@@ -15,8 +15,6 @@ import { InlineMath, BlockMath } from "react-katex";
 import { BlockSideTitle } from "@/components/block-sidetitle";
 import CopyButton from "@/components/copy-button";
 
-const cssVariablesTheme = createCssVariablesTheme({});
-
 export const components: Record<string, FC<any>> = {
   h1: (props) => (
     <div className="flex items-center gap-2 pt-2 mb-6">
@@ -92,9 +90,9 @@ export const components: Record<string, FC<any>> = {
     />
   ),
   pre: (props) => (
-    <div className="relative">
+    <div className="relative w-full">
       <pre
-        className=" bg-transparent border rounded-md border-secondary p-4 px-8 mt-7  py-6 overflow-hidden overflow-x-scroll max-w-[90%] sm:max-w-full"
+        className="w-0 min-w-full bg-transparent border rounded-md border-secondary p-4 px-8 mt-7 py-6 overflow-x-scroll"
         {...props}
       />
     </div>
@@ -131,7 +129,7 @@ export const components: Record<string, FC<any>> = {
       return (
         <>
           <code
-            className="inline shiki css-variables text-[0.805rem] sm:text-[13.8px] md:text-[0.92rem]"
+            className="block text-xs sm:text-sm"
             dangerouslySetInnerHTML={{ __html: code }}
           />
           <CopyButton
@@ -147,11 +145,8 @@ export const components: Record<string, FC<any>> = {
   Image,
   hr: (props) => <hr className="w-24 my-14 border-secondary" {...props} />,
   table: (props) => (
-    <div className="overflow-x-auto my-6">
-      <table
-        className="w-full border-collapse border border-secondary rounded-md"
-        {...props}
-      />
+    <div className="overflow-x-auto my-6 w-0 min-w-full border rounded-md">
+      <table {...props} />
     </div>
   ),
   thead: (props) => <thead className="bg-muted/50" {...props} />,

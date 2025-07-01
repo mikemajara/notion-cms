@@ -100,7 +100,7 @@ export default async function Page({
             <ArrowUpRightIcon className="w-4 h-4" />
           </Link>
         </div>
-        <div className="flex-col hidden gap-2 text-sm lg:flex min-w-xs">
+        <div className="flex-col hidden gap-2 text-sm lg:flex">
           {getPageIndex(content)?.map((heading, idx) => (
             <Link
               key={idx}
