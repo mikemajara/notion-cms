@@ -618,20 +618,26 @@ export function getPropertyValue(
     }
     case "files": {
       const filesProp = property as FilesPropertyItemObjectResponse;
-      const files = filesProp.files.map((file) => ({
-        name: file.name,
-        url:
-          file.type === "external" ? file.external.url : (file as any).file.url,
-      }));
+      const files = filesProp.files.map((file) => {
+        if (file.type === "external") {
+          return { name: file.name, url: file.external.url };
+        } else if (file.type === "file") {
+          return { name: file.name, url: file.file.url };
+        } else {
+          return { name: file.name, url: "" };
+        }
+      });
 
       // If fileManager is available and using cache strategy, process files
-      if (fileManager && fileManager.isCacheEnabled()) {
-        // Note: Return promise for async processing - this changes the API to async
-        // For now, return original files to maintain sync API, but log that caching is available
-        // debug.log(
-        //   `File caching is available for ${files.length} files but requires async processing`
-        // );
-        return files;
+      if (
+        fileManager &&
+        fileManager.isCacheEnabled &&
+        fileManager.isCacheEnabled()
+      ) {
+        // TODO: Implement async file caching logic here if needed
+        throw new Error(
+          "File caching is not implemented in getPropertyValue. Please use a different strategy or implement async caching."
+        );
       }
 
       return files;
@@ -778,30 +784,35 @@ export function getAdvancedPropertyValue(
     case "files": {
       const filesProp = property as FilesPropertyItemObjectResponse;
       // Return more complete file information
-      const files = filesProp.files.map((file) => ({
-        name: file.name,
-        type: file.type,
-        ...(file.type === "external" && {
-          external: {
-            url: file.external.url,
-          },
-        }),
-        ...(file.type === "file" && {
-          file: {
-            url: file.file.url,
-            expiry_time: file.file.expiry_time,
-          },
-        }),
-      }));
+      const files = filesProp.files.map((file) => {
+        if (file.type === "external") {
+          return {
+            name: file.name,
+            type: file.type,
+            external: {
+              url: file.external.url,
+            },
+          };
+        } else if (file.type === "file") {
+          return {
+            name: file.name,
+            type: file.type,
+            file: {
+              url: file.file.url,
+              expiry_time: file.file.expiry_time,
+            },
+          };
+        } else {
+          return { name: file.name, type: file.type };
+        }
+      });
 
       // If fileManager is available and using cache strategy, process files
       if (fileManager && fileManager.config?.files?.strategy === "cache") {
-        // Note: Return promise for async processing - this changes the API to async
-        // For now, return original files to maintain sync API, but log that caching is available
-        // debug.log(
-        //   `Advanced file caching is available for ${files.length} files but requires async processing`
-        // );
-        return files;
+        // TODO: Implement async file caching logic here if needed
+        throw new Error(
+          "File caching is not implemented in getAdvancedPropertyValue. Please use a different strategy or implement async caching."
+        );
       }
 
       return files;
