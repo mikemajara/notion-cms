@@ -572,10 +572,24 @@ export function advancedNotionRecords(
 }
 
 // Export the helper function directly
+/**
+ * Synchronous property value extraction. Will NOT process or cache files, even if fileManager is passed.
+ * For file caching, use the async NotionCMS API (getDatabase, getRecord, etc.).
+ */
 export function getPropertyValue(
   property: PropertyItemObjectResponse,
   fileManager?: any
 ): any {
+  // Warn if fileManager is passed and is using cache strategy
+  if (
+    fileManager &&
+    fileManager.isCacheEnabled &&
+    fileManager.isCacheEnabled()
+  ) {
+    throw new Error(
+      "getPropertyValue is synchronous and does NOT support file caching. Use NotionCMS async API for file caching."
+    );
+  }
   switch (property.type) {
     case "unique_id": {
       const idProp = property as UniqueIdPropertyItemObjectResponse;
@@ -627,19 +641,6 @@ export function getPropertyValue(
           return { name: file.name, url: "" };
         }
       });
-
-      // If fileManager is available and using cache strategy, process files
-      if (
-        fileManager &&
-        fileManager.isCacheEnabled &&
-        fileManager.isCacheEnabled()
-      ) {
-        // TODO: Implement async file caching logic here if needed
-        throw new Error(
-          "File caching is not implemented in getPropertyValue. Please use a different strategy or implement async caching."
-        );
-      }
-
       return files;
     }
     case "checkbox":
@@ -688,11 +689,24 @@ export function getPropertyValue(
   }
 }
 
-// New function to get more detailed property values for the advanced layer
+/**
+ * Synchronous advanced property value extraction. Will NOT process or cache files, even if fileManager is passed.
+ * For file caching, use the async NotionCMS API (getDatabase, getRecord, etc.).
+ */
 export function getAdvancedPropertyValue(
   property: PropertyItemObjectResponse,
   fileManager?: any
 ): any {
+  // Warn if fileManager is passed and is using cache strategy
+  if (
+    fileManager &&
+    fileManager.isCacheEnabled &&
+    fileManager.isCacheEnabled()
+  ) {
+    throw new Error(
+      "getAdvancedPropertyValue is synchronous and does NOT support file caching. Use NotionCMS async API for file caching."
+    );
+  }
   switch (property.type) {
     case "title": {
       const titleProp = property as TitlePropertyItemObjectResponse;
@@ -806,15 +820,6 @@ export function getAdvancedPropertyValue(
           return { name: file.name, type: file.type };
         }
       });
-
-      // If fileManager is available and using cache strategy, process files
-      if (fileManager && fileManager.config?.files?.strategy === "cache") {
-        // TODO: Implement async file caching logic here if needed
-        throw new Error(
-          "File caching is not implemented in getAdvancedPropertyValue. Please use a different strategy or implement async caching."
-        );
-      }
-
       return files;
     }
     case "checkbox":

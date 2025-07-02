@@ -270,18 +270,14 @@ export function generateFileId(notionUrl: string): string {
   // Notion URLs have structure: https://.../workspace-id/file-id/filename
   // We want the second UUID (file-id), not the first (workspace-id)
   const matches = notionUrl.match(/([a-f0-9-]{36})/g);
-  console.log(`[FileID] URL: ${notionUrl}`);
-  console.log(`[FileID] Found UUIDs:`, matches);
 
   if (matches && matches.length >= 2) {
     // Use the second UUID as the file identifier
     const fileId = matches[1].replace(/-/g, "");
-    console.log(`[FileID] Using second UUID as file ID: ${fileId}`);
     return fileId;
   } else if (matches && matches.length === 1) {
     // Fallback to first UUID if only one exists
     const fileId = matches[0].replace(/-/g, "");
-    console.log(`[FileID] Using first UUID as fallback: ${fileId}`);
     return fileId;
   }
 
