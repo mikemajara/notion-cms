@@ -774,20 +774,20 @@ export class QueryBuilder<
       const pages = response.results as PageObjectResponse[];
 
       // Debug logging
-      console.log(`[QueryBuilder] FileManager present:`, !!this.fileManager);
-      console.log(
+      debug.log(`[QueryBuilder] FileManager present:`, !!this.fileManager);
+      debug.log(
         `[QueryBuilder] Cache enabled:`,
         this.fileManager?.isCacheEnabled()
       );
 
       // Check if file caching is enabled in configuration
       if (this.fileManager?.isCacheEnabled()) {
-        console.log(
+        debug.log(
           `[QueryBuilder] Using ASYNC processing for file caching with ${pages.length} pages`
         );
         // Use async processing for file caching
         const results = await this.processNotionRecordsUnified(pages, true);
-        console.log(
+        debug.log(
           `[QueryBuilder] Processed ${results.length} records with async file processing`
         );
         return {
@@ -796,12 +796,12 @@ export class QueryBuilder<
           nextCursor: response.next_cursor,
         };
       } else {
-        console.log(
+        debug.log(
           `[QueryBuilder] Using SYNC processing (no file caching) with ${pages.length} pages`
         );
         // Use sync processing (current behavior, zero breaking changes)
         const results = processNotionRecords(pages, this.fileManager) as T[];
-        console.log(
+        debug.log(
           `[QueryBuilder] Processed ${results.length} records with sync processing`
         );
         return {

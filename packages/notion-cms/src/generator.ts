@@ -628,9 +628,9 @@ export function getPropertyValue(
       if (fileManager && fileManager.isCacheEnabled()) {
         // Note: Return promise for async processing - this changes the API to async
         // For now, return original files to maintain sync API, but log that caching is available
-        console.log(
-          `File caching is available for ${files.length} files but requires async processing`
-        );
+        // debug.log(
+        //   `File caching is available for ${files.length} files but requires async processing`
+        // );
         return files;
       }
 
@@ -798,9 +798,9 @@ export function getAdvancedPropertyValue(
       if (fileManager && fileManager.config?.files?.strategy === "cache") {
         // Note: Return promise for async processing - this changes the API to async
         // For now, return original files to maintain sync API, but log that caching is available
-        console.log(
-          `Advanced file caching is available for ${files.length} files but requires async processing`
-        );
+        // debug.log(
+        //   `Advanced file caching is available for ${files.length} files but requires async processing`
+        // );
         return files;
       }
 
