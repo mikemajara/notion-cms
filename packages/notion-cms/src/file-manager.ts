@@ -33,7 +33,6 @@ export class DirectStrategy implements FileStrategy {
 
 /**
  * Cache strategy - stores files locally or in S3-compatible storage
- * Note: Implementation will be added in Phase 2
  */
 export class CacheStrategy implements FileStrategy {
   private config: NotionCMSConfig["files"];
@@ -43,15 +42,113 @@ export class CacheStrategy implements FileStrategy {
   }
 
   async processFileUrl(url: string, fileName: string): Promise<string> {
-    // TODO: Implement in Phase 2 - Cache Strategy (Local Storage)
-    // For now, return original URL to maintain backward compatibility
-    return url;
+    // Only handle local storage for now (Phase 2)
+    if (this.config?.storage?.type !== "local") {
+      // For S3-compatible storage, return original URL until Phase 3
+      return url;
+    }
+
+    try {
+      // Generate stable filename
+      const fileId = generateFileId(url);
+      const extension = getFileExtension(fileName);
+      const stableFileName = `${fileId}${extension}`;
+      
+      // Get storage path
+      const storagePath = this.config.storage.path || "./public/assets/notion-files";
+      const fullPath = `${storagePath}/${stableFileName}`;
+      
+      // Check if file is already cached
+      const { fileExists, getFileSize } = await import("./utils/file-utils");
+      
+      if (await fileExists(fullPath)) {
+        // Check TTL if configured
+        if (this.config?.cache?.ttl) {
+          const fs = await import("fs/promises");
+          const stats = await fs.stat(fullPath);
+          const age = Date.now() - stats.mtime.getTime();
+          
+          if (age > this.config.cache.ttl) {
+            // File expired, delete and re-download
+            await fs.unlink(fullPath);
+          } else {
+            // File is valid, return cached URL
+            return this.generatePublicUrl(storagePath, stableFileName);
+          }
+        } else {
+          // No TTL configured, use cached file
+          return this.generatePublicUrl(storagePath, stableFileName);
+        }
+      }
+      
+      // Check cache size limits before downloading
+      if (this.config?.cache?.maxSize) {
+        const { calculateDirSize } = await import("./utils/file-utils");
+        const currentSize = await calculateDirSize(storagePath);
+        
+        if (currentSize > this.config.cache.maxSize) {
+          // Clean up old files to make space
+          await this.cleanupCache(storagePath);
+        }
+      }
+      
+      // Download and cache the file
+      const { downloadFile, writeFile } = await import("./utils/file-utils");
+      const fileData = await downloadFile(url);
+      await writeFile(fullPath, fileData);
+      
+      return this.generatePublicUrl(storagePath, stableFileName);
+      
+    } catch (error) {
+      console.warn(`Failed to cache file ${fileName}:`, error);
+      // Fallback to original URL if caching fails
+      return url;
+    }
   }
 
   async processFileInfo(fileInfo: FileInfo): Promise<FileInfo> {
-    // TODO: Implement in Phase 2 - Cache Strategy (Local Storage)
-    // For now, return original file info
-    return fileInfo;
+    try {
+      const cachedUrl = await this.processFileUrl(fileInfo.url, fileInfo.name);
+      
+      return {
+        ...fileInfo,
+        url: cachedUrl,
+      };
+    } catch (error) {
+      console.warn(`Failed to process file info for ${fileInfo.name}:`, error);
+      // Return original file info if processing fails
+      return fileInfo;
+    }
+  }
+
+  /**
+   * Generate public URL for cached file
+   */
+  private generatePublicUrl(storagePath: string, fileName: string): string {
+    // Convert storage path to public URL
+    // Assumes files are stored in public directory
+    if (storagePath.startsWith("./public")) {
+      return storagePath.replace("./public", "") + "/" + fileName;
+    } else if (storagePath.startsWith("public")) {
+      return "/" + storagePath.substring(6) + "/" + fileName;
+    } else {
+      // For non-public paths, return file path (may need framework-specific handling)
+      return `/${fileName}`;
+    }
+  }
+
+  /**
+   * Clean up old files to make space in cache
+   */
+  private async cleanupCache(storagePath: string): Promise<void> {
+    if (!this.config?.cache?.ttl) return;
+    
+    try {
+      const { cleanupOldFiles } = await import("./utils/file-utils");
+      await cleanupOldFiles(storagePath, this.config.cache.ttl);
+    } catch (error) {
+      console.warn(`Failed to cleanup cache in ${storagePath}:`, error);
+    }
   }
 }
 

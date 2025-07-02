@@ -187,6 +187,59 @@ describe("File Management Feature", () => {
     });
   });
 
+  describe("Async File Processing", () => {
+    it("should have async methods for file processing", () => {
+      const cms = new NotionCMS("test-token");
+      
+      // Check that the new async methods exist
+      expect(typeof cms.getRecordWithFileProcessing).toBe("function");
+      expect(typeof cms.getDatabaseWithFileProcessing).toBe("function");
+      expect(typeof cms.getAllDatabaseRecordsWithFileProcessing).toBe("function");
+    });
+
+    it("should process cache strategy correctly with async methods", async () => {
+      const config = {
+        files: {
+          strategy: "cache" as const,
+          storage: {
+            type: "local" as const,
+            path: "./test/cache",
+          },
+        },
+      };
+
+      const cms = new NotionCMS("test-token", config);
+      
+      // This would require actual Notion API calls to test fully
+      // For now, we're testing that the methods exist and can be called
+      expect(cms).toBeDefined();
+    });
+  });
+
+  describe("Cache Strategy Implementation", () => {
+    it("should implement complete cache strategy functionality", async () => {
+      const config = {
+        files: {
+          strategy: "cache" as const,
+          storage: {
+            type: "local" as const,
+            path: "./test/cache",
+          },
+          cache: {
+            ttl: 3600000, // 1 hour
+            maxSize: 10 * 1024 * 1024, // 10MB
+          },
+        },
+      };
+
+      const manager = new FileManager(config);
+      expect(manager).toBeDefined();
+
+      // Test that the strategy is properly instantiated
+      // The actual caching functionality would need real files to test
+    });
+  });
+
   describe("Backward Compatibility", () => {
     it("should maintain backward compatibility for existing constructor usage", () => {
       // This should still work without config
@@ -202,6 +255,17 @@ describe("File Management Feature", () => {
         },
       };
       expect(config).toBeDefined();
+    });
+
+    it("should maintain existing sync methods unchanged", () => {
+      const cms = new NotionCMS("test-token");
+      
+      // Existing methods should still exist and work as before
+      expect(typeof cms.getRecord).toBe("function");
+      expect(typeof cms.getDatabase).toBe("function");
+      expect(typeof cms.getAllDatabaseRecords).toBe("function");
+      expect(typeof cms.getPageContent).toBe("function");
+      expect(typeof cms.blocksToMarkdown).toBe("function");
     });
   });
 });

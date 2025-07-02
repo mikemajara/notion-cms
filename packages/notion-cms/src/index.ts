@@ -10,6 +10,8 @@ import {
   AdvancedDatabaseRecord,
   processNotionRecord,
   processNotionRecords,
+  processNotionRecordAsync,
+  processNotionRecordsAsync,
 } from "./generator";
 import {
   QueryBuilder,
@@ -208,7 +210,7 @@ export class NotionCMS {
 
       const pages = response.results as PageObjectResponse[];
       // Use the unified processing function to get records with all access levels
-      const results = processNotionRecords(pages) as T[];
+      const results = processNotionRecords(pages, this.fileManager) as T[];
 
       return {
         results,
@@ -235,8 +237,8 @@ export class NotionCMS {
       page_id: pageId,
     })) as PageObjectResponse;
 
-    // Use the unified processing function
-    return processNotionRecord(page) as T;
+    // Use the unified processing function with FileManager
+    return processNotionRecord(page, this.fileManager) as T;
   }
 
   /**
@@ -1040,6 +1042,98 @@ export class NotionCMS {
 
     tableHtml += "</table>";
     return tableHtml;
+  }
+
+  /**
+   * Get a single record from a database by its ID with async file processing
+   * Supports file caching when configured with cache strategy
+   * @param pageId The ID of the Notion page/record
+   * @returns A promise that resolves to the record with processed files
+   */
+  async getRecordWithFileProcessing<T extends DatabaseRecord>(pageId: string): Promise<T> {
+    const page = (await this.client.pages.retrieve({
+      page_id: pageId,
+    })) as PageObjectResponse;
+
+    // Use the async processing function with FileManager for file caching
+    return processNotionRecordAsync(page, this.fileManager) as Promise<T>;
+  }
+
+  /**
+   * Get all records from a Notion database with async file processing
+   * Supports file caching when configured with cache strategy
+   * @param databaseId The ID of the Notion database
+   * @param options Query options for filtering, sorting, and pagination
+   * @returns A promise that resolves to an array of records with pagination metadata
+   */
+  async getDatabaseWithFileProcessing<T extends DatabaseRecord>(
+    databaseId: string,
+    options: QueryOptions = {}
+  ): Promise<{ results: T[]; nextCursor: string | null; hasMore: boolean }> {
+    try {
+      debug.query(databaseId, {
+        database_id: databaseId,
+        filter: options.filter,
+        sorts: options.sorts,
+        page_size: options.pageSize,
+        start_cursor: options.startCursor,
+      });
+
+      const response = await this.client.databases.query({
+        database_id: databaseId,
+        filter: options.filter,
+        sorts: options.sorts,
+        page_size: options.pageSize,
+        start_cursor: options.startCursor,
+      });
+
+      debug.log(`Query returned ${response.results.length} results`);
+
+      const pages = response.results as PageObjectResponse[];
+      // Use the async processing function to get records with file processing
+      const results = (await processNotionRecordsAsync(pages, this.fileManager)) as T[];
+
+      return {
+        results,
+        nextCursor: response.next_cursor,
+        hasMore: response.has_more,
+      };
+    } catch (error) {
+      debug.error(error, {
+        databaseId,
+        options,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get all records from a database with automatic pagination and async file processing
+   * Supports file caching when configured with cache strategy
+   * @param databaseId The ID of the Notion database
+   * @param options Query options for filtering and sorting
+   * @returns A promise that resolves to all records from the database
+   */
+  async getAllDatabaseRecordsWithFileProcessing<T extends DatabaseRecord>(
+    databaseId: string,
+    options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
+  ): Promise<T[]> {
+    const results: T[] = [];
+    let hasMore = true;
+    let startCursor: string | null = null;
+
+    while (hasMore) {
+      const response: { results: T[]; nextCursor: string | null; hasMore: boolean } = await this.getDatabaseWithFileProcessing<T>(databaseId, {
+        ...options,
+        startCursor: startCursor || undefined,
+      });
+
+      results.push(...response.results);
+      hasMore = response.hasMore;
+      startCursor = response.nextCursor;
+    }
+
+    return results;
   }
 }
 

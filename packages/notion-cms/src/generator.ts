@@ -476,9 +476,10 @@ NotionCMS.prototype.${methodName} = function(databaseId: string): QueryBuilder<$
 /**
  * Process a Notion page into a record with layered access (simple, advanced, raw)
  * @param page The Notion page object from the API
+ * @param fileManager Optional FileManager for file processing
  * @returns A processed record with simple, advanced, and raw access
  */
-export function processNotionRecord(page: PageObjectResponse): DatabaseRecord {
+export function processNotionRecord(page: PageObjectResponse, fileManager?: any): DatabaseRecord {
   // Simple values (base level access)
   const simple: Record<string, any> = {
     id: page.id,
@@ -492,11 +493,12 @@ export function processNotionRecord(page: PageObjectResponse): DatabaseRecord {
   // Process each property
   for (const [key, value] of Object.entries(page.properties)) {
     // Simple version (direct access)
-    simple[key] = getPropertyValue(value as PropertyItemObjectResponse);
+    simple[key] = getPropertyValue(value as PropertyItemObjectResponse, fileManager);
 
     // Advanced version (detailed access)
     advanced[key] = getAdvancedPropertyValue(
-      value as PropertyItemObjectResponse
+      value as PropertyItemObjectResponse,
+      fileManager
     );
   }
 
@@ -523,9 +525,10 @@ export function processNotionRecord(page: PageObjectResponse): DatabaseRecord {
  * @returns An array of processed records with layered access
  */
 export function processNotionRecords(
-  pages: PageObjectResponse[]
+  pages: PageObjectResponse[],
+  fileManager?: any
 ): DatabaseRecord[] {
-  return pages.map((page) => processNotionRecord(page));
+  return pages.map((page) => processNotionRecord(page, fileManager));
 }
 
 /**
@@ -563,7 +566,7 @@ export function advancedNotionRecords(
 }
 
 // Export the helper function directly
-export function getPropertyValue(property: PropertyItemObjectResponse): any {
+export function getPropertyValue(property: PropertyItemObjectResponse, fileManager?: any): any {
   switch (property.type) {
     case "unique_id": {
       const idProp = property as UniqueIdPropertyItemObjectResponse;
@@ -606,10 +609,20 @@ export function getPropertyValue(property: PropertyItemObjectResponse): any {
     }
     case "files": {
       const filesProp = property as FilesPropertyItemObjectResponse;
-      return filesProp.files.map((file) => ({
+      const files = filesProp.files.map((file) => ({
         name: file.name,
         url: file.type === "external" ? file.external.url : (file as any).file.url,
       }));
+      
+      // If fileManager is available and using cache strategy, process files
+      if (fileManager && fileManager.config?.files?.strategy === "cache") {
+        // Note: Return promise for async processing - this changes the API to async
+        // For now, return original files to maintain sync API, but log that caching is available
+        console.log(`File caching is available for ${files.length} files but requires async processing`);
+        return files;
+      }
+      
+      return files;
     }
     case "checkbox":
       return (property as CheckboxPropertyItemObjectResponse).checkbox;
@@ -659,7 +672,8 @@ export function getPropertyValue(property: PropertyItemObjectResponse): any {
 
 // New function to get more detailed property values for the advanced layer
 export function getAdvancedPropertyValue(
-  property: PropertyItemObjectResponse
+  property: PropertyItemObjectResponse,
+  fileManager?: any
 ): any {
   switch (property.type) {
     case "title": {
@@ -752,7 +766,7 @@ export function getAdvancedPropertyValue(
     case "files": {
       const filesProp = property as FilesPropertyItemObjectResponse;
       // Return more complete file information
-      return filesProp.files.map((file) => ({
+      const files = filesProp.files.map((file) => ({
         name: file.name,
         type: file.type,
         ...(file.type === "external" && {
@@ -767,6 +781,16 @@ export function getAdvancedPropertyValue(
           },
         }),
       }));
+      
+      // If fileManager is available and using cache strategy, process files
+      if (fileManager && fileManager.config?.files?.strategy === "cache") {
+        // Note: Return promise for async processing - this changes the API to async
+        // For now, return original files to maintain sync API, but log that caching is available
+        console.log(`Advanced file caching is available for ${files.length} files but requires async processing`);
+        return files;
+      }
+      
+      return files;
     }
     case "checkbox":
       return (property as CheckboxPropertyItemObjectResponse).checkbox;
@@ -1241,4 +1265,154 @@ NotionCMS.prototype.${methodName} = function(databaseId: string): QueryBuilder<$
   // Save the file
   await sourceFile.save();
   console.log(`Generated combined types file: ${combinedFilePath}`);
+}
+
+/**
+ * Async version of getPropertyValue that supports file caching
+ */
+export async function getPropertyValueAsync(property: PropertyItemObjectResponse, fileManager?: any): Promise<any> {
+  // For most properties, delegate to the sync version
+  if (property.type !== "files") {
+    return getPropertyValue(property, fileManager);
+  }
+
+  // Special handling for files when caching is enabled
+  const filesProp = property as FilesPropertyItemObjectResponse;
+  const files = filesProp.files.map((file) => ({
+    name: file.name,
+    url: file.type === "external" ? file.external.url : (file as any).file.url,
+  }));
+
+  // If fileManager is available and using cache strategy, process files
+  if (fileManager && fileManager.config?.files?.strategy === "cache") {
+    // Process files through the FileManager for caching
+    const processedFiles = await Promise.all(
+      files.map(async (file) => {
+        try {
+          const processedUrl = await fileManager.processFileUrl(file.url, file.name);
+          return {
+            ...file,
+            url: processedUrl,
+          };
+        } catch (error) {
+          console.warn(`Failed to cache file ${file.name}:`, error);
+          return file; // Fallback to original
+        }
+      })
+    );
+    return processedFiles;
+  }
+
+  return files;
+}
+
+/**
+ * Async version of getAdvancedPropertyValue that supports file caching
+ */
+export async function getAdvancedPropertyValueAsync(
+  property: PropertyItemObjectResponse,
+  fileManager?: any
+): Promise<any> {
+  // For most properties, delegate to the sync version
+  if (property.type !== "files") {
+    return getAdvancedPropertyValue(property, fileManager);
+  }
+
+  // Special handling for files when caching is enabled
+  const filesProp = property as FilesPropertyItemObjectResponse;
+  const files = filesProp.files.map((file) => ({
+    name: file.name,
+    type: file.type,
+    ...(file.type === "external" && {
+      external: {
+        url: file.external.url,
+      },
+    }),
+    ...(file.type === "file" && {
+      file: {
+        url: file.file.url,
+        expiry_time: file.file.expiry_time,
+      },
+    }),
+  }));
+
+  // If fileManager is available and using cache strategy, process files
+  if (fileManager && fileManager.config?.files?.strategy === "cache") {
+    // Process files through the FileManager for caching
+    const processedFiles = await Promise.all(
+      files.map(async (file) => {
+        try {
+          const originalUrl = file.type === "external" ? file.external?.url : file.file?.url;
+          if (originalUrl) {
+            const processedUrl = await fileManager.processFileUrl(originalUrl, file.name);
+            
+            // Update the URL in the appropriate location
+            if (file.type === "external" && file.external) {
+              file.external.url = processedUrl;
+            } else if (file.type === "file" && file.file) {
+              file.file.url = processedUrl;
+            }
+          }
+          return file;
+        } catch (error) {
+          console.warn(`Failed to cache file ${file.name}:`, error);
+          return file; // Fallback to original
+        }
+      })
+    );
+    return processedFiles;
+  }
+
+  return files;
+}
+
+/**
+ * Async version of processNotionRecord that supports file caching
+ */
+export async function processNotionRecordAsync(page: PageObjectResponse, fileManager?: any): Promise<DatabaseRecord> {
+  // Simple values (base level access)
+  const simple: Record<string, any> = {
+    id: page.id,
+  };
+
+  // More detailed but still processed values
+  const advanced: Record<string, any> = {
+    id: page.id,
+  };
+
+  // Process each property
+  for (const [key, value] of Object.entries(page.properties)) {
+    // Simple version (direct access)
+    simple[key] = await getPropertyValueAsync(value as PropertyItemObjectResponse, fileManager);
+
+    // Advanced version (detailed access)
+    advanced[key] = await getAdvancedPropertyValueAsync(
+      value as PropertyItemObjectResponse,
+      fileManager
+    );
+  }
+
+  const result: DatabaseRecord = {
+    ...simple,
+    advanced: {
+      id: page.id,
+      ...advanced,
+    },
+    raw: {
+      id: page.id,
+      properties: page.properties,
+    },
+  };
+
+  return result;
+}
+
+/**
+ * Async version of processNotionRecords that supports file caching
+ */
+export async function processNotionRecordsAsync(
+  pages: PageObjectResponse[],
+  fileManager?: any
+): Promise<DatabaseRecord[]> {
+  return Promise.all(pages.map((page) => processNotionRecordAsync(page, fileManager)));
 }
