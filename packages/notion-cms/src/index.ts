@@ -38,6 +38,8 @@ import {
   createSimplifyFunction,
   createSimplifyRecordsFunction,
 } from "./utils/property-helpers";
+import { NotionCMSConfig, mergeConfig } from "./config";
+import { FileManager } from "./file-manager";
 
 // Re-export utility functions and types for use in projects
 export {
@@ -54,6 +56,7 @@ export type {
   TableRowBlockContent,
   SimpleTableBlock,
   SimpleTableRowBlock,
+  NotionCMSConfig,
 };
 
 // Re-export query-builder types and values
@@ -147,9 +150,13 @@ interface ListContext {
 
 export class NotionCMS {
   private client: Client;
+  private config: Required<NotionCMSConfig>;
+  private fileManager: FileManager;
 
-  constructor(token: string) {
+  constructor(token: string, config?: NotionCMSConfig) {
     this.client = new Client({ auth: token });
+    this.config = mergeConfig(config);
+    this.fileManager = new FileManager(this.config);
   }
 
   /**

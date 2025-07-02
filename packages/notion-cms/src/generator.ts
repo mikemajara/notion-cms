@@ -608,7 +608,7 @@ export function getPropertyValue(property: PropertyItemObjectResponse): any {
       const filesProp = property as FilesPropertyItemObjectResponse;
       return filesProp.files.map((file) => ({
         name: file.name,
-        url: file.type === "external" ? file.external.url : "",
+        url: file.type === "external" ? file.external.url : (file as any).file.url,
       }));
     }
     case "checkbox":

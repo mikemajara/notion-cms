@@ -64,7 +64,7 @@ export function getPropertyValue(property: NotionProperty): any {
       const filesProp = property as any;
       return filesProp.files.map((file: any) => ({
         name: file.name,
-        url: file.type === "external" ? file.external.url : "",
+        url: file.type === "external" ? file.external.url : file.file.url,
       }));
     }
     case "checkbox":
