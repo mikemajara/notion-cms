@@ -35,6 +35,7 @@ export const DEFAULT_CONFIG: Required<NotionCMSConfig> = {
       bucket: "",
       accessKey: "",
       secretKey: "",
+      region: "",
     },
     cache: {
       ttl: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
@@ -46,23 +47,29 @@ export const DEFAULT_CONFIG: Required<NotionCMSConfig> = {
 /**
  * Merge user config with defaults
  */
-export function mergeConfig(userConfig?: NotionCMSConfig): Required<NotionCMSConfig> {
+export function mergeConfig(
+  userConfig?: NotionCMSConfig
+): Required<NotionCMSConfig> {
   if (!userConfig) return DEFAULT_CONFIG;
-  
+
   const defaultFiles = DEFAULT_CONFIG.files;
   const defaultStorage = defaultFiles.storage!;
   const defaultCache = defaultFiles.cache!;
-  
+
   return {
     files: {
       strategy: userConfig.files?.strategy ?? defaultFiles.strategy,
       storage: {
         type: userConfig.files?.storage?.type ?? defaultStorage.type,
         path: userConfig.files?.storage?.path ?? defaultStorage.path,
-        endpoint: userConfig.files?.storage?.endpoint ?? defaultStorage.endpoint,
+        endpoint:
+          userConfig.files?.storage?.endpoint ?? defaultStorage.endpoint,
         bucket: userConfig.files?.storage?.bucket ?? defaultStorage.bucket,
-        accessKey: userConfig.files?.storage?.accessKey ?? defaultStorage.accessKey,
-        secretKey: userConfig.files?.storage?.secretKey ?? defaultStorage.secretKey,
+        accessKey:
+          userConfig.files?.storage?.accessKey ?? defaultStorage.accessKey,
+        secretKey:
+          userConfig.files?.storage?.secretKey ?? defaultStorage.secretKey,
+        region: userConfig.files?.storage?.region ?? defaultStorage.region,
       },
       cache: {
         ttl: userConfig.files?.cache?.ttl ?? defaultCache.ttl,

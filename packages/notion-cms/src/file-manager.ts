@@ -52,20 +52,21 @@ export class CacheStrategy implements FileStrategy {
       const fileId = generateFileId(url);
       const extension = getFileExtension(fileName);
       const stableFileName = `${fileId}${extension}`;
-      
+
       // Create appropriate storage interface
       const storage = await this.createStorage();
-      
+
       // Check if file is already cached
       if (await storage.exists(stableFileName)) {
         // Check TTL if configured (for local storage only - S3 uses bucket policies)
         if (this.config?.cache?.ttl && this.config.storage.type === "local") {
           const fs = await import("fs/promises");
-          const storagePath = this.config.storage.path || "./public/assets/notion-files";
+          const storagePath =
+            this.config.storage.path || "./public/assets/notion-files";
           const fullPath = `${storagePath}/${stableFileName}`;
           const stats = await fs.stat(fullPath);
           const age = Date.now() - stats.mtime.getTime();
-          
+
           if (age > this.config.cache.ttl) {
             // File expired, delete and re-download
             await storage.delete(stableFileName);
@@ -78,26 +79,26 @@ export class CacheStrategy implements FileStrategy {
           return storage.getPublicUrl(stableFileName);
         }
       }
-      
+
       // Check cache size limits before downloading (local storage only)
       if (this.config?.cache?.maxSize && this.config.storage.type === "local") {
-        const storagePath = this.config.storage.path || "./public/assets/notion-files";
+        const storagePath =
+          this.config.storage.path || "./public/assets/notion-files";
         const { calculateDirSize } = await import("./utils/file-utils");
         const currentSize = await calculateDirSize(storagePath);
-        
+
         if (currentSize > this.config.cache.maxSize) {
           // Clean up old files to make space
           await this.cleanupCache(storagePath);
         }
       }
-      
+
       // Download and cache the file
       const { downloadFile } = await import("./utils/file-utils");
       const fileData = await downloadFile(url);
       await storage.store(stableFileName, fileData);
-      
+
       return storage.getPublicUrl(stableFileName);
-      
     } catch (error) {
       console.warn(`Failed to cache file ${fileName}:`, error);
       // Fallback to original URL if caching fails
@@ -108,7 +109,7 @@ export class CacheStrategy implements FileStrategy {
   async processFileInfo(fileInfo: FileInfo): Promise<FileInfo> {
     try {
       const cachedUrl = await this.processFileUrl(fileInfo.url, fileInfo.name);
-      
+
       return {
         ...fileInfo,
         url: cachedUrl,
@@ -152,7 +153,10 @@ export class CacheStrategy implements FileStrategy {
         });
       } catch (error) {
         // If S3 setup fails, fall back to local storage
-        console.warn("S3 storage failed, falling back to local storage:", error);
+        console.warn(
+          "S3 storage failed, falling back to local storage:",
+          error
+        );
         const { LocalStorage } = await import("./storage/s3-storage");
         const storagePath = "./public/assets/notion-files";
         return new LocalStorage(storagePath);
@@ -160,7 +164,8 @@ export class CacheStrategy implements FileStrategy {
     } else {
       // Default to local storage
       const { LocalStorage } = await import("./storage/s3-storage");
-      const storagePath = this.config?.storage?.path || "./public/assets/notion-files";
+      const storagePath =
+        this.config?.storage?.path || "./public/assets/notion-files";
       return new LocalStorage(storagePath);
     }
   }
@@ -170,7 +175,7 @@ export class CacheStrategy implements FileStrategy {
    */
   private async cleanupCache(storagePath: string): Promise<void> {
     if (!this.config?.cache?.ttl) return;
-    
+
     try {
       const { cleanupOldFiles } = await import("./utils/file-utils");
       await cleanupOldFiles(storagePath, this.config.cache.ttl);
@@ -188,7 +193,7 @@ export class FileManager {
 
   constructor(config: NotionCMSConfig) {
     const fileConfig = config.files;
-    
+
     switch (fileConfig?.strategy) {
       case "cache":
         this.strategy = new CacheStrategy(fileConfig);
@@ -198,6 +203,13 @@ export class FileManager {
         this.strategy = new DirectStrategy();
         break;
     }
+  }
+
+  /**
+   * Check if file caching is enabled
+   */
+  isCacheEnabled(): boolean {
+    return this.strategy instanceof CacheStrategy;
   }
 
   /**
@@ -218,7 +230,7 @@ export class FileManager {
    * Process an array of file information objects
    */
   async processFileInfoArray(files: FileInfo[]): Promise<FileInfo[]> {
-    return Promise.all(files.map(file => this.processFileInfo(file)));
+    return Promise.all(files.map((file) => this.processFileInfo(file)));
   }
 
   /**
@@ -255,17 +267,29 @@ export class FileManager {
  */
 export function generateFileId(notionUrl: string): string {
   // Extract the file ID from the Notion URL
-  // Notion URLs contain unique identifiers we can use
-  const match = notionUrl.match(/([a-f0-9-]{36})/);
-  if (match) {
-    return match[1].replace(/-/g, "").substring(0, 16);
+  // Notion URLs have structure: https://.../workspace-id/file-id/filename
+  // We want the second UUID (file-id), not the first (workspace-id)
+  const matches = notionUrl.match(/([a-f0-9-]{36})/g);
+  console.log(`[FileID] URL: ${notionUrl}`);
+  console.log(`[FileID] Found UUIDs:`, matches);
+
+  if (matches && matches.length >= 2) {
+    // Use the second UUID as the file identifier
+    const fileId = matches[1].replace(/-/g, "");
+    console.log(`[FileID] Using second UUID as file ID: ${fileId}`);
+    return fileId;
+  } else if (matches && matches.length === 1) {
+    // Fallback to first UUID if only one exists
+    const fileId = matches[0].replace(/-/g, "");
+    console.log(`[FileID] Using first UUID as fallback: ${fileId}`);
+    return fileId;
   }
-  
+
   // Fallback: use hash of URL
   let hash = 0;
   for (let i = 0; i < notionUrl.length; i++) {
     const char = notionUrl.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash).toString(16);
@@ -284,16 +308,16 @@ export function getFileExtension(fileNameOrUrl: string): string {
  */
 export function detectFileType(fileName: string): string {
   const extension = getFileExtension(fileName).toLowerCase();
-  
+
   const imageTypes = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"];
   const documentTypes = [".pdf", ".doc", ".docx", ".txt", ".md"];
   const videoTypes = [".mp4", ".mov", ".avi", ".mkv"];
   const audioTypes = [".mp3", ".wav", ".m4a", ".aac"];
-  
+
   if (imageTypes.includes(extension)) return "image";
   if (documentTypes.includes(extension)) return "document";
   if (videoTypes.includes(extension)) return "video";
   if (audioTypes.includes(extension)) return "audio";
-  
+
   return "file";
 }

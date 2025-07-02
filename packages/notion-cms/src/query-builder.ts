@@ -5,6 +5,7 @@ import {
 } from "@notionhq/client/build/src/api-endpoints";
 import { DatabaseRecord, processNotionRecords } from "./generator";
 import { debug } from "./utils/debug";
+import { FileManager } from "./file-manager";
 
 export type SortDirection = "ascending" | "descending";
 export type LogicalOperator = "and" | "or";
@@ -471,11 +472,18 @@ export class QueryBuilder<
   private pageLimit: number = 100;
   private startCursor?: string;
   private singleMode: "required" | "optional" | null = null;
+  private fileManager?: FileManager;
 
-  constructor(client: Client, databaseId: string, fieldTypes: M = {} as M) {
+  constructor(
+    client: Client,
+    databaseId: string,
+    fieldTypes: M = {} as M,
+    fileManager?: FileManager
+  ) {
     this.client = client;
     this.databaseId = databaseId;
     this.fieldTypes = fieldTypes;
+    this.fileManager = fileManager;
   }
 
   /**
@@ -764,13 +772,44 @@ export class QueryBuilder<
       debug.log(`Query returned ${response.results.length} results`);
 
       const pages = response.results as PageObjectResponse[];
-      const results = processNotionRecords(pages) as T[];
 
-      return {
-        results,
-        hasMore: response.has_more,
-        nextCursor: response.next_cursor,
-      };
+      // Debug logging
+      console.log(`[QueryBuilder] FileManager present:`, !!this.fileManager);
+      console.log(
+        `[QueryBuilder] Cache enabled:`,
+        this.fileManager?.isCacheEnabled()
+      );
+
+      // Check if file caching is enabled in configuration
+      if (this.fileManager?.isCacheEnabled()) {
+        console.log(
+          `[QueryBuilder] Using ASYNC processing for file caching with ${pages.length} pages`
+        );
+        // Use async processing for file caching
+        const results = await this.processNotionRecordsUnified(pages, true);
+        console.log(
+          `[QueryBuilder] Processed ${results.length} records with async file processing`
+        );
+        return {
+          results,
+          hasMore: response.has_more,
+          nextCursor: response.next_cursor,
+        };
+      } else {
+        console.log(
+          `[QueryBuilder] Using SYNC processing (no file caching) with ${pages.length} pages`
+        );
+        // Use sync processing (current behavior, zero breaking changes)
+        const results = processNotionRecords(pages, this.fileManager) as T[];
+        console.log(
+          `[QueryBuilder] Processed ${results.length} records with sync processing`
+        );
+        return {
+          results,
+          hasMore: response.has_more,
+          nextCursor: response.next_cursor,
+        };
+      }
     } catch (error) {
       debug.error(error, {
         databaseId: this.databaseId,
@@ -944,5 +983,96 @@ export class QueryBuilder<
   private isValidSortField(property: keyof M & string): boolean {
     const fieldType = this.getFieldTypeForFilter(property);
     return fieldType !== undefined;
+  }
+
+  /**
+   * Process Notion records with unified file processing support
+   * Similar to the NotionCMS class implementation
+   * @private
+   */
+  private async processNotionRecordsUnified(
+    pages: PageObjectResponse[],
+    processFiles: boolean = false
+  ): Promise<T[]> {
+    if (processFiles && this.fileManager) {
+      // Process each record with file processing
+      const processedRecords = await Promise.all(
+        pages.map(async (page) => {
+          const record = await this.processNotionRecordUnified(
+            page,
+            processFiles
+          );
+          return record as T;
+        })
+      );
+      return processedRecords;
+    } else {
+      // Use sync processing (fallback to existing behavior)
+      return processNotionRecords(pages, this.fileManager) as T[];
+    }
+  }
+
+  /**
+   * Process a single Notion record with unified file processing support
+   * Similar to the NotionCMS class implementation
+   * @private
+   */
+  private async processNotionRecordUnified(
+    page: PageObjectResponse,
+    processFiles: boolean = false
+  ): Promise<DatabaseRecord> {
+    // Use the existing sync method as base, then enhance with file processing if needed
+    const record = processNotionRecords([page], this.fileManager)[0];
+
+    if (processFiles && this.fileManager) {
+      // Process file properties using FileManager
+      for (const [key, value] of Object.entries(record)) {
+        if (Array.isArray(value)) {
+          // Handle file arrays (files property type)
+          const processedValue = await Promise.all(
+            value.map(async (item: any) => {
+              if (
+                item &&
+                typeof item === "object" &&
+                item.url &&
+                typeof item.url === "string"
+              ) {
+                try {
+                  const cachedUrl = await this.fileManager!.processFileUrl(
+                    item.url,
+                    item.name || "file"
+                  );
+                  return { ...item, url: cachedUrl };
+                } catch (error) {
+                  console.warn(`Failed to cache file ${item.url}:`, error);
+                  return item; // Fallback to original
+                }
+              }
+              return item;
+            })
+          );
+          record[key] = processedValue;
+        } else if (
+          value &&
+          typeof value === "object" &&
+          value.url &&
+          typeof value.url === "string"
+        ) {
+          // Handle single file objects
+          try {
+            const cachedUrl = await this.fileManager.processFileUrl(
+              value.url,
+              value.name || "file"
+            );
+            record[key] = { ...value, url: cachedUrl };
+          } catch (error) {
+            console.warn(`Failed to cache file ${value.url}:`, error);
+            // Keep original value as fallback
+          }
+        }
+      }
+    }
+
+    return record;
   }
 }
