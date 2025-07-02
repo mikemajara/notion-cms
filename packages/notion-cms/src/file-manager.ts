@@ -42,9 +42,8 @@ export class CacheStrategy implements FileStrategy {
   }
 
   async processFileUrl(url: string, fileName: string): Promise<string> {
-    // Only handle local storage for now (Phase 2)
-    if (this.config?.storage?.type !== "local") {
-      // For S3-compatible storage, return original URL until Phase 3
+    // Handle both local and S3-compatible storage
+    if (!this.config?.storage?.type) {
       return url;
     }
 
@@ -54,35 +53,35 @@ export class CacheStrategy implements FileStrategy {
       const extension = getFileExtension(fileName);
       const stableFileName = `${fileId}${extension}`;
       
-      // Get storage path
-      const storagePath = this.config.storage.path || "./public/assets/notion-files";
-      const fullPath = `${storagePath}/${stableFileName}`;
+      // Create appropriate storage interface
+      const storage = await this.createStorage();
       
       // Check if file is already cached
-      const { fileExists, getFileSize } = await import("./utils/file-utils");
-      
-      if (await fileExists(fullPath)) {
-        // Check TTL if configured
-        if (this.config?.cache?.ttl) {
+      if (await storage.exists(stableFileName)) {
+        // Check TTL if configured (for local storage only - S3 uses bucket policies)
+        if (this.config?.cache?.ttl && this.config.storage.type === "local") {
           const fs = await import("fs/promises");
+          const storagePath = this.config.storage.path || "./public/assets/notion-files";
+          const fullPath = `${storagePath}/${stableFileName}`;
           const stats = await fs.stat(fullPath);
           const age = Date.now() - stats.mtime.getTime();
           
           if (age > this.config.cache.ttl) {
             // File expired, delete and re-download
-            await fs.unlink(fullPath);
+            await storage.delete(stableFileName);
           } else {
             // File is valid, return cached URL
-            return this.generatePublicUrl(storagePath, stableFileName);
+            return storage.getPublicUrl(stableFileName);
           }
         } else {
-          // No TTL configured, use cached file
-          return this.generatePublicUrl(storagePath, stableFileName);
+          // No TTL configured or S3 storage, use cached file
+          return storage.getPublicUrl(stableFileName);
         }
       }
       
-      // Check cache size limits before downloading
-      if (this.config?.cache?.maxSize) {
+      // Check cache size limits before downloading (local storage only)
+      if (this.config?.cache?.maxSize && this.config.storage.type === "local") {
+        const storagePath = this.config.storage.path || "./public/assets/notion-files";
         const { calculateDirSize } = await import("./utils/file-utils");
         const currentSize = await calculateDirSize(storagePath);
         
@@ -93,11 +92,11 @@ export class CacheStrategy implements FileStrategy {
       }
       
       // Download and cache the file
-      const { downloadFile, writeFile } = await import("./utils/file-utils");
+      const { downloadFile } = await import("./utils/file-utils");
       const fileData = await downloadFile(url);
-      await writeFile(fullPath, fileData);
+      await storage.store(stableFileName, fileData);
       
-      return this.generatePublicUrl(storagePath, stableFileName);
+      return storage.getPublicUrl(stableFileName);
       
     } catch (error) {
       console.warn(`Failed to cache file ${fileName}:`, error);
@@ -134,6 +133,35 @@ export class CacheStrategy implements FileStrategy {
     } else {
       // For non-public paths, return file path (may need framework-specific handling)
       return `/${fileName}`;
+    }
+  }
+
+  /**
+   * Create appropriate storage interface based on configuration
+   */
+  private async createStorage(): Promise<any> {
+    if (this.config?.storage?.type === "s3-compatible") {
+      try {
+        const { S3Storage } = await import("./storage/s3-storage");
+        return new S3Storage({
+          endpoint: this.config.storage.endpoint || "",
+          bucket: this.config.storage.bucket || "",
+          accessKey: this.config.storage.accessKey,
+          secretKey: this.config.storage.secretKey,
+          region: this.config.storage.region,
+        });
+      } catch (error) {
+        // If S3 setup fails, fall back to local storage
+        console.warn("S3 storage failed, falling back to local storage:", error);
+        const { LocalStorage } = await import("./storage/s3-storage");
+        const storagePath = "./public/assets/notion-files";
+        return new LocalStorage(storagePath);
+      }
+    } else {
+      // Default to local storage
+      const { LocalStorage } = await import("./storage/s3-storage");
+      const storagePath = this.config?.storage?.path || "./public/assets/notion-files";
+      return new LocalStorage(storagePath);
     }
   }
 

@@ -13,6 +13,7 @@ export interface NotionCMSConfig {
       bucket?: string;
       accessKey?: string;
       secretKey?: string;
+      region?: string; // AWS region or equivalent for other providers
     };
     cache?: {
       ttl: number; // default 24 hours
