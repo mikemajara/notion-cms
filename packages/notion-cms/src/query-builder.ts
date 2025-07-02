@@ -1021,58 +1021,47 @@ export class QueryBuilder<
     page: PageObjectResponse,
     processFiles: boolean = false
   ): Promise<DatabaseRecord> {
-    // Use the existing sync method as base, then enhance with file processing if needed
-    const record = processNotionRecords([page], this.fileManager)[0];
+    // Always process the record synchronously WITHOUT fileManager to avoid double file processing
+    // FileManager/file caching is handled below if needed
+    const record = processNotionRecords([page], undefined)[0];
 
+    // Only process file properties if requested and fileManager is present
     if (processFiles && this.fileManager) {
-      // Process file properties using FileManager
+      // Only process properties that are Notion file properties:
+      // - Arrays of objects where each object has both 'url' and 'name' as strings
       for (const [key, value] of Object.entries(record)) {
-        if (Array.isArray(value)) {
-          // Handle file arrays (files property type)
+        if (
+          Array.isArray(value) &&
+          value.length > 0 &&
+          value.every(
+            (item) =>
+              item &&
+              typeof item === "object" &&
+              typeof item.url === "string" &&
+              typeof item.name === "string"
+          )
+        ) {
+          // This is a Notion files property (array of file objects)
           const processedValue = await Promise.all(
             value.map(async (item: any) => {
-              if (
-                item &&
-                typeof item === "object" &&
-                item.url &&
-                typeof item.url === "string"
-              ) {
-                try {
-                  const cachedUrl = await this.fileManager!.processFileUrl(
-                    item.url,
-                    item.name || "file"
-                  );
-                  return { ...item, url: cachedUrl };
-                } catch (error) {
-                  console.warn(`Failed to cache file ${item.url}:`, error);
-                  return item; // Fallback to original
-                }
+              try {
+                const cachedUrl = await this.fileManager!.processFileUrl(
+                  item.url,
+                  item.name
+                );
+                return { ...item, url: cachedUrl };
+              } catch (error) {
+                console.warn(`Failed to cache file ${item.url}:`, error);
+                return item; // Fallback to original
               }
-              return item;
             })
           );
           record[key] = processedValue;
-        } else if (
-          value &&
-          typeof value === "object" &&
-          value.url &&
-          typeof value.url === "string"
-        ) {
-          // Handle single file objects
-          try {
-            const cachedUrl = await this.fileManager.processFileUrl(
-              value.url,
-              value.name || "file"
-            );
-            record[key] = { ...value, url: cachedUrl };
-          } catch (error) {
-            console.warn(`Failed to cache file ${value.url}:`, error);
-            // Keep original value as fallback
-          }
         }
       }
     }
 
+    // Always return a Promise (async function)
     return record;
   }
 }
