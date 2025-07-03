@@ -215,10 +215,13 @@ export class S3Storage implements StorageInterface {
         })
       );
 
-      return response.Contents?.map((obj: any) => obj.Key || "") || [];
+      // Only return valid keys, skip objects without a Key property
+      return (response.Contents || [])
+        .filter((obj: any) => typeof obj.Key === "string" && obj.Key.length > 0)
+        .map((obj: any) => obj.Key);
     } catch (error) {
       console.error("Failed to list files from S3:", error);
-      return [];
+      throw error;
     }
   }
 
@@ -296,13 +299,17 @@ export class LocalStorage implements StorageInterface {
 
   getPublicUrl(fileName: string): string {
     // Convert storage path to public URL
-    if (this.storagePath.startsWith("./public")) {
-      return this.storagePath.replace("./public", "") + "/" + fileName;
-    } else if (this.storagePath.startsWith("public")) {
-      return "/" + this.storagePath.substring(6) + "/" + fileName;
-    } else {
-      return `/${fileName}`;
+    let basePath = this.storagePath;
+    if (basePath.startsWith("./public")) {
+      basePath = basePath.replace(/^\.\/public\/?/, "");
+    } else if (basePath.startsWith("public")) {
+      basePath = basePath.replace(/^public\/?/, "");
     }
+    // Remove any leading/trailing slashes from basePath and fileName
+    basePath = basePath.replace(/^\/+|\/+$/g, "");
+    const cleanFileName = fileName.replace(/^\/+/, "");
+    // Only prepend slash if basePath is not empty
+    return basePath ? `/${basePath}/${cleanFileName}` : `/${cleanFileName}`;
   }
 
   async delete(fileName: string): Promise<void> {
