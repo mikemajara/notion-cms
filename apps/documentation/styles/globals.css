@@ -203,3 +203,7 @@
     filter: blur(0);
   }
 }
+
+.line.highlighted {
+  background-color: var(--color-accent);
+}

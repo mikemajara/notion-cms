@@ -114,7 +114,7 @@ export default async function RootLayout({
           <Navbar pages={pages} />
           <main className="relative flex-1 border-l">
             <ViewTransition name="crossfade">
-              <article className="pt-6 pl-6 sm:pt-0 sm:pl-10 md:pl-14">
+              <article className="px-6 py-6 sm:py-3 md:py-2 sm:px-10 md:px-14">
                 {children}
               </article>
             </ViewTransition>
