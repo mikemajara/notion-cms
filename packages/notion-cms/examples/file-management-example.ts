@@ -127,9 +127,7 @@ async function examplePageContentFiles() {
     });
     
     // Convert to markdown with file URLs
-    const markdown = defaultCMS.blocksToMarkdown(blocks, {
-      includeImageUrls: true,
-    });
+    const markdown = defaultCMS.blocksToMarkdown(blocks);
     
     console.log("Markdown with file URLs:");
     console.log(markdown.substring(0, 200) + "...");
