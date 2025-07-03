@@ -778,10 +778,7 @@ export class NotionCMS {
    * @param options Options for conversion
    * @returns Markdown string
    */
-  public blocksToMarkdown(
-    blocks: SimpleBlock[],
-    options: { includeImageUrls?: boolean } = {}
-  ): string {
+  public blocksToMarkdown(blocks: SimpleBlock[]): string {
     if (!blocks || !Array.isArray(blocks)) return "";
 
     const context: ListContext = {
@@ -791,7 +788,7 @@ export class NotionCMS {
       bulletStyles: ["-", "*", "+", "-"], // Cycle through different bullet styles
     };
 
-    return this.processBlocksGroup(blocks, options, context);
+    return this.processBlocksGroup(blocks, context);
   }
 
   /**
@@ -803,7 +800,6 @@ export class NotionCMS {
    */
   private processBlocksGroup(
     blocks: SimpleBlock[],
-    options: { includeImageUrls?: boolean } = {},
     context: ListContext
   ): string {
     if (!blocks || blocks.length === 0) return "";
@@ -817,16 +813,12 @@ export class NotionCMS {
       if (this.isListItem(block.type)) {
         // Process consecutive list items as a group
         const listGroup = this.extractListGroup(blocks, i);
-        const listMarkdown = this.processListGroup(
-          listGroup.blocks,
-          options,
-          context
-        );
+        const listMarkdown = this.processListGroup(listGroup.blocks, context);
         result.push(listMarkdown);
         i = listGroup.nextIndex;
       } else {
         // Process single non-list block
-        const blockMarkdown = this.blockToMarkdown(block, options, context);
+        const blockMarkdown = this.blockToMarkdown(block, context);
         if (blockMarkdown.trim()) {
           result.push(blockMarkdown);
         }
@@ -869,7 +861,6 @@ export class NotionCMS {
    */
   private processListGroup(
     blocks: SimpleBlock[],
-    options: { includeImageUrls?: boolean } = {},
     parentContext: ListContext
   ): string {
     if (blocks.length === 0) return "";
@@ -896,7 +887,7 @@ export class NotionCMS {
     const result: string[] = [];
 
     blocks.forEach((block) => {
-      const blockMarkdown = this.blockToMarkdown(block, options, context);
+      const blockMarkdown = this.blockToMarkdown(block, context);
       if (blockMarkdown.trim()) {
         result.push(blockMarkdown);
       }
@@ -917,13 +908,8 @@ export class NotionCMS {
    * @param context Current list context and nesting information
    * @returns Markdown string
    */
-  private blockToMarkdown(
-    block: SimpleBlock,
-    options: { includeImageUrls?: boolean } = {},
-    context: ListContext
-  ): string {
+  private blockToMarkdown(block: SimpleBlock, context: ListContext): string {
     const { type, content, children } = block;
-    const { includeImageUrls = true } = options;
 
     // Calculate proper indentation based on context
     const baseIndent = "  ".repeat(context.level);
@@ -969,7 +955,7 @@ export class NotionCMS {
             ...context,
             level: context.level + 1,
           };
-          markdown += this.processBlocksGroup(children, options, childContext);
+          markdown += this.processBlocksGroup(children, childContext);
         }
         markdown += `\n${baseIndent}</details>`;
         break;
@@ -991,9 +977,6 @@ export class NotionCMS {
       case "image":
         const imageCaption = content.caption ? ` "${content.caption}"` : "";
         markdown = `${baseIndent}![Image${imageCaption}](${content.url})`;
-        if (includeImageUrls) {
-          markdown += `\n${baseIndent}<!-- ${content.url} -->`;
-        }
         break;
 
       case "bookmark":
@@ -1038,7 +1021,6 @@ export class NotionCMS {
         };
         const childrenMarkdown = this.processBlocksGroup(
           children,
-          options,
           childContext
         );
         if (childrenMarkdown.trim()) {
@@ -1052,7 +1034,6 @@ export class NotionCMS {
         };
         const childrenMarkdown = this.processBlocksGroup(
           children,
-          options,
           childContext
         );
         if (childrenMarkdown.trim()) {
