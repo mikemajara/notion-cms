@@ -38,11 +38,15 @@
     "commander": "^13.1.0"
   },
   "peerDependencies": {
-    "@notionhq/client": "^2.2.14"
+    "@notionhq/client": "^2.2.14",
+    "@aws-sdk/client-s3": "^3.0.0"
   },
   "peerDependenciesMeta": {
     "@notionhq/client": {
       "optional": false
+    },
+    "@aws-sdk/client-s3": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -77,7 +81,8 @@
     "clean": true,
     "treeshake": true,
     "external": [
-      "@notionhq/client"
+      "@notionhq/client",
+      "@aws-sdk/client-s3"
     ],
     "minify": false,
     "sourcemap": false,

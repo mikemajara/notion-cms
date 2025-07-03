@@ -476,9 +476,13 @@ NotionCMS.prototype.${methodName} = function(databaseId: string): QueryBuilder<$
 /**
  * Process a Notion page into a record with layered access (simple, advanced, raw)
  * @param page The Notion page object from the API
+ * @param fileManager Optional FileManager for file processing
  * @returns A processed record with simple, advanced, and raw access
  */
-export function processNotionRecord(page: PageObjectResponse): DatabaseRecord {
+export function processNotionRecord(
+  page: PageObjectResponse,
+  fileManager?: any
+): DatabaseRecord {
   // Simple values (base level access)
   const simple: Record<string, any> = {
     id: page.id,
@@ -492,11 +496,15 @@ export function processNotionRecord(page: PageObjectResponse): DatabaseRecord {
   // Process each property
   for (const [key, value] of Object.entries(page.properties)) {
     // Simple version (direct access)
-    simple[key] = getPropertyValue(value as PropertyItemObjectResponse);
+    simple[key] = getPropertyValue(
+      value as PropertyItemObjectResponse,
+      fileManager
+    );
 
     // Advanced version (detailed access)
     advanced[key] = getAdvancedPropertyValue(
-      value as PropertyItemObjectResponse
+      value as PropertyItemObjectResponse,
+      fileManager
     );
   }
 
@@ -523,9 +531,10 @@ export function processNotionRecord(page: PageObjectResponse): DatabaseRecord {
  * @returns An array of processed records with layered access
  */
 export function processNotionRecords(
-  pages: PageObjectResponse[]
+  pages: PageObjectResponse[],
+  fileManager?: any
 ): DatabaseRecord[] {
-  return pages.map((page) => processNotionRecord(page));
+  return pages.map((page) => processNotionRecord(page, fileManager));
 }
 
 /**
@@ -563,7 +572,24 @@ export function advancedNotionRecords(
 }
 
 // Export the helper function directly
-export function getPropertyValue(property: PropertyItemObjectResponse): any {
+/**
+ * Synchronous property value extraction. Will NOT process or cache files, even if fileManager is passed.
+ * For file caching, use the async NotionCMS API (getDatabase, getRecord, etc.).
+ */
+export function getPropertyValue(
+  property: PropertyItemObjectResponse,
+  fileManager?: any
+): any {
+  // Warn if fileManager is passed and is using cache strategy
+  if (
+    fileManager &&
+    fileManager.isCacheEnabled &&
+    fileManager.isCacheEnabled()
+  ) {
+    throw new Error(
+      "getPropertyValue is synchronous and does NOT support file caching. Use NotionCMS async API for file caching."
+    );
+  }
   switch (property.type) {
     case "unique_id": {
       const idProp = property as UniqueIdPropertyItemObjectResponse;
@@ -606,10 +632,16 @@ export function getPropertyValue(property: PropertyItemObjectResponse): any {
     }
     case "files": {
       const filesProp = property as FilesPropertyItemObjectResponse;
-      return filesProp.files.map((file) => ({
-        name: file.name,
-        url: file.type === "external" ? file.external.url : "",
-      }));
+      const files = filesProp.files.map((file) => {
+        if (file.type === "external") {
+          return { name: file.name, url: file.external.url };
+        } else if (file.type === "file") {
+          return { name: file.name, url: file.file.url };
+        } else {
+          return { name: file.name, url: "" };
+        }
+      });
+      return files;
     }
     case "checkbox":
       return (property as CheckboxPropertyItemObjectResponse).checkbox;
@@ -657,10 +689,24 @@ export function getPropertyValue(property: PropertyItemObjectResponse): any {
   }
 }
 
-// New function to get more detailed property values for the advanced layer
+/**
+ * Synchronous advanced property value extraction. Will NOT process or cache files, even if fileManager is passed.
+ * For file caching, use the async NotionCMS API (getDatabase, getRecord, etc.).
+ */
 export function getAdvancedPropertyValue(
-  property: PropertyItemObjectResponse
+  property: PropertyItemObjectResponse,
+  fileManager?: any
 ): any {
+  // Warn if fileManager is passed and is using cache strategy
+  if (
+    fileManager &&
+    fileManager.isCacheEnabled &&
+    fileManager.isCacheEnabled()
+  ) {
+    throw new Error(
+      "getAdvancedPropertyValue is synchronous and does NOT support file caching. Use NotionCMS async API for file caching."
+    );
+  }
   switch (property.type) {
     case "title": {
       const titleProp = property as TitlePropertyItemObjectResponse;
@@ -752,21 +798,29 @@ export function getAdvancedPropertyValue(
     case "files": {
       const filesProp = property as FilesPropertyItemObjectResponse;
       // Return more complete file information
-      return filesProp.files.map((file) => ({
-        name: file.name,
-        type: file.type,
-        ...(file.type === "external" && {
-          external: {
-            url: file.external.url,
-          },
-        }),
-        ...(file.type === "file" && {
-          file: {
-            url: file.file.url,
-            expiry_time: file.file.expiry_time,
-          },
-        }),
-      }));
+      const files = filesProp.files.map((file) => {
+        if (file.type === "external") {
+          return {
+            name: file.name,
+            type: file.type,
+            external: {
+              url: file.external.url,
+            },
+          };
+        } else if (file.type === "file") {
+          return {
+            name: file.name,
+            type: file.type,
+            file: {
+              url: file.file.url,
+              expiry_time: file.file.expiry_time,
+            },
+          };
+        } else {
+          return { name: file.name, type: file.type };
+        }
+      });
+      return files;
     }
     case "checkbox":
       return (property as CheckboxPropertyItemObjectResponse).checkbox;

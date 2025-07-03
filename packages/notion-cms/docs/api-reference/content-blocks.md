@@ -75,19 +75,15 @@ Convert Notion blocks to Markdown format.
 #### Syntax
 
 ```typescript
-blocksToMarkdown(
-  blocks: SimpleBlock[],
-  options?: { includeImageUrls?: boolean }
-): string
+blocksToMarkdown(blocks: SimpleBlock[]): string
 ```
 
 #### Parameters
 
-| Parameter                  | Type            | Default | Description                             |
-| -------------------------- | --------------- | ------- | --------------------------------------- |
-| `blocks`                   | `SimpleBlock[]` | -       | Array of blocks to convert              |
-| `options`                  | `object`        | `{}`    | Conversion options                      |
-| `options.includeImageUrls` | `boolean`       | `false` | Whether to include image URLs in output |
+| Parameter | Type            | Default | Description                |
+| --------- | --------------- | ------- | -------------------------- |
+| `blocks`  | `SimpleBlock[]` | -       | Array of blocks to convert |
+| `options` | `object`        | `{}`    | Conversion options         |
 
 #### Return Value
 
@@ -115,9 +111,7 @@ console.log(markdown);
 ##### With Image URLs
 
 ```typescript
-const markdown = notionCms.blocksToMarkdown(blocks, {
-  includeImageUrls: true,
-});
+const markdown = notionCms.blocksToMarkdown(blocks);
 
 console.log(markdown);
 // # My Page Title
@@ -391,9 +385,7 @@ async function convertPageToMarkdown(pageId: string): Promise<string> {
     const blocks = await notionCms.getPageContent(pageId);
 
     // Convert to markdown
-    const markdown = notionCms.blocksToMarkdown(blocks, {
-      includeImageUrls: true,
-    });
+    const markdown = notionCms.blocksToMarkdown(blocks);
 
     return markdown;
   } catch (error) {
@@ -445,9 +437,7 @@ async function convertBlogPostsToMarkdown() {
       const blocks = await notionCms.getPageContent(post.id);
 
       // Convert to markdown
-      const content = notionCms.blocksToMarkdown(blocks, {
-        includeImageUrls: true
-      });
+      const content = notionCms.blocksToMarkdown(blocks);
 
       return {
         ...post,

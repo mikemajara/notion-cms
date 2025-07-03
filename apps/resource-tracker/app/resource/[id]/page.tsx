@@ -40,7 +40,7 @@ async function getResourceById(
 
     try {
       const blocks = await notionCMS.getPageContent(resource.id, true);
-      content = notionCMS.blocksToMarkdown(blocks, { includeImageUrls: true });
+      content = notionCMS.blocksToMarkdown(blocks);
       hasContent = blocks.length > 0 && content.trim().length > 0;
     } catch (contentError) {
       console.warn("Could not fetch page content:", contentError);
