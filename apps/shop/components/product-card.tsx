@@ -72,9 +72,9 @@ export function ProductCard({ artwork, className }: ProductCardProps) {
         )}
       >
         <div className="relative aspect-square overflow-hidden">
-          {artwork.Image ? (
+          {artwork.Image.length > 0 ? (
             <Image
-              src={artwork.Image}
+              src={artwork.Image?.[0]?.url}
               alt={artwork["Artwork Title"] || "Artwork"}
               fill
               className="object-cover transition-transform duration-300 group-hover:scale-105"

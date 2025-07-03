@@ -11,6 +11,7 @@ export const RecordArtGalleryInventoryFieldTypes = {
   "Date Acquired": { type: "date" },
   "Date Sold": { type: "date" },
   "Image": { type: "files" },
+  "Published": { type: "checkbox" },
   "Price": { type: "number" },
   "Medium": { 
     type: "select",
@@ -29,6 +30,7 @@ export interface RecordArtGalleryInventoryAdvanced {
     "Date Acquired": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
     "Date Sold": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
     Image: { name: string; type: string; external?: { url: string }; file?: { url: string; expiry_time: string } }[];
+    Published: boolean;
     Price: number;
     Medium: { id: string; name: string; color: string } | null;
     "Commission Rate": number;
@@ -49,6 +51,7 @@ export interface RecordArtGalleryInventory extends DatabaseRecord {
     "Date Acquired": Date;
     "Date Sold": Date;
     Image: { name: string; url: string; }[];
+    Published: boolean;
     Price: number;
     Medium: "Oil Paint" | "Acrylic" | "Watercolor" | "Sculpture" | "Mixed Media" | "Digital" | "Charcoal/Graphite" | "Photography" | "Textile" | "Glass" | "Painting" | "Charcoal" | "Installation";
     "Commission Rate": number;
