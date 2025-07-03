@@ -26,10 +26,12 @@ export interface StorageInterface {
 async function importAwsS3(): Promise<any> {
   try {
     // Using require with eval to avoid TypeScript compile-time errors
-    const requireFunc = eval('require');
-    return requireFunc('@aws-sdk/client-s3');
+    const requireFunc = eval("require");
+    return requireFunc("@aws-sdk/client-s3");
   } catch (error) {
-    throw new Error("AWS SDK is required for S3-compatible storage. Install: npm install @aws-sdk/client-s3");
+    throw new Error(
+      "AWS SDK is required for S3-compatible storage. Install: npm install @aws-sdk/client-s3"
+    );
   }
 }
 
@@ -54,13 +56,16 @@ export class S3Storage implements StorageInterface {
     try {
       const awsS3 = await importAwsS3();
       const { S3Client } = awsS3;
-      
+
       const clientConfig: any = {
         region: this.config.region || "us-east-1",
       };
 
       // Handle custom endpoints (for Vercel Blob, MinIO, etc.)
-      if (this.config.endpoint && !this.config.endpoint.includes("amazonaws.com")) {
+      if (
+        this.config.endpoint &&
+        !this.config.endpoint.includes("amazonaws.com")
+      ) {
         clientConfig.endpoint = this.config.endpoint;
         clientConfig.forcePathStyle = true;
       }
@@ -75,7 +80,10 @@ export class S3Storage implements StorageInterface {
 
       this.s3Client = new S3Client(clientConfig);
     } catch (error) {
-      console.warn("AWS SDK not found. Install @aws-sdk/client-s3 for S3-compatible storage:", error);
+      console.warn(
+        "AWS SDK not found. Install @aws-sdk/client-s3 for S3-compatible storage:",
+        error
+      );
       throw error;
     }
   }
@@ -88,15 +96,20 @@ export class S3Storage implements StorageInterface {
       await this.initializeS3Client();
       const awsS3 = await importAwsS3();
       const { HeadObjectCommand } = awsS3;
-      
-      await this.s3Client.send(new HeadObjectCommand({
-        Bucket: this.config.bucket,
-        Key: fileName,
-      }));
-      
+
+      await this.s3Client.send(
+        new HeadObjectCommand({
+          Bucket: this.config.bucket,
+          Key: fileName,
+        })
+      );
+
       return true;
     } catch (error: any) {
-      if (error.name === "NotFound" || error.$metadata?.httpStatusCode === 404) {
+      if (
+        error.name === "NotFound" ||
+        error.$metadata?.httpStatusCode === 404
+      ) {
         return false;
       }
       throw error;
@@ -111,13 +124,15 @@ export class S3Storage implements StorageInterface {
       await this.initializeS3Client();
       const awsS3 = await importAwsS3();
       const { PutObjectCommand } = awsS3;
-      
-      await this.s3Client.send(new PutObjectCommand({
-        Bucket: this.config.bucket,
-        Key: fileName,
-        Body: data,
-        ContentType: this.getContentType(fileName),
-      }));
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.config.bucket,
+          Key: fileName,
+          Body: data,
+          ContentType: this.getContentType(fileName),
+        })
+      );
     } catch (error) {
       console.error(`Failed to store file ${fileName} in S3:`, error);
       throw error;
@@ -128,14 +143,40 @@ export class S3Storage implements StorageInterface {
    * Get public URL for a file
    */
   getPublicUrl(fileName: string): string {
-    // For AWS S3
-    if (this.config.endpoint.includes("amazonaws.com")) {
-      const region = this.config.region || "us-east-1";
-      return `https://${this.config.bucket}.s3.${region}.amazonaws.com/${fileName}`;
+    const { endpoint, bucket, region } = this.config;
+
+    // Validate bucket
+    if (!bucket || typeof bucket !== "string" || bucket.trim() === "") {
+      throw new Error(
+        "S3Storage: Bucket name is missing or invalid in config."
+      );
     }
-    
+
+    // If endpoint is missing or empty, fallback to AWS S3 default
+    if (!endpoint || typeof endpoint !== "string" || endpoint.trim() === "") {
+      const awsRegion = region || "us-east-1";
+      return `https://${bucket}.s3.${awsRegion}.amazonaws.com/${encodeURIComponent(
+        fileName
+      )}`;
+    }
+
+    // If endpoint is AWS S3
+    if (endpoint.includes("amazonaws.com")) {
+      const awsRegion = region || "us-east-1";
+      return `https://${bucket}.s3.${awsRegion}.amazonaws.com/${encodeURIComponent(
+        fileName
+      )}`;
+    }
+
     // For custom endpoints (Vercel Blob, MinIO, etc.)
-    return `${this.config.endpoint}/${this.config.bucket}/${fileName}`;
+    // Remove trailing slashes from endpoint and bucket
+    const cleanEndpoint = endpoint.replace(/\/+$/, "");
+    const cleanBucket = bucket.replace(/\/+$/, "");
+    // Remove leading slashes from fileName
+    const cleanFileName = fileName.replace(/^\/+/, "");
+    return `${cleanEndpoint}/${cleanBucket}/${encodeURIComponent(
+      cleanFileName
+    )}`;
   }
 
   /**
@@ -146,11 +187,13 @@ export class S3Storage implements StorageInterface {
       await this.initializeS3Client();
       const awsS3 = await importAwsS3();
       const { DeleteObjectCommand } = awsS3;
-      
-      await this.s3Client.send(new DeleteObjectCommand({
-        Bucket: this.config.bucket,
-        Key: fileName,
-      }));
+
+      await this.s3Client.send(
+        new DeleteObjectCommand({
+          Bucket: this.config.bucket,
+          Key: fileName,
+        })
+      );
     } catch (error) {
       console.error(`Failed to delete file ${fileName} from S3:`, error);
       throw error;
@@ -165,10 +208,12 @@ export class S3Storage implements StorageInterface {
       await this.initializeS3Client();
       const awsS3 = await importAwsS3();
       const { ListObjectsV2Command } = awsS3;
-      
-      const response = await this.s3Client.send(new ListObjectsV2Command({
-        Bucket: this.config.bucket,
-      }));
+
+      const response = await this.s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: this.config.bucket,
+        })
+      );
 
       return response.Contents?.map((obj: any) => obj.Key || "") || [];
     } catch (error) {
@@ -185,11 +230,13 @@ export class S3Storage implements StorageInterface {
       await this.initializeS3Client();
       const awsS3 = await importAwsS3();
       const { HeadObjectCommand } = awsS3;
-      
-      const response = await this.s3Client.send(new HeadObjectCommand({
-        Bucket: this.config.bucket,
-        Key: fileName,
-      }));
+
+      const response = await this.s3Client.send(
+        new HeadObjectCommand({
+          Bucket: this.config.bucket,
+          Key: fileName,
+        })
+      );
 
       return response.ContentLength || 0;
     } catch (error) {
@@ -202,26 +249,26 @@ export class S3Storage implements StorageInterface {
    * Get appropriate content type for file
    */
   private getContentType(fileName: string): string {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    
+    const extension = fileName.split(".").pop()?.toLowerCase();
+
     const contentTypes: Record<string, string> = {
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'webp': 'image/webp',
-      'svg': 'image/svg+xml',
-      'pdf': 'application/pdf',
-      'mp4': 'video/mp4',
-      'mov': 'video/quicktime',
-      'mp3': 'audio/mpeg',
-      'wav': 'audio/wav',
-      'zip': 'application/zip',
-      'txt': 'text/plain',
-      'md': 'text/markdown',
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      webp: "image/webp",
+      svg: "image/svg+xml",
+      pdf: "application/pdf",
+      mp4: "video/mp4",
+      mov: "video/quicktime",
+      mp3: "audio/mpeg",
+      wav: "audio/wav",
+      zip: "application/zip",
+      txt: "text/plain",
+      md: "text/markdown",
     };
 
-    return contentTypes[extension || ''] || 'application/octet-stream';
+    return contentTypes[extension || ""] || "application/octet-stream";
   }
 }
 
@@ -271,10 +318,12 @@ export class LocalStorage implements StorageInterface {
   async listFiles(): Promise<string[]> {
     try {
       const fs = await import("fs/promises");
-      const entries = await fs.readdir(this.storagePath, { withFileTypes: true });
+      const entries = await fs.readdir(this.storagePath, {
+        withFileTypes: true,
+      });
       return entries
-        .filter(entry => entry.isFile())
-        .map(entry => entry.name);
+        .filter((entry) => entry.isFile())
+        .map((entry) => entry.name);
     } catch (error) {
       console.warn(`Failed to list files in ${this.storagePath}:`, error);
       return [];
