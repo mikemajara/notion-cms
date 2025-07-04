@@ -1,6 +1,10 @@
 /**
  * Configuration options for NotionCMS file management
  */
+
+const DEFAULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const DEFAULT_CACHE_MAX_SIZE = 100 * 1024 * 1024; // 100MB in bytes
+const DEFAULT_LOCAL_PATH = "./public/assets";
 export interface NotionCMSConfig {
   files?: {
     strategy: "direct" | "cache";
@@ -16,8 +20,8 @@ export interface NotionCMSConfig {
       region?: string; // AWS region or equivalent for other providers
     };
     cache?: {
-      ttl: number; // default 24 hours
-      maxSize: number; // default 100MB
+      ttl: number;
+      maxSize: number;
     };
   };
 }
@@ -30,7 +34,7 @@ export const DEFAULT_CONFIG: Required<NotionCMSConfig> = {
     strategy: "direct",
     storage: {
       type: "local",
-      path: "./public/assets/notion-files",
+      path: DEFAULT_LOCAL_PATH,
       endpoint: "",
       bucket: "",
       accessKey: "",
@@ -38,8 +42,8 @@ export const DEFAULT_CONFIG: Required<NotionCMSConfig> = {
       region: "",
     },
     cache: {
-      ttl: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
-      maxSize: 100 * 1024 * 1024, // 100MB in bytes
+      ttl: DEFAULT_CACHE_TTL,
+      maxSize: DEFAULT_CACHE_MAX_SIZE,
     },
   },
 };
