@@ -49,7 +49,6 @@ import {
   SimpleTableBlock,
   SimpleTableRowBlock,
 } from "./converter";
-import { BlockProcessor } from "./processor";
 
 // Re-export utility functions and types for use in projects
 export {
@@ -103,7 +102,6 @@ export class NotionCMS {
   private fileManager: FileManager;
   private autoProcessFiles: boolean;
   private contentConverter: ContentConverter;
-  private blockProcessor: BlockProcessor;
 
   constructor(token: string, config?: NotionCMSConfig) {
     this.client = new Client({ auth: token });
@@ -111,9 +109,8 @@ export class NotionCMS {
     this.fileManager = new FileManager(this.config);
     // Auto-enable file processing if cache strategy is configured
     this.autoProcessFiles = this.config.files?.strategy === "cache";
-    // Initialize services
+    // Initialize ContentConverter service
     this.contentConverter = new ContentConverter();
-    this.blockProcessor = new BlockProcessor(this.fileManager);
   }
 
   /**
@@ -383,9 +380,7 @@ export class NotionCMS {
 
       const blocks = response.results as BlockObjectResponse[];
       const simpleBlocks = await Promise.all(
-        blocks.map((block) =>
-          this.blockProcessor.simplifyBlockAsync(block, processFiles)
-        )
+        blocks.map((block) => this.simplifyBlockAsync(block, processFiles))
       );
 
       allBlocks = [...allBlocks, ...simpleBlocks];
@@ -394,6 +389,149 @@ export class NotionCMS {
     }
 
     return allBlocks;
+  }
+
+  /**
+   * Convert a Notion block to a simplified format with optional file processing
+   * @param block The Notion block to simplify
+   * @param processFiles Whether to process files through FileManager
+   * @returns A simplified representation of the block
+   */
+  private async simplifyBlockAsync(
+    block: BlockObjectResponse,
+    processFiles: boolean = false
+  ): Promise<SimpleBlock> {
+    const { id, type, has_children } = block;
+
+    // Extract the content based on the block type
+    const content = await this.extractBlockContentAsync(block, processFiles);
+
+    return {
+      id,
+      type,
+      content,
+      hasChildren: has_children,
+    };
+  }
+
+  /**
+   * Extract the content from a Notion block based on its type with optional file processing
+   * @param block The Notion block to extract content from
+   * @param processFiles Whether to process files through FileManager
+   * @returns The extracted content in a simplified format
+   */
+  private async extractBlockContentAsync(
+    block: BlockObjectResponse,
+    processFiles: boolean = false
+  ): Promise<any> {
+    const { type } = block;
+
+    // Accessing the block's content based on its type
+    // @ts-ignore - Dynamic access to block properties
+    const typeData = block[type];
+
+    switch (type) {
+      case "paragraph":
+      case "heading_1":
+      case "heading_2":
+      case "heading_3":
+      case "bulleted_list_item":
+      case "numbered_list_item":
+      case "toggle":
+      case "quote":
+        // These blocks have rich text content
+        return {
+          text: this.extractRichText(typeData.rich_text),
+          richText: typeData.rich_text,
+        };
+
+      case "code":
+        return {
+          text: this.extractRichText(typeData.rich_text),
+          language: typeData.language,
+        };
+
+      case "image":
+      case "file":
+      case "pdf":
+      case "video":
+      case "audio":
+        // These blocks have file content
+        const fileType = typeData.type; // 'external' or 'file'
+        let url =
+          fileType === "external" ? typeData.external.url : typeData.file.url;
+
+        // Process file through FileManager if enabled
+        if (processFiles && this.fileManager?.isCacheEnabled()) {
+          try {
+            url = await this.fileManager.processFileUrl(
+              url,
+              `content-block-${block.id}`
+            );
+          } catch (error) {
+            console.warn(`Failed to cache content block file: ${url}`, error);
+            // Fall back to original URL
+          }
+        }
+
+        return {
+          caption: typeData.caption
+            ? this.extractRichText(typeData.caption)
+            : "",
+          url: url,
+        };
+
+      case "bookmark":
+      case "embed":
+      case "link_preview":
+        return {
+          url: typeData.url,
+          caption: typeData.caption
+            ? this.extractRichText(typeData.caption)
+            : "",
+        };
+
+      case "divider":
+      case "equation":
+      case "table_of_contents":
+        // These blocks don't have additional content
+        return {};
+
+      case "to_do":
+        return {
+          text: this.extractRichText(typeData.rich_text),
+          checked: typeData.checked,
+        };
+
+      case "callout":
+        return {
+          text: this.extractRichText(typeData.rich_text),
+          icon: typeData.icon,
+        };
+
+      case "table":
+        return {
+          tableWidth: typeData.table_width,
+          hasColumnHeader: typeData.has_column_header,
+          hasRowHeader: typeData.has_row_header,
+        };
+
+      case "table_row":
+        return {
+          cells: typeData.cells.map((cell: any[]) => ({
+            plainText: this.extractRichText(cell),
+            richText: cell,
+          })),
+        };
+
+      case "column_list":
+      case "column":
+        // These are container blocks and their content is in children
+        return {};
+
+      default:
+        return typeData || {};
+    }
   }
 
   /**
@@ -592,11 +730,20 @@ export class NotionCMS {
     const { getAdvancedPropertyValue } = await import("./generator");
     return getAdvancedPropertyValue(property, this.fileManager);
   }
+
+  /**
+   * Extract plain text from rich text objects
+   * @param richText Array of rich text objects
+   * @returns Plain text string
+   */
+  private extractRichText(richText: any[] = []): string {
+    if (!richText || !Array.isArray(richText)) return "";
+    return richText.map((text) => text.plain_text || "").join("");
+  }
 }
 
-// Re-export types and utilities from ContentConverter and BlockProcessor
+// Re-export types and utilities from ContentConverter
 export { ContentConverter } from "./converter";
-export { BlockProcessor } from "./processor";
 
 // Re-export types and utilities
 export * from "./generator";
