@@ -2,9 +2,11 @@ import React from "react";
 import { ProductCard } from "./product-card";
 import { RecordArtGalleryInventory } from "@/notion/notion-types-art-gallery-inventory";
 import { cn } from "@/lib/utils";
+import { type FileStrategy } from "@/lib/strategy-utils";
 
 interface ProductGridProps {
   artworks: RecordArtGalleryInventory[];
+  strategy: FileStrategy;
   className?: string;
   loading?: boolean;
   emptyState?: React.ReactNode;
@@ -42,6 +44,7 @@ function ProductGridSkeleton({
 
 export function ProductGrid({
   artworks,
+  strategy,
   className,
   loading = false,
   emptyState,
@@ -93,7 +96,12 @@ export function ProductGrid({
       )}
     >
       {artworks.map((artwork) => (
-        <ProductCard key={artwork.id} artwork={artwork} className="w-full" />
+        <ProductCard
+          key={artwork.id}
+          artwork={artwork}
+          strategy={strategy}
+          className="w-full"
+        />
       ))}
     </div>
   );
@@ -102,6 +110,7 @@ export function ProductGrid({
 // Additional utility components for different grid layouts
 export function ProductGridCompact({
   artworks,
+  strategy,
   className,
   loading = false,
 }: Omit<ProductGridProps, "emptyState">) {
@@ -125,7 +134,12 @@ export function ProductGridCompact({
       )}
     >
       {artworks.map((artwork) => (
-        <ProductCard key={artwork.id} artwork={artwork} className="w-full" />
+        <ProductCard
+          key={artwork.id}
+          artwork={artwork}
+          strategy={strategy}
+          className="w-full"
+        />
       ))}
     </div>
   );
@@ -133,6 +147,7 @@ export function ProductGridCompact({
 
 export function ProductGridFeatured({
   artworks,
+  strategy,
   className,
   loading = false,
 }: Omit<ProductGridProps, "emptyState">) {
@@ -156,7 +171,12 @@ export function ProductGridFeatured({
       )}
     >
       {artworks.map((artwork) => (
-        <ProductCard key={artwork.id} artwork={artwork} className="w-full" />
+        <ProductCard
+          key={artwork.id}
+          artwork={artwork}
+          strategy={strategy}
+          className="w-full"
+        />
       ))}
     </div>
   );

@@ -1,25 +1,15 @@
 import Link from "next/link";
-import {
-  Calendar,
-  Store,
-  BookOpen,
-  Home,
-  LayoutDashboard,
-  Settings,
-  Link as LinkIcon,
-} from "lucide-react";
+import { Store, Home, LayoutDashboard, Globe } from "lucide-react";
 
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { ThemeSelector } from "./theme-selector";
-import { ModeToggle } from "./mode-toggle";
+// import { ThemeSelector } from "./theme-selector";
+// import { ModeToggle } from "./mode-toggle";
 
 // Menu items - reusing the same items from the sidebar
 const items = [
@@ -29,30 +19,35 @@ const items = [
     icon: Home,
   },
   {
-    title: "Dashboard",
-    url: "/dashboard",
+    title: "Direct",
+    url: "/direct",
     icon: LayoutDashboard,
   },
   {
-    title: "Store",
-    url: "/store",
+    title: "Local",
+    url: "/cache/local",
     icon: Store,
   },
   {
-    title: "Blog",
-    url: "/blog",
-    icon: BookOpen,
+    title: "Remote",
+    url: "/cache/remote",
+    icon: Globe,
   },
-  {
-    title: "Query url",
-    url: "/query-url",
-    icon: LinkIcon,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
+  // {
+  //   title: "Blog",
+  //   url: "/blog",
+  //   icon: BookOpen,
+  // },
+  // {
+  //   title: "Query url",
+  //   url: "/query-url",
+  //   icon: LinkIcon,
+  // },
+  // {
+  //   title: "Settings",
+  //   url: "#",
+  //   icon: Settings,
+  // },
 ];
 
 export function SiteNavbar() {
@@ -76,8 +71,8 @@ export function SiteNavbar() {
           </NavigationMenuList>
         </NavigationMenu>
         <div className="flex items-center gap-2">
-          <ThemeSelector />
-          <ModeToggle />
+          {/* <ThemeSelector /> */}
+          {/* <ModeToggle /> */}
         </div>
       </div>
     </div>

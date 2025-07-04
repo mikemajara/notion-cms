@@ -4,13 +4,19 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { RecordArtGalleryInventory } from "@/notion/notion-types-art-gallery-inventory";
+import { generateProductLink, type FileStrategy } from "@/lib/strategy-utils";
 
 interface ProductCardProps {
   artwork: RecordArtGalleryInventory;
+  strategy: FileStrategy;
   className?: string;
 }
 
-export function ProductCard({ artwork, className }: ProductCardProps) {
+export function ProductCard({
+  artwork,
+  strategy,
+  className,
+}: ProductCardProps) {
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -64,7 +70,7 @@ export function ProductCard({ artwork, className }: ProductCardProps) {
   };
 
   return (
-    <Link href={`/artwork/${artwork.id}`} className="group">
+    <Link href={generateProductLink(artwork.id, strategy)} className="group">
       <Card
         className={cn(
           "overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1",
