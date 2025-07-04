@@ -1044,16 +1044,11 @@ export class QueryBuilder<
           // This is a Notion files property (array of file objects)
           const processedValue = await Promise.all(
             value.map(async (item: any) => {
-              try {
-                const cachedUrl = await this.fileManager!.processFileUrl(
-                  item.url,
-                  item.name
-                );
-                return { ...item, url: cachedUrl };
-              } catch (error) {
-                console.warn(`Failed to cache file ${item.url}:`, error);
-                return item; // Fallback to original
-              }
+              const cachedUrl = await this.fileManager!.processFileUrl(
+                item.url,
+                item.name
+              );
+              return { ...item, url: cachedUrl };
             })
           );
           record[key] = processedValue;

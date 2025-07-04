@@ -680,19 +680,14 @@ export class NotionCMS {
       // Process files through the FileManager for caching
       const processedFiles = await Promise.all(
         files.map(async (file: any) => {
-          try {
-            const processedUrl = await this.fileManager.processFileUrl(
-              file.url,
-              file.name
-            );
-            return {
-              ...file,
-              url: processedUrl,
-            };
-          } catch (error) {
-            console.warn(`Failed to cache file ${file.name}:`, error);
-            return file; // Fallback to original
-          }
+          const processedUrl = await this.fileManager.processFileUrl(
+            file.url,
+            file.name
+          );
+          return {
+            ...file,
+            url: processedUrl,
+          };
         })
       );
       return processedFiles;
@@ -740,27 +735,22 @@ export class NotionCMS {
       // Process files through the FileManager for caching
       const processedFiles = await Promise.all(
         files.map(async (file: any) => {
-          try {
-            const originalUrl =
-              file.type === "external" ? file.external?.url : file.file?.url;
-            if (originalUrl) {
-              const processedUrl = await this.fileManager.processFileUrl(
-                originalUrl,
-                file.name
-              );
+          const originalUrl =
+            file.type === "external" ? file.external?.url : file.file?.url;
+          if (originalUrl) {
+            const processedUrl = await this.fileManager.processFileUrl(
+              originalUrl,
+              file.name
+            );
 
-              // Update the URL in the appropriate location
-              if (file.type === "external" && file.external) {
-                file.external.url = processedUrl;
-              } else if (file.type === "file" && file.file) {
-                file.file.url = processedUrl;
-              }
+            // Update the URL in the appropriate location
+            if (file.type === "external" && file.external) {
+              file.external.url = processedUrl;
+            } else if (file.type === "file" && file.file) {
+              file.file.url = processedUrl;
             }
-            return file;
-          } catch (error) {
-            console.warn(`Failed to cache file ${file.name}:`, error);
-            return file; // Fallback to original
           }
+          return file;
         })
       );
       return processedFiles;

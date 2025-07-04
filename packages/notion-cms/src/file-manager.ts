@@ -15,7 +15,6 @@ export interface FileInfo {
  */
 export interface FileStrategy {
   processFileUrl(url: string, fileName: string): Promise<string>;
-  processFileInfo(fileInfo: FileInfo): Promise<FileInfo>;
 }
 
 /**
@@ -24,10 +23,6 @@ export interface FileStrategy {
 export class DirectStrategy implements FileStrategy {
   async processFileUrl(url: string, fileName: string): Promise<string> {
     return url;
-  }
-
-  async processFileInfo(fileInfo: FileInfo): Promise<FileInfo> {
-    return fileInfo;
   }
 }
 
@@ -100,24 +95,14 @@ export class CacheStrategy implements FileStrategy {
 
       return storage.getPublicUrl(stableFileName);
     } catch (error) {
-      console.warn(`Failed to cache file ${fileName}:`, error);
+      console.warn(`Failed to cache file: ${fileName} from ${url}`, {
+        fileName,
+        url,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       // Fallback to original URL if caching fails
       return url;
-    }
-  }
-
-  async processFileInfo(fileInfo: FileInfo): Promise<FileInfo> {
-    try {
-      const cachedUrl = await this.processFileUrl(fileInfo.url, fileInfo.name);
-
-      return {
-        ...fileInfo,
-        url: cachedUrl,
-      };
-    } catch (error) {
-      console.warn(`Failed to process file info for ${fileInfo.name}:`, error);
-      // Return original file info if processing fails
-      return fileInfo;
     }
   }
 
@@ -220,17 +205,18 @@ export class FileManager {
   }
 
   /**
-   * Process file information object
-   */
-  async processFileInfo(fileInfo: FileInfo): Promise<FileInfo> {
-    return this.strategy.processFileInfo(fileInfo);
-  }
-
-  /**
    * Process an array of file information objects
    */
   async processFileInfoArray(files: FileInfo[]): Promise<FileInfo[]> {
-    return Promise.all(files.map((file) => this.processFileInfo(file)));
+    return Promise.all(
+      files.map(async (file) => {
+        const processedUrl = await this.processFileUrl(file.url, file.name);
+        return {
+          ...file,
+          url: processedUrl,
+        };
+      })
+    );
   }
 
   /**

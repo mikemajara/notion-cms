@@ -171,7 +171,7 @@ describe("File Management Feature", () => {
       expect(processedUrl).toBe(originalUrl);
     });
 
-    it("should process file info with direct strategy", async () => {
+    it("should process file info arrays with direct strategy", async () => {
       const manager = new FileManager(DEFAULT_CONFIG);
 
       const fileInfo = {
@@ -181,10 +181,10 @@ describe("File Management Feature", () => {
         expiry_time: "2024-12-31",
       };
 
-      const processed = await manager.processFileInfo(fileInfo);
+      const processed = await manager.processFileInfoArray([fileInfo]);
 
       // Direct strategy should return the original file info
-      expect(processed).toEqual(fileInfo);
+      expect(processed).toEqual([fileInfo]);
     });
 
     it("should process file arrays", async () => {
@@ -323,7 +323,7 @@ describe("File Management Feature", () => {
       expect(fileManager).toBeDefined();
       expect(fileManager.isCacheEnabled()).toBe(true);
       expect(typeof fileManager.processFileUrl).toBe("function");
-      expect(typeof fileManager.processFileInfo).toBe("function");
+      expect(typeof fileManager.processFileInfoArray).toBe("function");
     });
 
     it("should support multiple S3-compatible providers", () => {
@@ -433,7 +433,6 @@ describe("File Management Feature", () => {
       expect(manager).toBeDefined();
       expect(manager.isCacheEnabled()).toBe(true);
       expect(typeof manager.processFileUrl).toBe("function");
-      expect(typeof manager.processFileInfo).toBe("function");
       expect(typeof manager.processFileInfoArray).toBe("function");
       expect(typeof manager.extractFileUrl).toBe("function");
       expect(typeof manager.createFileInfo).toBe("function");
@@ -529,6 +528,255 @@ describe("File Management Feature", () => {
       expect(typeof s3CMS.getAllDatabaseRecords).toBe("function");
       expect(typeof directCMS.getPageContent).toBe("function");
       expect(typeof s3CMS.getPageContent).toBe("function");
+    });
+  });
+
+  describe("Centralized Error Handling", () => {
+    let consoleWarnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // Mock console.warn to capture error messages
+      consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      consoleWarnSpy.mockRestore();
+    });
+
+    it("should handle cache failure gracefully with single error message", async () => {
+      // Create a cache strategy that will fail
+      const config = {
+        files: {
+          strategy: "cache" as const,
+          storage: {
+            type: "local" as const,
+            path: "/nonexistent/path", // This will cause storage to fail
+            endpoint: "",
+            bucket: "",
+            accessKey: "",
+            secretKey: "",
+          },
+          cache: {
+            ttl: 3600000,
+            maxSize: 1024000,
+          },
+        },
+      };
+
+      const manager = new FileManager(config);
+      const originalUrl = "https://files.notion.so/test.jpg";
+      const fileName = "test.jpg";
+
+      // Process the file URL - should fail gracefully
+      const result = await manager.processFileUrl(originalUrl, fileName);
+
+      // Should return original URL as fallback
+      expect(result).toBe(originalUrl);
+
+      // Should have exactly one error message with proper context
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        `Failed to cache file: ${fileName} from ${originalUrl}`,
+        expect.objectContaining({
+          fileName,
+          url: originalUrl,
+          error: expect.any(String),
+        })
+      );
+    });
+
+    it("should handle multiple file failures independently", async () => {
+      const config = {
+        files: {
+          strategy: "cache" as const,
+          storage: {
+            type: "local" as const,
+            path: "/nonexistent/path",
+            endpoint: "",
+            bucket: "",
+            accessKey: "",
+            secretKey: "",
+          },
+          cache: {
+            ttl: 3600000,
+            maxSize: 1024000,
+          },
+        },
+      };
+
+      const manager = new FileManager(config);
+
+      const files = [
+        {
+          name: "test1.jpg",
+          url: "https://files.notion.so/test1.jpg",
+          type: "file" as const,
+        },
+        {
+          name: "test2.pdf",
+          url: "https://files.notion.so/test2.pdf",
+          type: "file" as const,
+        },
+      ];
+
+      // Process multiple files - all should fail gracefully
+      const results = await manager.processFileInfoArray(files);
+
+      // Should return original file info as fallback
+      expect(results).toEqual(files);
+
+      // Should have exactly two error messages (one per file)
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(2);
+
+      // Verify each error message has proper context
+      expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+        1,
+        "Failed to cache file: test1.jpg from https://files.notion.so/test1.jpg",
+        expect.objectContaining({
+          fileName: "test1.jpg",
+          url: "https://files.notion.so/test1.jpg",
+          error: expect.any(String),
+        })
+      );
+
+      expect(consoleWarnSpy).toHaveBeenNthCalledWith(
+        2,
+        "Failed to cache file: test2.pdf from https://files.notion.so/test2.pdf",
+        expect.objectContaining({
+          fileName: "test2.pdf",
+          url: "https://files.notion.so/test2.pdf",
+          error: expect.any(String),
+        })
+      );
+    });
+
+    it("should not duplicate error messages in consumer classes", async () => {
+      // This test simulates what happens when NotionCMS calls FileManager
+      const config = {
+        files: {
+          strategy: "cache" as const,
+          storage: {
+            type: "local" as const,
+            path: "/nonexistent/path",
+            endpoint: "",
+            bucket: "",
+            accessKey: "",
+            secretKey: "",
+          },
+          cache: {
+            ttl: 3600000,
+            maxSize: 1024000,
+          },
+        },
+      };
+
+      const cms = new NotionCMS("test-token", config);
+
+      // Mock the Notion API call to avoid actual network requests
+      const mockProperties = {
+        files: {
+          id: "test-id",
+          type: "files" as const,
+          files: [
+            {
+              name: "test.jpg",
+              type: "file" as const,
+              file: {
+                url: "https://files.notion.so/test.jpg",
+                expiry_time: "2024-12-31",
+              },
+            },
+          ],
+        },
+      };
+
+      // Create a minimal mock page object
+      const mockPage = {
+        id: "test-page-id",
+        object: "page" as const,
+        properties: mockProperties,
+        created_time: "2024-01-01T00:00:00.000Z",
+        last_edited_time: "2024-01-01T00:00:00.000Z",
+        created_by: { object: "user" as const, id: "test-user" },
+        last_edited_by: { object: "user" as const, id: "test-user" },
+        cover: null,
+        icon: null,
+        parent: { type: "database_id" as const, database_id: "test-db-id" },
+        archived: false,
+        in_trash: false,
+        url: "https://www.notion.so/test-page",
+        public_url: null,
+      };
+
+      // Test property processing - this internally calls FileManager.processFileUrl
+      const result = await (cms as any).getPropertyValueUnified(
+        mockProperties.files,
+        true
+      );
+
+      // Should return the processed files with original URLs (fallback)
+      // Note: getPropertyValueUnified returns simplified file objects
+      expect(result).toEqual([
+        {
+          name: "test.jpg",
+          url: "https://files.notion.so/test.jpg", // Should fallback to original
+        },
+      ]);
+
+      // Should have exactly one error message (not duplicated by consumer)
+      expect(consoleWarnSpy).toHaveBeenCalledTimes(1);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        "Failed to cache file: test.jpg from https://files.notion.so/test.jpg",
+        expect.objectContaining({
+          fileName: "test.jpg",
+          url: "https://files.notion.so/test.jpg",
+          error: expect.any(String),
+        })
+      );
+    });
+
+    it("should include error stack trace in development context", async () => {
+      const config = {
+        files: {
+          strategy: "cache" as const,
+          storage: {
+            type: "local" as const,
+            path: "/nonexistent/path",
+            endpoint: "",
+            bucket: "",
+            accessKey: "",
+            secretKey: "",
+          },
+          cache: {
+            ttl: 3600000,
+            maxSize: 1024000,
+          },
+        },
+      };
+
+      const manager = new FileManager(config);
+      const originalUrl = "https://files.notion.so/test.jpg";
+      const fileName = "test.jpg";
+
+      await manager.processFileUrl(originalUrl, fileName);
+
+      // Verify error context includes stack trace for debugging
+      const loggedContext = consoleWarnSpy.mock.calls[0][1];
+      expect(loggedContext).toHaveProperty("fileName", fileName);
+      expect(loggedContext).toHaveProperty("url", originalUrl);
+      expect(loggedContext).toHaveProperty("error");
+      expect(loggedContext).toHaveProperty("stack");
+    });
+
+    it("should handle direct strategy without any error logging", async () => {
+      // Direct strategy should never log errors since it doesn't do caching
+      const manager = new FileManager(DEFAULT_CONFIG); // Uses direct strategy
+
+      const originalUrl = "https://files.notion.so/test.jpg";
+      const result = await manager.processFileUrl(originalUrl, "test.jpg");
+
+      expect(result).toBe(originalUrl);
+      expect(consoleWarnSpy).not.toHaveBeenCalled();
     });
   });
 });
