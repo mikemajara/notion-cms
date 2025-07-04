@@ -475,37 +475,37 @@ NotionCMS.prototype.${methodName} = function(databaseId: string): QueryBuilder<$
 
 /**
  * Process a Notion page into a record with layered access (simple, advanced, raw)
+ * @deprecated Use DatabaseService.getRecord() or DatabaseService.getDatabase() instead.
  * @param page The Notion page object from the API
- * @param fileManager Optional FileManager for file processing
+ * @param fileManager Optional FileManager for file processing (deprecated, ignored)
  * @returns A processed record with simple, advanced, and raw access
  */
 export function processNotionRecord(
   page: PageObjectResponse,
   fileManager?: any
 ): DatabaseRecord {
-  // Simple values (base level access)
+  console.warn(
+    "processNotionRecord is deprecated. Use DatabaseService.getRecord() or DatabaseService.getDatabase() for full functionality including file processing."
+  );
+
+  // Basic implementation without file processing
   const simple: Record<string, any> = {
     id: page.id,
   };
 
-  // More detailed but still processed values
   const advanced: Record<string, any> = {
     id: page.id,
   };
 
-  // Process each property
+  // Basic property processing without the deleted functions
   for (const [key, value] of Object.entries(page.properties)) {
-    // Simple version (direct access)
-    simple[key] = getPropertyValue(
-      value as PropertyItemObjectResponse,
-      fileManager
-    );
+    const property = value as PropertyItemObjectResponse;
 
-    // Advanced version (detailed access)
-    advanced[key] = getAdvancedPropertyValue(
-      value as PropertyItemObjectResponse,
-      fileManager
-    );
+    // Simple version - just extract basic values
+    simple[key] = extractBasicPropertyValue(property);
+
+    // Advanced version - same as simple for now in this deprecated function
+    advanced[key] = extractBasicPropertyValue(property);
   }
 
   // Construct unified record with all three access levels
@@ -523,6 +523,85 @@ export function processNotionRecord(
   };
 
   return result;
+}
+
+/**
+ * Basic property value extraction without file processing
+ * @private
+ */
+function extractBasicPropertyValue(property: PropertyItemObjectResponse): any {
+  switch (property.type) {
+    case "title":
+      const titleProp = property as any;
+      return titleProp.title?.[0]?.plain_text ?? "";
+    case "rich_text":
+      const richTextProp = property as any;
+      return richTextProp.rich_text?.[0]?.plain_text ?? "";
+    case "number":
+      return (property as any).number;
+    case "select":
+      return (property as any).select?.name ?? null;
+    case "multi_select":
+      return (
+        (property as any).multi_select?.map((select: any) => select.name) ?? []
+      );
+    case "date":
+      const dateProp = property as any;
+      return dateProp.date ? new Date(dateProp.date.start) : null;
+    case "people":
+      const peopleProp = property as any;
+      return peopleProp.people?.map((person: any) => person.name || "") ?? [];
+    case "files":
+      const filesProp = property as any;
+      return (
+        filesProp.files?.map((file: any) => ({
+          name: file.name,
+          url: file.type === "external" ? file.external?.url : file.file?.url,
+        })) ?? []
+      );
+    case "checkbox":
+      return (property as any).checkbox;
+    case "url":
+      return (property as any).url;
+    case "email":
+      return (property as any).email;
+    case "phone_number":
+      return (property as any).phone_number;
+    case "formula":
+      return (property as any).formula;
+    case "relation":
+      const relationProp = property as any;
+      return relationProp.relation?.map((rel: any) => rel.id) ?? [];
+    case "rollup":
+      return (property as any).rollup;
+    case "created_time":
+      return (property as any).created_time;
+    case "created_by":
+      const createdBy = (property as any).created_by;
+      return createdBy
+        ? {
+            id: createdBy.id,
+            name: createdBy.name,
+            avatar_url: createdBy.avatar_url,
+          }
+        : null;
+    case "last_edited_time":
+      return (property as any).last_edited_time;
+    case "last_edited_by":
+      const lastEditedBy = (property as any).last_edited_by;
+      return lastEditedBy
+        ? {
+            id: lastEditedBy.id,
+            name: lastEditedBy.name,
+            avatar_url: lastEditedBy.avatar_url,
+          }
+        : null;
+    case "unique_id":
+      const uniqueId = (property as any).unique_id;
+      return uniqueId?.number ?? null;
+    default:
+      return null;
+  }
 }
 
 /**
@@ -569,386 +648,6 @@ export function advancedNotionRecords(
   pages: PageObjectResponse[]
 ): AdvancedDatabaseRecord[] {
   return processNotionRecords(pages) as AdvancedDatabaseRecord[];
-}
-
-// Export the helper function directly
-/**
- * Synchronous property value extraction. Will NOT process or cache files, even if fileManager is passed.
- * For file caching, use the async NotionCMS API (getDatabase, getRecord, etc.).
- */
-export function getPropertyValue(
-  property: PropertyItemObjectResponse,
-  fileManager?: any
-): any {
-  // Warn if fileManager is passed and is using cache strategy
-  if (
-    fileManager &&
-    fileManager.isCacheEnabled &&
-    fileManager.isCacheEnabled()
-  ) {
-    throw new Error(
-      "getPropertyValue is synchronous and does NOT support file caching. Use NotionCMS async API for file caching."
-    );
-  }
-  switch (property.type) {
-    case "unique_id": {
-      const idProp = property as UniqueIdPropertyItemObjectResponse;
-      return idProp.unique_id.number;
-    }
-    case "title": {
-      const titleProp = property as TitlePropertyItemObjectResponse;
-      const richText = titleProp.title as unknown as Array<{
-        plain_text: string;
-      }>;
-      return richText?.[0]?.plain_text ?? "";
-    }
-    case "rich_text": {
-      const richTextProp = property as RichTextPropertyItemObjectResponse;
-      const richText = richTextProp.rich_text as unknown as Array<{
-        plain_text: string;
-      }>;
-      return richText?.[0]?.plain_text ?? "";
-    }
-    case "number":
-      return (property as NumberPropertyItemObjectResponse).number;
-    case "select":
-      return (
-        (property as SelectPropertyItemObjectResponse).select?.name ?? null
-      );
-    case "multi_select":
-      return (
-        property as MultiSelectPropertyItemObjectResponse
-      ).multi_select.map((select) => select.name);
-    case "date":
-      const dateProp = property as DatePropertyItemObjectResponse;
-      return dateProp.date ? new Date(dateProp.date.start) : null;
-    case "people": {
-      const peopleProp = property as PeoplePropertyItemObjectResponse;
-      return Array.isArray(peopleProp.people)
-        ? peopleProp.people.map(
-            (person: UserObjectResponse) => person.name || ""
-          )
-        : [];
-    }
-    case "files": {
-      const filesProp = property as FilesPropertyItemObjectResponse;
-      const files = filesProp.files.map((file) => {
-        if (file.type === "external") {
-          return { name: file.name, url: file.external.url };
-        } else if (file.type === "file") {
-          return { name: file.name, url: file.file.url };
-        } else {
-          return { name: file.name, url: "" };
-        }
-      });
-      return files;
-    }
-    case "checkbox":
-      return (property as CheckboxPropertyItemObjectResponse).checkbox;
-    case "url":
-      return (property as UrlPropertyItemObjectResponse).url;
-    case "email":
-      return (property as EmailPropertyItemObjectResponse).email;
-    case "phone_number":
-      return (property as PhoneNumberPropertyItemObjectResponse).phone_number;
-    case "formula":
-      return (property as FormulaPropertyItemObjectResponse).formula;
-    case "relation": {
-      const relationProp = property as RelationPropertyItemObjectResponse;
-      return Array.isArray(relationProp.relation)
-        ? relationProp.relation.map((rel: { id: string }) => rel.id)
-        : [];
-    }
-    case "rollup":
-      return (property as RollupPropertyItemObjectResponse).rollup;
-    case "created_time":
-      return (property as CreatedTimePropertyItemObjectResponse).created_time;
-    case "created_by": {
-      const createdBy = (property as CreatedByPropertyItemObjectResponse)
-        .created_by as UserObjectResponse;
-      return {
-        id: createdBy.id,
-        name: createdBy.name,
-        avatar_url: createdBy.avatar_url,
-      };
-    }
-    case "last_edited_time":
-      return (property as LastEditedTimePropertyItemObjectResponse)
-        .last_edited_time;
-    case "last_edited_by": {
-      const lastEditedBy = (property as LastEditedByPropertyItemObjectResponse)
-        .last_edited_by as UserObjectResponse;
-      return {
-        id: lastEditedBy.id,
-        name: lastEditedBy.name,
-        avatar_url: lastEditedBy.avatar_url,
-      };
-    }
-    default:
-      return null;
-  }
-}
-
-/**
- * Synchronous advanced property value extraction. Will NOT process or cache files, even if fileManager is passed.
- * For file caching, use the async NotionCMS API (getDatabase, getRecord, etc.).
- */
-export function getAdvancedPropertyValue(
-  property: PropertyItemObjectResponse,
-  fileManager?: any
-): any {
-  // Warn if fileManager is passed and is using cache strategy
-  if (
-    fileManager &&
-    fileManager.isCacheEnabled &&
-    fileManager.isCacheEnabled()
-  ) {
-    throw new Error(
-      "getAdvancedPropertyValue is synchronous and does NOT support file caching. Use NotionCMS async API for file caching."
-    );
-  }
-  switch (property.type) {
-    case "title": {
-      const titleProp = property as TitlePropertyItemObjectResponse;
-      // Ensure we're working with an array of rich text items
-      if (!Array.isArray(titleProp.title)) {
-        return [];
-      }
-      // Return full rich text array with all formatting information
-      return titleProp.title.map((item) => ({
-        content: item.plain_text,
-        annotations: item.annotations,
-        href: item.href,
-        ...(item.type === "text" && {
-          link: item.text.link,
-        }),
-      }));
-    }
-    case "rich_text": {
-      const richTextProp = property as RichTextPropertyItemObjectResponse;
-      // Ensure we're working with an array of rich text items
-      if (!Array.isArray(richTextProp.rich_text)) {
-        return [];
-      }
-      // Return full rich text array with all formatting information
-      return richTextProp.rich_text.map((item) => ({
-        content: item.plain_text,
-        annotations: item.annotations,
-        href: item.href,
-        ...(item.type === "text" && {
-          link: item.text.link,
-        }),
-      }));
-    }
-    case "number":
-      return (property as NumberPropertyItemObjectResponse).number;
-    case "select": {
-      const selectProp = (property as SelectPropertyItemObjectResponse).select;
-      // Return full select object with id, name, and color
-      return selectProp
-        ? {
-            id: selectProp.id,
-            name: selectProp.name,
-            color: selectProp.color,
-          }
-        : null;
-    }
-    case "multi_select": {
-      const multiSelectProp = (
-        property as MultiSelectPropertyItemObjectResponse
-      ).multi_select;
-      // Return array of full select objects with id, name, and color
-      return multiSelectProp.map((select) => ({
-        id: select.id,
-        name: select.name,
-        color: select.color,
-      }));
-    }
-    case "date": {
-      const dateProp = property as DatePropertyItemObjectResponse;
-      if (!dateProp.date) return null;
-
-      // Return complete date information including end date if available
-      return {
-        start: dateProp.date.start,
-        end: dateProp.date.end,
-        time_zone: dateProp.date.time_zone,
-        // Also include a parsed Date object for convenience
-        parsedStart: dateProp.date.start ? new Date(dateProp.date.start) : null,
-        parsedEnd: dateProp.date.end ? new Date(dateProp.date.end) : null,
-      };
-    }
-    case "people": {
-      const peopleProp = property as PeoplePropertyItemObjectResponse;
-      // Return more complete user information
-      return Array.isArray(peopleProp.people)
-        ? peopleProp.people.map((person: UserObjectResponse) => ({
-            id: person.id,
-            name: person.name,
-            avatar_url: person.avatar_url,
-            object: person.object,
-            type: person.type,
-            ...(person.type === "person" &&
-              person.person && {
-                email: person.person.email,
-              }),
-          }))
-        : [];
-    }
-    case "files": {
-      const filesProp = property as FilesPropertyItemObjectResponse;
-      // Return more complete file information
-      const files = filesProp.files.map((file) => {
-        if (file.type === "external") {
-          return {
-            name: file.name,
-            type: file.type,
-            external: {
-              url: file.external.url,
-            },
-          };
-        } else if (file.type === "file") {
-          return {
-            name: file.name,
-            type: file.type,
-            file: {
-              url: file.file.url,
-              expiry_time: file.file.expiry_time,
-            },
-          };
-        } else {
-          return { name: file.name, type: file.type };
-        }
-      });
-      return files;
-    }
-    case "checkbox":
-      return (property as CheckboxPropertyItemObjectResponse).checkbox;
-    case "url":
-      return (property as UrlPropertyItemObjectResponse).url;
-    case "email":
-      return (property as EmailPropertyItemObjectResponse).email;
-    case "phone_number":
-      return (property as PhoneNumberPropertyItemObjectResponse).phone_number;
-    case "formula": {
-      const formulaProp = (property as FormulaPropertyItemObjectResponse)
-        .formula;
-      // Return the complete formula result with type information
-      return {
-        type: formulaProp.type,
-        // Safely access value based on type
-        value:
-          formulaProp.type === "string"
-            ? formulaProp.string
-            : formulaProp.type === "number"
-            ? formulaProp.number
-            : formulaProp.type === "boolean"
-            ? formulaProp.boolean
-            : formulaProp.type === "date"
-            ? formulaProp.date
-            : null,
-      };
-    }
-    case "relation": {
-      const relationProp = property as RelationPropertyItemObjectResponse;
-      // Return complete relation information
-      return Array.isArray(relationProp.relation)
-        ? relationProp.relation.map((rel) => ({
-            id: rel.id,
-          }))
-        : [];
-    }
-    case "rollup": {
-      const rollupProp = (property as RollupPropertyItemObjectResponse).rollup;
-      // Return the complete rollup with type information
-      return {
-        type: rollupProp.type,
-        function: rollupProp.function,
-        ...(rollupProp.type === "array" && {
-          array: rollupProp.array,
-        }),
-        ...(rollupProp.type === "number" && {
-          number: rollupProp.number,
-        }),
-        ...(rollupProp.type === "date" && {
-          date: rollupProp.date,
-        }),
-      };
-    }
-    case "created_time":
-      return {
-        timestamp: (property as CreatedTimePropertyItemObjectResponse)
-          .created_time,
-        date: new Date(
-          (property as CreatedTimePropertyItemObjectResponse).created_time
-        ),
-      };
-    case "created_by": {
-      const createdBy = (property as CreatedByPropertyItemObjectResponse)
-        .created_by as UserObjectResponse;
-      // Return more complete user information
-      return {
-        id: createdBy.id,
-        name: createdBy.name,
-        avatar_url: createdBy.avatar_url,
-        object: createdBy.object,
-        type: createdBy.type,
-        ...(createdBy.type === "person" &&
-          createdBy.person && {
-            email: createdBy.person.email,
-          }),
-      };
-    }
-    case "last_edited_time":
-      return {
-        timestamp: (property as LastEditedTimePropertyItemObjectResponse)
-          .last_edited_time,
-        date: new Date(
-          (
-            property as LastEditedTimePropertyItemObjectResponse
-          ).last_edited_time
-        ),
-      };
-    case "last_edited_by": {
-      const lastEditedBy = (property as LastEditedByPropertyItemObjectResponse)
-        .last_edited_by as UserObjectResponse;
-      // Return more complete user information
-      return {
-        id: lastEditedBy.id,
-        name: lastEditedBy.name,
-        avatar_url: lastEditedBy.avatar_url,
-        object: lastEditedBy.object,
-        type: lastEditedBy.type,
-        ...(lastEditedBy.type === "person" &&
-          lastEditedBy.person && {
-            email: lastEditedBy.person.email,
-          }),
-      };
-    }
-    case "status": {
-      const statusProp = (property as any).status;
-      // Return full status object with id, name, and color
-      return statusProp
-        ? {
-            id: statusProp.id,
-            name: statusProp.name,
-            color: statusProp.color,
-          }
-        : null;
-    }
-    case "unique_id": {
-      const uniqueIdProp = (property as any).unique_id;
-      // Return the unique ID object with prefix and number
-      return uniqueIdProp
-        ? {
-            prefix: uniqueIdProp.prefix,
-            number: uniqueIdProp.number,
-          }
-        : null;
-    }
-    default:
-      return null;
-  }
 }
 
 /**

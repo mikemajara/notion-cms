@@ -3,6 +3,27 @@ import {
   PageObjectResponse,
   PropertyItemObjectResponse,
   QueryDatabaseParameters,
+  SelectPropertyItemObjectResponse,
+  MultiSelectPropertyItemObjectResponse,
+  DatePropertyItemObjectResponse,
+  PeoplePropertyItemObjectResponse,
+  FilesPropertyItemObjectResponse,
+  CheckboxPropertyItemObjectResponse,
+  NumberPropertyItemObjectResponse,
+  FormulaPropertyItemObjectResponse,
+  RelationPropertyItemObjectResponse,
+  RollupPropertyItemObjectResponse,
+  CreatedTimePropertyItemObjectResponse,
+  CreatedByPropertyItemObjectResponse,
+  LastEditedTimePropertyItemObjectResponse,
+  LastEditedByPropertyItemObjectResponse,
+  TitlePropertyItemObjectResponse,
+  RichTextPropertyItemObjectResponse,
+  UrlPropertyItemObjectResponse,
+  EmailPropertyItemObjectResponse,
+  PhoneNumberPropertyItemObjectResponse,
+  UserObjectResponse,
+  UniqueIdPropertyItemObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
 import {
   DatabaseRecord,
@@ -292,13 +313,13 @@ export class DatabaseService {
     // Process each property with async file processing
     for (const [key, value] of Object.entries(page.properties)) {
       // Simple version (direct access)
-      simple[key] = await this.getPropertyValueUnified(
+      simple[key] = await this.getPropertyValue(
         value as PropertyItemObjectResponse,
         true
       );
 
       // Advanced version (detailed access)
-      advanced[key] = await this.getAdvancedPropertyValueUnified(
+      advanced[key] = await this.getPropertyValueAdvanced(
         value as PropertyItemObjectResponse,
         true
       );
@@ -322,109 +343,415 @@ export class DatabaseService {
   }
 
   /**
-   * Unified property value extraction with optional file processing
+   * Async property value extraction for simple layer API
    * @param property Property item from Notion API
-   * @param processFiles Whether to process files through FileManager
-   * @returns Processed property value
+   * @param processFiles Whether to process files through FileManager (default: true)
+   * @returns Processed property value for simple layer
    */
-  private async getPropertyValueUnified(
+  async getPropertyValue(
     property: PropertyItemObjectResponse,
-    processFiles: boolean = false
+    processFiles: boolean = true
   ): Promise<any> {
-    // For files property, handle async processing if needed
-    if (
-      property.type === "files" &&
-      processFiles &&
-      this.fileManager?.isCacheEnabled()
-    ) {
-      const filesProp = property as any;
-      const files = filesProp.files.map((file: any) => ({
-        name: file.name,
-        url: file.type === "external" ? file.external.url : file.file.url,
-      }));
+    switch (property.type) {
+      case "unique_id": {
+        const idProp = property as UniqueIdPropertyItemObjectResponse;
+        return idProp.unique_id.number;
+      }
+      case "title": {
+        const titleProp = property as TitlePropertyItemObjectResponse;
+        const richText = titleProp.title as unknown as Array<{
+          plain_text: string;
+        }>;
+        return richText?.[0]?.plain_text ?? "";
+      }
+      case "rich_text": {
+        const richTextProp = property as RichTextPropertyItemObjectResponse;
+        const richText = richTextProp.rich_text as unknown as Array<{
+          plain_text: string;
+        }>;
+        return richText?.[0]?.plain_text ?? "";
+      }
+      case "number":
+        return (property as NumberPropertyItemObjectResponse).number;
+      case "select":
+        return (
+          (property as SelectPropertyItemObjectResponse).select?.name ?? null
+        );
+      case "multi_select":
+        return (
+          property as MultiSelectPropertyItemObjectResponse
+        ).multi_select.map((select) => select.name);
+      case "date":
+        const dateProp = property as DatePropertyItemObjectResponse;
+        return dateProp.date ? new Date(dateProp.date.start) : null;
+      case "people": {
+        const peopleProp = property as PeoplePropertyItemObjectResponse;
+        return Array.isArray(peopleProp.people)
+          ? peopleProp.people.map(
+              (person: UserObjectResponse) => person.name || ""
+            )
+          : [];
+      }
+      case "files": {
+        const filesProp = property as FilesPropertyItemObjectResponse;
+        const files = filesProp.files.map((file) => {
+          if (file.type === "external") {
+            return { name: file.name, url: file.external.url };
+          } else if (file.type === "file") {
+            return { name: file.name, url: file.file.url };
+          } else {
+            return { name: file.name, url: "" };
+          }
+        });
 
-      // Process files through the FileManager for caching
-      const processedFiles = await Promise.all(
-        files.map(async (file: any) => {
-          const processedUrl = await this.fileManager.processFileUrl(
-            file.url,
-            file.name
+        // Process files through the FileManager for caching if enabled
+        if (processFiles && this.fileManager?.isCacheEnabled()) {
+          const processedFiles = await Promise.all(
+            files.map(async (file) => {
+              const processedUrl = await this.fileManager.processFileUrl(
+                file.url,
+                file.name
+              );
+              return {
+                ...file,
+                url: processedUrl,
+              };
+            })
           );
-          return {
-            ...file,
-            url: processedUrl,
-          };
-        })
-      );
-      return processedFiles;
-    }
+          return processedFiles;
+        }
 
-    // For all other properties, use the existing sync function
-    // Import the function from generator.ts to avoid duplication
-    const { getPropertyValue } = await import("./generator");
-    return getPropertyValue(property, this.fileManager);
+        return files;
+      }
+      case "checkbox":
+        return (property as CheckboxPropertyItemObjectResponse).checkbox;
+      case "url":
+        return (property as UrlPropertyItemObjectResponse).url;
+      case "email":
+        return (property as EmailPropertyItemObjectResponse).email;
+      case "phone_number":
+        return (property as PhoneNumberPropertyItemObjectResponse).phone_number;
+      case "formula":
+        return (property as FormulaPropertyItemObjectResponse).formula;
+      case "relation": {
+        const relationProp = property as RelationPropertyItemObjectResponse;
+        return Array.isArray(relationProp.relation)
+          ? relationProp.relation.map((rel: { id: string }) => rel.id)
+          : [];
+      }
+      case "rollup":
+        return (property as RollupPropertyItemObjectResponse).rollup;
+      case "created_time":
+        return (property as CreatedTimePropertyItemObjectResponse).created_time;
+      case "created_by": {
+        const createdBy = (property as CreatedByPropertyItemObjectResponse)
+          .created_by as UserObjectResponse;
+        return {
+          id: createdBy.id,
+          name: createdBy.name,
+          avatar_url: createdBy.avatar_url,
+        };
+      }
+      case "last_edited_time":
+        return (property as LastEditedTimePropertyItemObjectResponse)
+          .last_edited_time;
+      case "last_edited_by": {
+        const lastEditedBy = (
+          property as LastEditedByPropertyItemObjectResponse
+        ).last_edited_by as UserObjectResponse;
+        return {
+          id: lastEditedBy.id,
+          name: lastEditedBy.name,
+          avatar_url: lastEditedBy.avatar_url,
+        };
+      }
+      default:
+        return null;
+    }
   }
 
   /**
-   * Unified advanced property value extraction with optional file processing
+   * Async advanced property value extraction for advanced layer API
    * @param property Property item from Notion API
-   * @param processFiles Whether to process files through FileManager
-   * @returns Processed advanced property value
+   * @param processFiles Whether to process files through FileManager (default: true)
+   * @returns Processed advanced property value with complete metadata
    */
-  private async getAdvancedPropertyValueUnified(
+  async getPropertyValueAdvanced(
     property: PropertyItemObjectResponse,
-    processFiles: boolean = false
+    processFiles: boolean = true
   ): Promise<any> {
-    // For files property, handle async processing if needed
-    if (
-      property.type === "files" &&
-      processFiles &&
-      this.fileManager?.isCacheEnabled()
-    ) {
-      const filesProp = property as any;
-      const files = filesProp.files.map((file: any) => ({
-        name: file.name,
-        type: file.type,
-        ...(file.type === "external" && {
-          external: {
-            url: file.external.url,
-          },
-        }),
-        ...(file.type === "file" && {
-          file: {
-            url: file.file.url,
-            expiry_time: file.file.expiry_time,
-          },
-        }),
-      }));
-
-      // Process files through the FileManager for caching
-      const processedFiles = await Promise.all(
-        files.map(async (file: any) => {
-          const originalUrl =
-            file.type === "external" ? file.external?.url : file.file?.url;
-          if (originalUrl) {
-            const processedUrl = await this.fileManager.processFileUrl(
-              originalUrl,
-              file.name
-            );
-
-            // Update the URL in the appropriate location
-            if (file.type === "external" && file.external) {
-              file.external.url = processedUrl;
-            } else if (file.type === "file" && file.file) {
-              file.file.url = processedUrl;
+    switch (property.type) {
+      case "title": {
+        const titleProp = property as TitlePropertyItemObjectResponse;
+        // Ensure we're working with an array of rich text items
+        if (!Array.isArray(titleProp.title)) {
+          return [];
+        }
+        // Return full rich text array with all formatting information
+        return titleProp.title.map((item) => ({
+          content: item.plain_text,
+          annotations: item.annotations,
+          href: item.href,
+          ...(item.type === "text" && {
+            link: item.text.link,
+          }),
+        }));
+      }
+      case "rich_text": {
+        const richTextProp = property as RichTextPropertyItemObjectResponse;
+        // Ensure we're working with an array of rich text items
+        if (!Array.isArray(richTextProp.rich_text)) {
+          return [];
+        }
+        // Return full rich text array with all formatting information
+        return richTextProp.rich_text.map((item) => ({
+          content: item.plain_text,
+          annotations: item.annotations,
+          href: item.href,
+          ...(item.type === "text" && {
+            link: item.text.link,
+          }),
+        }));
+      }
+      case "number":
+        return (property as NumberPropertyItemObjectResponse).number;
+      case "select": {
+        const selectProp = (property as SelectPropertyItemObjectResponse)
+          .select;
+        // Return full select object with id, name, and color
+        return selectProp
+          ? {
+              id: selectProp.id,
+              name: selectProp.name,
+              color: selectProp.color,
             }
-          }
-          return file;
-        })
-      );
-      return processedFiles;
-    }
+          : null;
+      }
+      case "multi_select": {
+        const multiSelectProp = (
+          property as MultiSelectPropertyItemObjectResponse
+        ).multi_select;
+        // Return array of full select objects with id, name, and color
+        return multiSelectProp.map((select) => ({
+          id: select.id,
+          name: select.name,
+          color: select.color,
+        }));
+      }
+      case "date": {
+        const dateProp = property as DatePropertyItemObjectResponse;
+        if (!dateProp.date) return null;
 
-    // For all other properties, use the existing sync function
-    // Import the function from generator.ts to avoid duplication
-    const { getAdvancedPropertyValue } = await import("./generator");
-    return getAdvancedPropertyValue(property, this.fileManager);
+        // Return complete date information including end date if available
+        return {
+          start: dateProp.date.start,
+          end: dateProp.date.end,
+          time_zone: dateProp.date.time_zone,
+          // Also include a parsed Date object for convenience
+          parsedStart: dateProp.date.start
+            ? new Date(dateProp.date.start)
+            : null,
+          parsedEnd: dateProp.date.end ? new Date(dateProp.date.end) : null,
+        };
+      }
+      case "people": {
+        const peopleProp = property as PeoplePropertyItemObjectResponse;
+        // Return more complete user information
+        return Array.isArray(peopleProp.people)
+          ? peopleProp.people.map((person: UserObjectResponse) => ({
+              id: person.id,
+              name: person.name,
+              avatar_url: person.avatar_url,
+              object: person.object,
+              type: person.type,
+              ...(person.type === "person" &&
+                person.person && {
+                  email: person.person.email,
+                }),
+            }))
+          : [];
+      }
+      case "files": {
+        const filesProp = property as FilesPropertyItemObjectResponse;
+        // Return more complete file information
+        const files = filesProp.files.map((file) => {
+          if (file.type === "external") {
+            return {
+              name: file.name,
+              type: file.type,
+              external: {
+                url: file.external.url,
+              },
+            };
+          } else if (file.type === "file") {
+            return {
+              name: file.name,
+              type: file.type,
+              file: {
+                url: file.file.url,
+                expiry_time: file.file.expiry_time,
+              },
+            };
+          } else {
+            return { name: file.name, type: file.type };
+          }
+        });
+
+        // Process files through the FileManager for caching if enabled
+        if (processFiles && this.fileManager?.isCacheEnabled()) {
+          const processedFiles = await Promise.all(
+            files.map(async (file) => {
+              const originalUrl =
+                file.type === "external" ? file.external?.url : file.file?.url;
+              if (originalUrl) {
+                const processedUrl = await this.fileManager.processFileUrl(
+                  originalUrl,
+                  file.name
+                );
+
+                // Update the URL in the appropriate location
+                if (file.type === "external" && file.external) {
+                  file.external.url = processedUrl;
+                } else if (file.type === "file" && file.file) {
+                  file.file.url = processedUrl;
+                }
+              }
+              return file;
+            })
+          );
+          return processedFiles;
+        }
+
+        return files;
+      }
+      case "checkbox":
+        return (property as CheckboxPropertyItemObjectResponse).checkbox;
+      case "url":
+        return (property as UrlPropertyItemObjectResponse).url;
+      case "email":
+        return (property as EmailPropertyItemObjectResponse).email;
+      case "phone_number":
+        return (property as PhoneNumberPropertyItemObjectResponse).phone_number;
+      case "formula": {
+        const formulaProp = (property as FormulaPropertyItemObjectResponse)
+          .formula;
+        // Return the complete formula result with type information
+        return {
+          type: formulaProp.type,
+          // Safely access value based on type
+          value:
+            formulaProp.type === "string"
+              ? formulaProp.string
+              : formulaProp.type === "number"
+              ? formulaProp.number
+              : formulaProp.type === "boolean"
+              ? formulaProp.boolean
+              : formulaProp.type === "date"
+              ? formulaProp.date
+              : null,
+        };
+      }
+      case "relation": {
+        const relationProp = property as RelationPropertyItemObjectResponse;
+        // Return complete relation information
+        return Array.isArray(relationProp.relation)
+          ? relationProp.relation.map((rel) => ({
+              id: rel.id,
+            }))
+          : [];
+      }
+      case "rollup": {
+        const rollupProp = (property as RollupPropertyItemObjectResponse)
+          .rollup;
+        // Return the complete rollup with type information
+        return {
+          type: rollupProp.type,
+          function: rollupProp.function,
+          ...(rollupProp.type === "array" && {
+            array: rollupProp.array,
+          }),
+          ...(rollupProp.type === "number" && {
+            number: rollupProp.number,
+          }),
+          ...(rollupProp.type === "date" && {
+            date: rollupProp.date,
+          }),
+        };
+      }
+      case "created_time":
+        return {
+          timestamp: (property as CreatedTimePropertyItemObjectResponse)
+            .created_time,
+          date: new Date(
+            (property as CreatedTimePropertyItemObjectResponse).created_time
+          ),
+        };
+      case "created_by": {
+        const createdBy = (property as CreatedByPropertyItemObjectResponse)
+          .created_by as UserObjectResponse;
+        // Return more complete user information
+        return {
+          id: createdBy.id,
+          name: createdBy.name,
+          avatar_url: createdBy.avatar_url,
+          object: createdBy.object,
+          type: createdBy.type,
+          ...(createdBy.type === "person" &&
+            createdBy.person && {
+              email: createdBy.person.email,
+            }),
+        };
+      }
+      case "last_edited_time":
+        return {
+          timestamp: (property as LastEditedTimePropertyItemObjectResponse)
+            .last_edited_time,
+          date: new Date(
+            (
+              property as LastEditedTimePropertyItemObjectResponse
+            ).last_edited_time
+          ),
+        };
+      case "last_edited_by": {
+        const lastEditedBy = (
+          property as LastEditedByPropertyItemObjectResponse
+        ).last_edited_by as UserObjectResponse;
+        // Return more complete user information
+        return {
+          id: lastEditedBy.id,
+          name: lastEditedBy.name,
+          avatar_url: lastEditedBy.avatar_url,
+          object: lastEditedBy.object,
+          type: lastEditedBy.type,
+          ...(lastEditedBy.type === "person" &&
+            lastEditedBy.person && {
+              email: lastEditedBy.person.email,
+            }),
+        };
+      }
+      case "status": {
+        const statusProp = (property as any).status;
+        // Return full status object with id, name, and color
+        return statusProp
+          ? {
+              id: statusProp.id,
+              name: statusProp.name,
+              color: statusProp.color,
+            }
+          : null;
+      }
+      case "unique_id": {
+        const uniqueIdProp = (property as any).unique_id;
+        // Return the unique ID object with prefix and number
+        return uniqueIdProp
+          ? {
+              prefix: uniqueIdProp.prefix,
+              number: uniqueIdProp.number,
+            }
+          : null;
+      }
+      default:
+        return null;
+    }
   }
 }

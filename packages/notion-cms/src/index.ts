@@ -30,14 +30,7 @@ import {
   TypeSafeFilterCondition,
 } from "./query-builder";
 import { debug } from "./utils/debug";
-import {
-  NotionProperty,
-  getPropertyValue,
-  simplifyNotionRecord,
-  simplifyNotionRecords,
-  createSimplifyFunction,
-  createSimplifyRecordsFunction,
-} from "./utils/property-helpers";
+import { NotionProperty } from "./utils/property-helpers";
 import { NotionCMSConfig, mergeConfig } from "./config";
 import { FileManager } from "./file-manager";
 import {
@@ -53,14 +46,8 @@ import { BlockProcessor } from "./processor";
 import { PageContentService } from "./page-content-service";
 import { DatabaseService, QueryOptions } from "./database-service";
 
-// Re-export utility functions and types for use in projects
-export {
-  getPropertyValue,
-  simplifyNotionRecord,
-  simplifyNotionRecords,
-  createSimplifyFunction,
-  createSimplifyRecordsFunction,
-};
+// Note: Property utility functions have been consolidated into DatabaseService
+// Use DatabaseService.getRecord() or DatabaseService.getDatabase() for full functionality
 export type {
   DatabaseRecord,
   SimpleBlock,
