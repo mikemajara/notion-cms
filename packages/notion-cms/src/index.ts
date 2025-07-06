@@ -1,16 +1,8 @@
 import { Client } from "@notionhq/client";
 import {
-  PageObjectResponse,
-  PropertyItemObjectResponse,
-  QueryDatabaseParameters,
-  BlockObjectResponse,
-} from "@notionhq/client/build/src/api-endpoints";
-import {
   NotionPropertyType,
   AdvancedDatabaseRecord,
   DatabaseRecord,
-  processNotionRecord,
-  processNotionRecords,
 } from "./generator";
 import {
   QueryBuilder,
@@ -29,7 +21,7 @@ import {
   ValueTypeMap,
   TypeSafeFilterCondition,
 } from "./query-builder";
-import { debug } from "./utils/debug";
+
 import { NotionProperty } from "./utils/property-helpers";
 import { NotionCMSConfig, mergeConfig } from "./config";
 import { FileManager } from "./file-manager";
@@ -47,7 +39,7 @@ import { PageContentService } from "./page-content-service";
 import { DatabaseService, QueryOptions } from "./database-service";
 
 // Note: Property utility functions have been consolidated into DatabaseService
-// Use DatabaseService.getRecord() or DatabaseService.getDatabase() for full functionality
+// Use the public API methods like query(), getRecord(), and getAllDatabaseRecords() for database operations
 export type {
   DatabaseRecord,
   SimpleBlock,
@@ -110,6 +102,8 @@ export class NotionCMS {
     );
   }
 
+  // UTILITY METHODS
+
   /**
    * Convert page content to Markdown
    * @param blocks Array of blocks to convert
@@ -128,8 +122,11 @@ export class NotionCMS {
     return this.contentConverter.blocksToHtml(blocks);
   }
 
+  // HIGH-LEVEL PUBLIC API
+
   /**
    * Creates a query builder for a Notion database with type safety
+   * This is the recommended way to interact with databases
    * @param databaseId The ID of the Notion database
    * @param fieldMetadata Optional metadata about field types for type-safe operations
    * @returns A query builder instance for the specified database
@@ -139,20 +136,6 @@ export class NotionCMS {
     fieldMetadata?: M
   ): QueryBuilder<T, M> {
     return this.databaseService.query<T, M>(databaseId, fieldMetadata);
-  }
-
-  /**
-   * Get all records from a Notion database with pagination, filtering, and sorting
-   * Records include all access levels: simple, advanced, and raw
-   * @param databaseId The ID of the Notion database
-   * @param options Query options for filtering, sorting, and pagination, plus file processing
-   * @returns A promise that resolves to an array of records with pagination metadata
-   */
-  async getDatabase<T extends DatabaseRecord>(
-    databaseId: string,
-    options: QueryOptions & { processFiles?: boolean } = {}
-  ): Promise<{ results: T[]; nextCursor: string | null; hasMore: boolean }> {
-    return this.databaseService.getDatabase<T>(databaseId, options);
   }
 
   /**
@@ -183,23 +166,6 @@ export class NotionCMS {
     } = {}
   ): Promise<T[]> {
     return this.databaseService.getAllDatabaseRecords<T>(databaseId, options);
-  }
-
-  /**
-   * Create a typed filter for a database query
-   * @param property The property name to filter on
-   * @param type The type of filter to apply
-   * @param value The filter value
-   * @returns A properly formatted filter object
-   * @deprecated This method uses old filter patterns. Use the new QueryBuilder.filter(property, operator, value) method instead.
-   * The new method provides type-safe field names, operators, and values with IntelliSense support.
-   */
-  createFilter(
-    property: string,
-    type: string,
-    value: any
-  ): QueryDatabaseParameters["filter"] {
-    return this.databaseService.createFilter(property, type, value);
   }
 
   /**
