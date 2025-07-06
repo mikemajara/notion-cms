@@ -113,10 +113,11 @@ export class DatabaseService {
 
       const pages = response.results as PageObjectResponse[];
 
-      // Use the new unified processing method
-      const results = await this.processNotionRecords<T>(pages, {
-        processFiles: shouldProcessFiles,
-      });
+      // Use unified async processing for all records
+      const results = (await this.processNotionRecordsUnified(
+        pages,
+        shouldProcessFiles
+      )) as T[];
 
       return {
         results,
@@ -147,10 +148,13 @@ export class DatabaseService {
       page_id: pageId,
     })) as PageObjectResponse;
 
-    // Use the new unified processing method
-    return await this.processNotionRecord<T>(page, {
-      processFiles: options.processFiles,
-    });
+    const shouldProcessFiles = options.processFiles ?? this.autoProcessFiles;
+
+    // Use unified async processing
+    return (await this.processNotionRecordUnified(
+      page,
+      shouldProcessFiles
+    )) as T;
   }
 
   /**
@@ -246,6 +250,96 @@ export class DatabaseService {
     }
 
     return filter;
+  }
+
+  /**
+   * Unified processing function for Notion records with optional file processing
+   * @param page The Notion page object from the API
+   * @param processFiles Whether to process files through FileManager
+   * @returns A processed record with simple, advanced, and raw access
+   */
+  private async processNotionRecordUnified(
+    page: PageObjectResponse,
+    processFiles: boolean = false
+  ): Promise<DatabaseRecord> {
+    if (processFiles && this.fileManager?.isCacheEnabled()) {
+      // Use async processing when file caching is enabled
+      return this.processNotionRecordWithFiles(page);
+    } else {
+      // Use sync processing for compatibility
+      return processNotionRecord(page, this.fileManager);
+    }
+  }
+
+  /**
+   * Unified processing function for multiple Notion records with optional file processing
+   * @param pages An array of Notion page objects
+   * @param processFiles Whether to process files through FileManager
+   * @returns An array of processed records with layered access
+   */
+  private async processNotionRecordsUnified(
+    pages: PageObjectResponse[],
+    processFiles: boolean = false
+  ): Promise<DatabaseRecord[]> {
+    if (processFiles && this.fileManager?.isCacheEnabled()) {
+      // Use async processing when file caching is enabled
+      return Promise.all(
+        pages.map((page) => this.processNotionRecordWithFiles(page))
+      );
+    } else {
+      // Use sync processing for compatibility
+      return processNotionRecords(pages, this.fileManager);
+    }
+  }
+
+  /**
+   * Process a Notion page into a record with file processing
+   * @param page The Notion page object from the API
+   * @returns A processed record with file processing applied
+   */
+  private async processNotionRecordWithFiles(
+    page: PageObjectResponse
+  ): Promise<DatabaseRecord> {
+    // Simple values (base level access)
+    const simple: Record<string, any> = {
+      id: page.id,
+    };
+
+    // More detailed but still processed values
+    const advanced: Record<string, any> = {
+      id: page.id,
+    };
+
+    // Process each property with async file processing
+    for (const [key, value] of Object.entries(page.properties)) {
+      // Simple version (direct access)
+      simple[key] = await this.getPropertyValue(
+        value as PropertyItemObjectResponse,
+        true
+      );
+
+      // Advanced version (detailed access)
+      advanced[key] = await this.getPropertyValueAdvanced(
+        value as PropertyItemObjectResponse,
+        true
+      );
+    }
+
+    // Construct unified record with all three access levels
+    const result: DatabaseRecord = {
+      id: page.id,
+      ...simple,
+      advanced: {
+        id: page.id,
+        ...advanced,
+      },
+      raw: {
+        id: page.id,
+        properties: page.properties,
+      },
+    };
+
+    return result;
   }
 
   /**
@@ -659,77 +753,5 @@ export class DatabaseService {
       default:
         return null;
     }
-  }
-
-  /**
-   * Unified method to process a single Notion page into a DatabaseRecord
-   * This is the single source of truth for record processing across the library
-   * @param page The Notion page object from the API
-   * @param options Processing options including file processing
-   * @returns A processed record with simple, advanced, and raw access layers
-   */
-  async processNotionRecord<T extends DatabaseRecord = DatabaseRecord>(
-    page: PageObjectResponse,
-    options: { processFiles?: boolean } = {}
-  ): Promise<T> {
-    const processFiles = options.processFiles ?? this.autoProcessFiles;
-
-    // Simple values (base level access)
-    const simple: Record<string, any> = {
-      id: page.id,
-    };
-
-    // More detailed but still processed values (advanced access)
-    const advanced: Record<string, any> = {
-      id: page.id,
-    };
-
-    // Process each property with appropriate level of detail
-    for (const [key, value] of Object.entries(page.properties)) {
-      // Simple version (direct access) - async to support file processing
-      simple[key] = await this.getPropertyValue(
-        value as PropertyItemObjectResponse,
-        processFiles
-      );
-
-      // Advanced version (detailed access) - async to support file processing
-      advanced[key] = await this.getPropertyValueAdvanced(
-        value as PropertyItemObjectResponse,
-        processFiles
-      );
-    }
-
-    // Construct unified record with all three access levels
-    const result: T = {
-      id: page.id,
-      ...simple,
-      advanced: {
-        id: page.id,
-        ...advanced,
-      },
-      raw: {
-        id: page.id,
-        properties: page.properties,
-      },
-    } as T;
-
-    return result;
-  }
-
-  /**
-   * Unified method to process multiple Notion pages into DatabaseRecords
-   * This is the single source of truth for batch record processing across the library
-   * @param pages Array of Notion page objects from the API
-   * @param options Processing options including file processing
-   * @returns Array of processed records with simple, advanced, and raw access layers
-   */
-  async processNotionRecords<T extends DatabaseRecord = DatabaseRecord>(
-    pages: PageObjectResponse[],
-    options: { processFiles?: boolean } = {}
-  ): Promise<T[]> {
-    // Process all records in parallel for better performance
-    return Promise.all(
-      pages.map((page) => this.processNotionRecord<T>(page, options))
-    );
   }
 }

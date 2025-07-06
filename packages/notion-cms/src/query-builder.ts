@@ -3,9 +3,10 @@ import {
   QueryDatabaseParameters,
   PageObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
-import { DatabaseRecord, processNotionRecords } from "./generator";
+import { DatabaseRecord } from "./generator";
 import { debug } from "./utils/debug";
 import { FileManager } from "./file-manager";
+import { DatabaseService } from "./database-service";
 
 export type SortDirection = "ascending" | "descending";
 export type LogicalOperator = "and" | "or";
@@ -473,6 +474,7 @@ export class QueryBuilder<
   private startCursor?: string;
   private singleMode: "required" | "optional" | null = null;
   private fileManager?: FileManager;
+  private databaseService: DatabaseService;
 
   constructor(
     client: Client,
@@ -484,6 +486,12 @@ export class QueryBuilder<
     this.databaseId = databaseId;
     this.fieldTypes = fieldTypes;
     this.fileManager = fileManager;
+    // Create DatabaseService instance for unified record processing
+    this.databaseService = new DatabaseService(
+      client,
+      fileManager || new FileManager({}),
+      false
+    );
   }
 
   /**
@@ -799,8 +807,13 @@ export class QueryBuilder<
         debug.log(
           `[QueryBuilder] Using SYNC processing (no file caching) with ${pages.length} pages`
         );
-        // Use sync processing (current behavior, zero breaking changes)
-        const results = processNotionRecords(pages, this.fileManager) as T[];
+        // Use DatabaseService for consistent processing (no file processing for sync)
+        const results = await this.databaseService.processNotionRecords<T>(
+          pages,
+          {
+            processFiles: false,
+          }
+        );
         debug.log(
           `[QueryBuilder] Processed ${results.length} records with sync processing`
         );
@@ -986,77 +999,15 @@ export class QueryBuilder<
   }
 
   /**
-   * Process Notion records with unified file processing support
-   * Similar to the NotionCMS class implementation
+   * Process Notion records using the unified DatabaseService
    * @private
    */
   private async processNotionRecordsUnified(
     pages: PageObjectResponse[],
     processFiles: boolean = false
   ): Promise<T[]> {
-    if (processFiles && this.fileManager) {
-      // Process each record with file processing
-      const processedRecords = await Promise.all(
-        pages.map(async (page) => {
-          const record = await this.processNotionRecordUnified(
-            page,
-            processFiles
-          );
-          return record as T;
-        })
-      );
-      return processedRecords;
-    } else {
-      // Use sync processing (fallback to existing behavior)
-      return processNotionRecords(pages, this.fileManager) as T[];
-    }
-  }
-
-  /**
-   * Process a single Notion record with unified file processing support
-   * Similar to the NotionCMS class implementation
-   * @private
-   */
-  private async processNotionRecordUnified(
-    page: PageObjectResponse,
-    processFiles: boolean = false
-  ): Promise<DatabaseRecord> {
-    // Always process the record synchronously WITHOUT fileManager to avoid double file processing
-    // FileManager/file caching is handled below if needed
-    const record = processNotionRecords([page], undefined)[0];
-
-    // Only process file properties if requested and fileManager is present
-    if (processFiles && this.fileManager) {
-      // Only process properties that are Notion file properties:
-      // - Arrays of objects where each object has both 'url' and 'name' as strings
-      for (const [key, value] of Object.entries(record)) {
-        if (
-          Array.isArray(value) &&
-          value.length > 0 &&
-          value.every(
-            (item) =>
-              item &&
-              typeof item === "object" &&
-              typeof item.url === "string" &&
-              typeof item.name === "string"
-          )
-        ) {
-          // This is a Notion files property (array of file objects)
-          const processedValue = await Promise.all(
-            value.map(async (item: any) => {
-              const cachedUrl = await this.fileManager!.processFileUrl(
-                item.url,
-                item.name
-              );
-              return { ...item, url: cachedUrl };
-            })
-          );
-          record[key] = processedValue;
-        }
-      }
-    }
-
-    // Always return a Promise (async function)
-    return record;
+    return this.databaseService.processNotionRecords<T>(pages, {
+      processFiles,
+    });
   }
 }

@@ -485,10 +485,10 @@ export function processNotionRecord(
   fileManager?: any
 ): DatabaseRecord {
   console.warn(
-    "processNotionRecord is deprecated. Use DatabaseService.getRecord() or DatabaseService.getDatabase() for full functionality including file processing."
+    "processNotionRecord is deprecated. Use DatabaseService.processNotionRecord() for the unified processing method with proper file handling and layered access."
   );
 
-  // Basic implementation without file processing
+  // Basic implementation without file processing for backward compatibility
   const simple: Record<string, any> = {
     id: page.id,
   };
@@ -608,11 +608,15 @@ function extractBasicPropertyValue(property: PropertyItemObjectResponse): any {
  * Process multiple Notion pages into records with layered access
  * @param pages An array of Notion page objects
  * @returns An array of processed records with layered access
+ * @deprecated Use DatabaseService.processNotionRecords() for the unified processing method with proper file handling and layered access.
  */
 export function processNotionRecords(
   pages: PageObjectResponse[],
   fileManager?: any
 ): DatabaseRecord[] {
+  console.warn(
+    "processNotionRecords is deprecated. Use DatabaseService.processNotionRecords() for the unified processing method with proper file handling and layered access."
+  );
   return pages.map((page) => processNotionRecord(page, fileManager));
 }
 
