@@ -7,32 +7,25 @@ import { SimpleBlock } from "./converter";
  * Page content service for retrieving and processing Notion page content
  */
 export class PageContentService {
-  constructor(
-    private client: Client,
-    private blockProcessor: BlockProcessor,
-    private autoProcessFiles: boolean = false
-  ) {}
+  constructor(private client: Client, private blockProcessor: BlockProcessor) {}
 
   /**
    * Retrieve the content blocks of a Notion page
    * @param pageId The ID of the Notion page
    * @param recursive Whether to recursively fetch nested blocks (default: true)
-   * @param options Optional configuration including file processing
    * @returns A promise that resolves to an array of simplified blocks
    */
   async getPageContent(
     pageId: string,
-    recursive: boolean = true,
-    options: { processFiles?: boolean } = {}
+    recursive: boolean = true
   ): Promise<SimpleBlock[]> {
-    const shouldProcessFiles = options.processFiles ?? this.autoProcessFiles;
-    const blocks = await this.getBlocks(pageId, shouldProcessFiles);
+    const blocks = await this.getBlocks(pageId);
 
     if (recursive) {
       // For each block with children, recursively fetch those children
       for (const block of blocks) {
         if (block.hasChildren) {
-          block.children = await this.getPageContent(block.id, true, options);
+          block.children = await this.getPageContent(block.id, true);
         }
       }
     }
@@ -42,13 +35,9 @@ export class PageContentService {
   /**
    * Fetch blocks for a specific page or block
    * @param blockId The ID of the page or block to fetch children for
-   * @param processFiles Whether to process files through FileManager
    * @returns A promise that resolves to an array of simplified blocks
    */
-  private async getBlocks(
-    blockId: string,
-    processFiles: boolean = false
-  ): Promise<SimpleBlock[]> {
+  private async getBlocks(blockId: string): Promise<SimpleBlock[]> {
     let allBlocks: SimpleBlock[] = [];
     let hasMore = true;
     let startCursor: string | undefined = undefined;
@@ -61,9 +50,7 @@ export class PageContentService {
 
       const blocks = response.results as BlockObjectResponse[];
       const simpleBlocks = await Promise.all(
-        blocks.map((block) =>
-          this.blockProcessor.simplifyBlockAsync(block, processFiles)
-        )
+        blocks.map((block) => this.blockProcessor.simplifyBlockAsync(block))
       );
 
       allBlocks = [...allBlocks, ...simpleBlocks];

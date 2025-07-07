@@ -489,8 +489,7 @@ export class QueryBuilder<
     // Create DatabaseService instance for unified record processing
     this.databaseService = new DatabaseService(
       client,
-      fileManager || new FileManager({}),
-      false
+      fileManager || new FileManager({})
     );
   }
 
@@ -788,41 +787,20 @@ export class QueryBuilder<
         this.fileManager?.isCacheEnabled()
       );
 
-      // Check if file caching is enabled in configuration
-      if (this.fileManager?.isCacheEnabled()) {
-        debug.log(
-          `[QueryBuilder] Using ASYNC processing for file caching with ${pages.length} pages`
-        );
-        // Use async processing for file caching
-        const results = await this.processNotionRecordsUnified(pages, true);
-        debug.log(
-          `[QueryBuilder] Processed ${results.length} records with async file processing`
-        );
-        return {
-          results,
-          hasMore: response.has_more,
-          nextCursor: response.next_cursor,
-        };
-      } else {
-        debug.log(
-          `[QueryBuilder] Using SYNC processing (no file caching) with ${pages.length} pages`
-        );
-        // Use DatabaseService for consistent processing (no file processing for sync)
-        const results = await this.databaseService.processNotionRecords<T>(
-          pages,
-          {
-            processFiles: false,
-          }
-        );
-        debug.log(
-          `[QueryBuilder] Processed ${results.length} records with sync processing`
-        );
-        return {
-          results,
-          hasMore: response.has_more,
-          nextCursor: response.next_cursor,
-        };
-      }
+      // Always use unified processing - FileManager strategy handles caching behavior
+      debug.log(
+        `[QueryBuilder] Using unified processing with ${pages.length} pages`
+      );
+      const results = await this.databaseService.processNotionRecords<T>(pages);
+      debug.log(
+        `[QueryBuilder] Processed ${results.length} records with unified processing`
+      );
+
+      return {
+        results,
+        hasMore: response.has_more,
+        nextCursor: response.next_cursor,
+      };
     } catch (error) {
       debug.error(error, {
         databaseId: this.databaseId,
@@ -996,18 +974,5 @@ export class QueryBuilder<
   private isValidSortField(property: keyof M & string): boolean {
     const fieldType = this.getFieldTypeForFilter(property);
     return fieldType !== undefined;
-  }
-
-  /**
-   * Process Notion records using the unified DatabaseService
-   * @private
-   */
-  private async processNotionRecordsUnified(
-    pages: PageObjectResponse[],
-    processFiles: boolean = false
-  ): Promise<T[]> {
-    return this.databaseService.processNotionRecords<T>(pages, {
-      processFiles,
-    });
   }
 }

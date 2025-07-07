@@ -75,7 +75,6 @@ export class NotionCMS {
   private client: Client;
   private config: Required<NotionCMSConfig>;
   private fileManager: FileManager;
-  private autoProcessFiles: boolean;
   private contentConverter: ContentConverter;
   private blockProcessor: BlockProcessor;
   private pageContentService: PageContentService;
@@ -85,21 +84,14 @@ export class NotionCMS {
     this.client = new Client({ auth: token });
     this.config = mergeConfig(config);
     this.fileManager = new FileManager(this.config);
-    // Auto-enable file processing if cache strategy is configured
-    this.autoProcessFiles = this.config.files?.strategy === "cache";
     // Initialize services
     this.contentConverter = new ContentConverter();
     this.blockProcessor = new BlockProcessor(this.fileManager);
     this.pageContentService = new PageContentService(
       this.client,
-      this.blockProcessor,
-      this.autoProcessFiles
+      this.blockProcessor
     );
-    this.databaseService = new DatabaseService(
-      this.client,
-      this.fileManager,
-      this.autoProcessFiles
-    );
+    this.databaseService = new DatabaseService(this.client, this.fileManager);
   }
 
   // UTILITY METHODS
@@ -142,28 +134,22 @@ export class NotionCMS {
    * Get a single record from a database by its ID
    * Record includes all access levels: simple, advanced, and raw
    * @param pageId The ID of the Notion page/record
-   * @param options Optional configuration including file processing
    * @returns A promise that resolves to the record
    */
-  async getRecord<T extends DatabaseRecord>(
-    pageId: string,
-    options: { processFiles?: boolean } = {}
-  ): Promise<T> {
-    return this.databaseService.getRecord<T>(pageId, options);
+  async getRecord<T extends DatabaseRecord>(pageId: string): Promise<T> {
+    return this.databaseService.getRecord<T>(pageId);
   }
 
   /**
    * Get all records from a database with automatic pagination
    * Records include all access levels: simple, advanced, and raw
    * @param databaseId The ID of the Notion database
-   * @param options Query options for filtering and sorting, plus file processing
+   * @param options Query options for filtering and sorting
    * @returns A promise that resolves to all records from the database
    */
   async getAllDatabaseRecords<T extends DatabaseRecord>(
     databaseId: string,
-    options: Omit<QueryOptions, "startCursor" | "pageSize"> & {
-      processFiles?: boolean;
-    } = {}
+    options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
   ): Promise<T[]> {
     return this.databaseService.getAllDatabaseRecords<T>(databaseId, options);
   }
@@ -172,15 +158,13 @@ export class NotionCMS {
    * Retrieve the content blocks of a Notion page
    * @param pageId The ID of the Notion page
    * @param recursive Whether to recursively fetch nested blocks (default: true)
-   * @param options Optional configuration including file processing
    * @returns A promise that resolves to an array of simplified blocks
    */
   async getPageContent(
     pageId: string,
-    recursive: boolean = true,
-    options: { processFiles?: boolean } = {}
+    recursive: boolean = true
   ): Promise<SimpleBlock[]> {
-    return this.pageContentService.getPageContent(pageId, recursive, options);
+    return this.pageContentService.getPageContent(pageId, recursive);
   }
 }
 

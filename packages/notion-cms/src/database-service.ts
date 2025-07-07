@@ -45,11 +45,7 @@ export interface QueryOptions {
  * Database service for handling all Notion database operations
  */
 export class DatabaseService {
-  constructor(
-    private client: Client,
-    private fileManager: FileManager,
-    private autoProcessFiles: boolean = false
-  ) {}
+  constructor(private client: Client, private fileManager: FileManager) {}
 
   /**
    * Creates a query builder for a Notion database with type safety
@@ -82,31 +78,28 @@ export class DatabaseService {
    * Get all records from a Notion database with pagination, filtering, and sorting
    * Records include all access levels: simple, advanced, and raw
    * @param databaseId The ID of the Notion database
-   * @param options Query options for filtering, sorting, and pagination, plus file processing
+   * @param options Query options for filtering, sorting, and pagination
    * @returns A promise that resolves to an array of records with pagination metadata
    */
   async getDatabase<T extends DatabaseRecord>(
     databaseId: string,
-    options: QueryOptions & { processFiles?: boolean } = {}
+    options: QueryOptions = {}
   ): Promise<{ results: T[]; nextCursor: string | null; hasMore: boolean }> {
     try {
-      const { processFiles, ...queryOptions } = options;
-      const shouldProcessFiles = processFiles ?? this.autoProcessFiles;
-
       debug.query(databaseId, {
         database_id: databaseId,
-        filter: queryOptions.filter,
-        sorts: queryOptions.sorts,
-        page_size: queryOptions.pageSize,
-        start_cursor: queryOptions.startCursor,
+        filter: options.filter,
+        sorts: options.sorts,
+        page_size: options.pageSize,
+        start_cursor: options.startCursor,
       });
 
       const response = await this.client.databases.query({
         database_id: databaseId,
-        filter: queryOptions.filter,
-        sorts: queryOptions.sorts,
-        page_size: queryOptions.pageSize,
-        start_cursor: queryOptions.startCursor,
+        filter: options.filter,
+        sorts: options.sorts,
+        page_size: options.pageSize,
+        start_cursor: options.startCursor,
       });
 
       debug.log(`Query returned ${response.results.length} results`);
@@ -114,9 +107,7 @@ export class DatabaseService {
       const pages = response.results as PageObjectResponse[];
 
       // Use the new unified processing method
-      const results = await this.processNotionRecords<T>(pages, {
-        processFiles: shouldProcessFiles,
-      });
+      const results = await this.processNotionRecords<T>(pages);
 
       return {
         results,
@@ -136,35 +127,27 @@ export class DatabaseService {
    * Get a single record from a database by its ID
    * Record includes all access levels: simple, advanced, and raw
    * @param pageId The ID of the Notion page/record
-   * @param options Optional configuration including file processing
    * @returns A promise that resolves to the record
    */
-  async getRecord<T extends DatabaseRecord>(
-    pageId: string,
-    options: { processFiles?: boolean } = {}
-  ): Promise<T> {
+  async getRecord<T extends DatabaseRecord>(pageId: string): Promise<T> {
     const page = (await this.client.pages.retrieve({
       page_id: pageId,
     })) as PageObjectResponse;
 
     // Use the new unified processing method
-    return await this.processNotionRecord<T>(page, {
-      processFiles: options.processFiles,
-    });
+    return await this.processNotionRecord<T>(page);
   }
 
   /**
    * Get all records from a database with automatic pagination
    * Records include all access levels: simple, advanced, and raw
    * @param databaseId The ID of the Notion database
-   * @param options Query options for filtering and sorting, plus file processing
+   * @param options Query options for filtering and sorting
    * @returns A promise that resolves to all records from the database
    */
   async getAllDatabaseRecords<T extends DatabaseRecord>(
     databaseId: string,
-    options: Omit<QueryOptions, "startCursor" | "pageSize"> & {
-      processFiles?: boolean;
-    } = {}
+    options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
   ): Promise<T[]> {
     const results: T[] = [];
     let hasMore = true;
@@ -251,13 +234,9 @@ export class DatabaseService {
   /**
    * Async property value extraction for simple layer API
    * @param property Property item from Notion API
-   * @param processFiles Whether to process files through FileManager (default: true)
    * @returns Processed property value for simple layer
    */
-  async getPropertyValue(
-    property: PropertyItemObjectResponse,
-    processFiles: boolean = true
-  ): Promise<any> {
+  async getPropertyValue(property: PropertyItemObjectResponse): Promise<any> {
     switch (property.type) {
       case "unique_id": {
         const idProp = property as UniqueIdPropertyItemObjectResponse;
@@ -310,24 +289,21 @@ export class DatabaseService {
           }
         });
 
-        // Process files through the FileManager for caching if enabled
-        if (processFiles && this.fileManager?.isCacheEnabled()) {
-          const processedFiles = await Promise.all(
-            files.map(async (file) => {
-              const processedUrl = await this.fileManager.processFileUrl(
-                file.url,
-                file.name
-              );
-              return {
-                ...file,
-                url: processedUrl,
-              };
-            })
-          );
-          return processedFiles;
-        }
+        // Always process files through the FileManager (strategy pattern handles behavior)
+        const processedFiles = await Promise.all(
+          files.map(async (file) => {
+            const processedUrl = await this.fileManager.processFileUrl(
+              file.url,
+              file.name
+            );
+            return {
+              ...file,
+              url: processedUrl,
+            };
+          })
+        );
 
-        return files;
+        return processedFiles;
       }
       case "checkbox":
         return (property as CheckboxPropertyItemObjectResponse).checkbox;
@@ -379,12 +355,10 @@ export class DatabaseService {
   /**
    * Async advanced property value extraction for advanced layer API
    * @param property Property item from Notion API
-   * @param processFiles Whether to process files through FileManager (default: true)
    * @returns Processed advanced property value with complete metadata
    */
   async getPropertyValueAdvanced(
-    property: PropertyItemObjectResponse,
-    processFiles: boolean = true
+    property: PropertyItemObjectResponse
   ): Promise<any> {
     switch (property.type) {
       case "title": {
@@ -503,32 +477,29 @@ export class DatabaseService {
           }
         });
 
-        // Process files through the FileManager for caching if enabled
-        if (processFiles && this.fileManager?.isCacheEnabled()) {
-          const processedFiles = await Promise.all(
-            files.map(async (file) => {
-              const originalUrl =
-                file.type === "external" ? file.external?.url : file.file?.url;
-              if (originalUrl) {
-                const processedUrl = await this.fileManager.processFileUrl(
-                  originalUrl,
-                  file.name
-                );
+        // Always process files through the FileManager (strategy pattern handles behavior)
+        const processedFiles = await Promise.all(
+          files.map(async (file) => {
+            const originalUrl =
+              file.type === "external" ? file.external?.url : file.file?.url;
+            if (originalUrl) {
+              const processedUrl = await this.fileManager.processFileUrl(
+                originalUrl,
+                file.name
+              );
 
-                // Update the URL in the appropriate location
-                if (file.type === "external" && file.external) {
-                  file.external.url = processedUrl;
-                } else if (file.type === "file" && file.file) {
-                  file.file.url = processedUrl;
-                }
+              // Update the URL in the appropriate location
+              if (file.type === "external" && file.external) {
+                file.external.url = processedUrl;
+              } else if (file.type === "file" && file.file) {
+                file.file.url = processedUrl;
               }
-              return file;
-            })
-          );
-          return processedFiles;
-        }
+            }
+            return file;
+          })
+        );
 
-        return files;
+        return processedFiles;
       }
       case "checkbox":
         return (property as CheckboxPropertyItemObjectResponse).checkbox;
@@ -665,15 +636,11 @@ export class DatabaseService {
    * Unified method to process a single Notion page into a DatabaseRecord
    * This is the single source of truth for record processing across the library
    * @param page The Notion page object from the API
-   * @param options Processing options including file processing
    * @returns A processed record with simple, advanced, and raw access layers
    */
   async processNotionRecord<T extends DatabaseRecord = DatabaseRecord>(
-    page: PageObjectResponse,
-    options: { processFiles?: boolean } = {}
+    page: PageObjectResponse
   ): Promise<T> {
-    const processFiles = options.processFiles ?? this.autoProcessFiles;
-
     // Simple values (base level access)
     const simple: Record<string, any> = {
       id: page.id,
@@ -688,14 +655,12 @@ export class DatabaseService {
     for (const [key, value] of Object.entries(page.properties)) {
       // Simple version (direct access) - async to support file processing
       simple[key] = await this.getPropertyValue(
-        value as PropertyItemObjectResponse,
-        processFiles
+        value as PropertyItemObjectResponse
       );
 
       // Advanced version (detailed access) - async to support file processing
       advanced[key] = await this.getPropertyValueAdvanced(
-        value as PropertyItemObjectResponse,
-        processFiles
+        value as PropertyItemObjectResponse
       );
     }
 
@@ -720,16 +685,12 @@ export class DatabaseService {
    * Unified method to process multiple Notion pages into DatabaseRecords
    * This is the single source of truth for batch record processing across the library
    * @param pages Array of Notion page objects from the API
-   * @param options Processing options including file processing
    * @returns Array of processed records with simple, advanced, and raw access layers
    */
   async processNotionRecords<T extends DatabaseRecord = DatabaseRecord>(
-    pages: PageObjectResponse[],
-    options: { processFiles?: boolean } = {}
+    pages: PageObjectResponse[]
   ): Promise<T[]> {
     // Process all records in parallel for better performance
-    return Promise.all(
-      pages.map((page) => this.processNotionRecord<T>(page, options))
-    );
+    return Promise.all(pages.map((page) => this.processNotionRecord<T>(page)));
   }
 }

@@ -9,19 +9,15 @@ export class BlockProcessor {
   constructor(private fileManager: FileManager) {}
 
   /**
-   * Convert a Notion block to a simplified format with optional file processing
+   * Convert a Notion block to a simplified format with file processing
    * @param block The Notion block to simplify
-   * @param processFiles Whether to process files through FileManager
    * @returns A simplified representation of the block
    */
-  async simplifyBlockAsync(
-    block: BlockObjectResponse,
-    processFiles: boolean = false
-  ): Promise<SimpleBlock> {
+  async simplifyBlockAsync(block: BlockObjectResponse): Promise<SimpleBlock> {
     const { id, type, has_children } = block;
 
     // Extract the content based on the block type
-    const content = await this.extractBlockContentAsync(block, processFiles);
+    const content = await this.extractBlockContentAsync(block);
 
     return {
       id,
@@ -32,15 +28,11 @@ export class BlockProcessor {
   }
 
   /**
-   * Extract the content from a Notion block based on its type with optional file processing
+   * Extract the content from a Notion block based on its type with file processing
    * @param block The Notion block to extract content from
-   * @param processFiles Whether to process files through FileManager
    * @returns The extracted content in a simplified format
    */
-  async extractBlockContentAsync(
-    block: BlockObjectResponse,
-    processFiles: boolean = false
-  ): Promise<any> {
+  async extractBlockContentAsync(block: BlockObjectResponse): Promise<any> {
     const { type } = block;
 
     // Accessing the block's content based on its type
@@ -78,17 +70,15 @@ export class BlockProcessor {
         let url =
           fileType === "external" ? typeData.external.url : typeData.file.url;
 
-        // Process file through FileManager if enabled
-        if (processFiles && this.fileManager?.isCacheEnabled()) {
-          try {
-            url = await this.fileManager.processFileUrl(
-              url,
-              `content-block-${block.id}`
-            );
-          } catch (error) {
-            console.warn(`Failed to cache content block file: ${url}`, error);
-            // Fall back to original URL
-          }
+        // Always process file through FileManager (strategy pattern handles behavior)
+        try {
+          url = await this.fileManager.processFileUrl(
+            url,
+            `content-block-${block.id}`
+          );
+        } catch (error) {
+          console.warn(`Failed to process content block file: ${url}`, error);
+          // Fall back to original URL
         }
 
         return {
