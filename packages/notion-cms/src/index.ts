@@ -85,11 +85,8 @@ export class NotionCMS {
     this.client = new Client({ auth: token });
     this.config = mergeConfig(config);
 
-    // Configure debug logger only if user provided explicit debug config
-    // This allows environment variables to work when no config is provided
-    if (config?.debug !== undefined) {
-      debug.configure(this.config.debug);
-    }
+    // Configure debug logger with the merged config
+    debug.configure(this.config.debug);
 
     this.fileManager = new FileManager(this.config);
     // Initialize services

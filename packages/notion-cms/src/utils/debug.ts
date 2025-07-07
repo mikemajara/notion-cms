@@ -9,35 +9,8 @@ class DebugLogger {
     level: "info",
   };
 
-  constructor() {
-    // Initialize with environment variable fallback
-    this.config.enabled = this.isDebugEnabledFromEnv();
-  }
-
   configure(config: DebugConfig) {
     this.config = { ...this.config, ...config };
-  }
-
-  private isDebugEnabledFromEnv(): boolean {
-    // Check for Next.js public env var
-    if (
-      typeof process !== "undefined" &&
-      process.env &&
-      process.env[`NEXT_PUBLIC_NOTION_CMS_DEBUG`]
-    ) {
-      return process.env[`NEXT_PUBLIC_NOTION_CMS_DEBUG`] === "true";
-    }
-
-    // Check for regular Node.js env var
-    if (
-      typeof process !== "undefined" &&
-      process.env &&
-      process.env["NOTION_CMS_DEBUG"]
-    ) {
-      return process.env["NOTION_CMS_DEBUG"] === "true";
-    }
-
-    return false;
   }
 
   private normalizeLevel(level?: string): "error" | "warn" | "info" | "debug" {

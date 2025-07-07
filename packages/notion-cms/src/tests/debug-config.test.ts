@@ -20,10 +20,6 @@ beforeEach(() => {
   console.error = jest.fn((...args) => {
     errorCalls.push(args);
   });
-
-  // Clear environment variables
-  delete process.env.NOTION_CMS_DEBUG;
-  delete process.env.NEXT_PUBLIC_NOTION_CMS_DEBUG;
 });
 
 afterEach(() => {
@@ -135,52 +131,6 @@ describe("Debug Configuration System", () => {
 
       expect(logCalls).toHaveLength(1); // Only log() should appear
       expect(logCalls[0][1]).toBe("info message");
-    });
-  });
-
-  describe("Environment Variable Backward Compatibility", () => {
-    test("NOTION_CMS_DEBUG env var should enable debug", () => {
-      process.env.NOTION_CMS_DEBUG = "true";
-
-      const cms = new NotionCMS(mockToken); // No config provided
-
-      debug.log("test message");
-
-      expect(logCalls).toHaveLength(1);
-      expect(logCalls[0][1]).toBe("test message");
-    });
-
-    test("NEXT_PUBLIC_NOTION_CMS_DEBUG env var should enable debug", () => {
-      process.env.NEXT_PUBLIC_NOTION_CMS_DEBUG = "true";
-
-      const cms = new NotionCMS(mockToken); // No config provided
-
-      debug.log("test message");
-
-      expect(logCalls).toHaveLength(1);
-      expect(logCalls[0][1]).toBe("test message");
-    });
-
-    test("config should override environment variables", () => {
-      process.env.NOTION_CMS_DEBUG = "true";
-
-      const cms = new NotionCMS(mockToken, {
-        debug: { enabled: false }, // Explicitly disabled
-      });
-
-      debug.log("test message");
-
-      expect(logCalls).toHaveLength(0); // Config should override env var
-    });
-
-    test("env var false value should be respected", () => {
-      process.env.NOTION_CMS_DEBUG = "false";
-
-      const cms = new NotionCMS(mockToken);
-
-      debug.log("test message");
-
-      expect(logCalls).toHaveLength(0);
     });
   });
 
