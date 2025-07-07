@@ -5,25 +5,49 @@
 const DEFAULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 const DEFAULT_CACHE_MAX_SIZE = 100 * 1024 * 1024; // 100MB in bytes
 const DEFAULT_LOCAL_PATH = "./public/assets";
-export interface NotionCMSConfig {
-  files?: {
-    strategy: "direct" | "cache";
-    storage?: {
-      type: "local" | "s3-compatible";
-      // For local storage
-      path?: string; // default: "./public/assets/notion-files"
-      // For S3-compatible storage
-      endpoint?: string;
-      bucket?: string;
-      accessKey?: string;
-      secretKey?: string;
-      region?: string; // AWS region or equivalent for other providers
-    };
-    cache?: {
-      ttl: number;
-      maxSize: number;
-    };
+
+/**
+ * Configuration options for debug logging
+ */
+export interface DebugConfig {
+  /**
+   * Enable/disable all logging
+   * @default false
+   */
+  enabled?: boolean;
+
+  /**
+   * Log level - controls what gets logged
+   * @default "info"
+   */
+  level?: "error" | "warn" | "info" | "debug";
+}
+
+/**
+ * Configuration options for file management
+ */
+export interface FileConfig {
+  strategy: "direct" | "cache";
+  storage?: {
+    type: "local" | "s3-compatible";
+    // For local storage
+    path?: string; // default: "./public/assets/notion-files"
+    // For S3-compatible storage
+    endpoint?: string;
+    bucket?: string;
+    accessKey?: string;
+    secretKey?: string;
+    region?: string; // AWS region or equivalent for other providers
   };
+  cache?: {
+    ttl: number;
+    maxSize: number;
+  };
+}
+
+export interface NotionCMSConfig {
+  files?: FileConfig;
+  debug?: DebugConfig;
 }
 
 /**
@@ -46,6 +70,10 @@ export const DEFAULT_CONFIG: Required<NotionCMSConfig> = {
       maxSize: DEFAULT_CACHE_MAX_SIZE,
     },
   },
+  debug: {
+    enabled: false,
+    level: "info",
+  },
 };
 
 /**
@@ -59,6 +87,7 @@ export function mergeConfig(
   const defaultFiles = DEFAULT_CONFIG.files;
   const defaultStorage = defaultFiles.storage!;
   const defaultCache = defaultFiles.cache!;
+  const defaultDebug = DEFAULT_CONFIG.debug;
 
   return {
     files: {
@@ -79,6 +108,10 @@ export function mergeConfig(
         ttl: userConfig.files?.cache?.ttl ?? defaultCache.ttl,
         maxSize: userConfig.files?.cache?.maxSize ?? defaultCache.maxSize,
       },
+    },
+    debug: {
+      enabled: userConfig.debug?.enabled ?? defaultDebug.enabled,
+      level: userConfig.debug?.level ?? defaultDebug.level,
     },
   };
 }

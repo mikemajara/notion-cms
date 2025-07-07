@@ -37,6 +37,7 @@ import {
 import { BlockProcessor } from "./processor";
 import { PageContentService } from "./page-content-service";
 import { DatabaseService, QueryOptions } from "./database-service";
+import { debug } from "./utils/debug";
 
 // Note: Property utility functions have been consolidated into DatabaseService
 // Use the public API methods like query(), getRecord(), and getAllDatabaseRecords() for database operations
@@ -83,6 +84,13 @@ export class NotionCMS {
   constructor(token: string, config?: NotionCMSConfig) {
     this.client = new Client({ auth: token });
     this.config = mergeConfig(config);
+
+    // Configure debug logger only if user provided explicit debug config
+    // This allows environment variables to work when no config is provided
+    if (config?.debug !== undefined) {
+      debug.configure(this.config.debug);
+    }
+
     this.fileManager = new FileManager(this.config);
     // Initialize services
     this.contentConverter = new ContentConverter();
