@@ -6,6 +6,9 @@ import "@/notion/notion-types-art-gallery-inventory";
 
 export default async function Home() {
   const cms = new NotionCMS(process.env.NOTION_API_KEY!, {
+    debug: {
+      enabled: process.env.DEBUG === "true",
+    },
     files: {
       strategy: "cache",
       storage: {

@@ -20,6 +20,7 @@ export const RecordArtGalleryInventoryFieldTypes = {
   "Commission Rate": { type: "number" },
   "Dimensions": { type: "rich_text" },
   "Status": { type: "status" },
+  "Certificate": { type: "files" },
   "Description": { type: "rich_text" },
   "Artwork Title": { type: "title" },
 } as const satisfies DatabaseFieldMetadata;
@@ -36,6 +37,7 @@ export interface RecordArtGalleryInventoryAdvanced {
     "Commission Rate": number;
     Dimensions: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
     Status: { id: string; name: string; color: string } | null;
+    Certificate: { name: string; type: string; external?: { url: string }; file?: { url: string; expiry_time: string } }[];
     Description: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
     "Artwork Title": { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
 }
@@ -57,6 +59,7 @@ export interface RecordArtGalleryInventory extends DatabaseRecord {
     "Commission Rate": number;
     Dimensions: string;
     Status: any;
+    Certificate: { name: string; url: string; }[];
     Description: string;
     "Artwork Title": string;
     advanced: RecordArtGalleryInventoryAdvanced;

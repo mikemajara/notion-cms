@@ -8,6 +8,7 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
 // import { ThemeSelector } from "./theme-selector";
 // import { ModeToggle } from "./mode-toggle";
 
@@ -59,7 +60,12 @@ export function SiteNavbar() {
             {items.map((item) => (
               <NavigationMenuItem key={item.title}>
                 <Link href={item.url} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  <NavigationMenuLink
+                    className={cn(
+                      navigationMenuTriggerStyle(),
+                      "bg-transparent"
+                    )}
+                  >
                     <span className="flex items-center gap-2">
                       <item.icon className="h-4 w-4" />
                       {item.title}

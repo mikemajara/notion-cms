@@ -1,4 +1,5 @@
 import { NotionCMSConfig } from "./config";
+import { debug } from "./utils/debug";
 
 /**
  * Interface for file information
