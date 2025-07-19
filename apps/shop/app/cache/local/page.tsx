@@ -35,11 +35,6 @@ export default async function Home() {
         strategy="cache-local"
         className="mb-12"
       />
-
-      <div className="mt-16">
-        <h2 className="text-2xl font-semibold mb-6">Featured Collection</h2>
-        <ProductGrid artworks={artworks.slice(0, 2)} strategy="cache-local" />
-      </div>
     </div>
   );
 }

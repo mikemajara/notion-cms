@@ -23,11 +23,6 @@ export default async function Home() {
       </div>
 
       <ProductGrid artworks={artworks} strategy="direct" className="mb-12" />
-
-      <div className="mt-16">
-        <h2 className="text-2xl font-semibold mb-6">Featured Collection</h2>
-        <ProductGrid artworks={artworks.slice(0, 2)} strategy="direct" />
-      </div>
     </div>
   );
 }
