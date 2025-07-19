@@ -41,7 +41,18 @@ const getPageIndex = (content: string) => {
 const getPageData = (slug: string) =>
   unstable_cache(
     async () => {
-      const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!);
+      const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!, {
+        debug: {
+          enabled: process.env.DEBUG === "true",
+        },
+        files: {
+          strategy: "cache",
+          storage: {
+            type: "local",
+            path: "./public/images",
+          },
+        },
+      });
       const page = (await notionCMS
         .queryNotionCMS(process.env.NOTION_CMS_DATABASE_ID!)
         .filter("slug", "equals", slug)
