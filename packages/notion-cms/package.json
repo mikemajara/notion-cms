@@ -1,6 +1,6 @@
 {
   "name": "@mikemajara/notion-cms",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A TypeScript library for using Notion as a headless CMS",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -38,8 +38,8 @@
     "commander": "^13.1.0"
   },
   "peerDependencies": {
-    "@notionhq/client": "^2.2.14",
-    "@aws-sdk/client-s3": "^3.0.0"
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@notionhq/client": "^2.2.14"
   },
   "peerDependenciesMeta": {
     "@notionhq/client": {
@@ -53,6 +53,8 @@
     "@tailwindcss/typography": "^0.5.13",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.3.4",
     "ts-morph": "^21.0.1",

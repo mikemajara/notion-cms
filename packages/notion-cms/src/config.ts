@@ -4,7 +4,7 @@
 
 const DEFAULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 const DEFAULT_CACHE_MAX_SIZE = 100 * 1024 * 1024; // 100MB in bytes
-const DEFAULT_LOCAL_PATH = "./public/assets";
+const DEFAULT_LOCAL_PATH = "./public/assets/notion-files";
 
 /**
  * Configuration options for debug logging

@@ -25,10 +25,9 @@ export interface StorageInterface {
  */
 async function importAwsS3(): Promise<any> {
   try {
-    // Using require with eval to avoid TypeScript compile-time errors
-    const requireFunc = eval("require");
-    return requireFunc("@aws-sdk/client-s3");
-  } catch (error) {
+    // Use dynamic import instead of eval for better security and bundling
+    return await import("@aws-sdk/client-s3");
+  } catch {
     throw new Error(
       "AWS SDK is required for S3-compatible storage. Install: npm install @aws-sdk/client-s3"
     );

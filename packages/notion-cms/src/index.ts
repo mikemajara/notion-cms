@@ -1,9 +1,5 @@
 import { Client } from "@notionhq/client";
-import {
-  NotionPropertyType,
-  AdvancedDatabaseRecord,
-  DatabaseRecord,
-} from "./generator";
+import { NotionPropertyType, DatabaseRecord } from "./generator";
 import {
   QueryBuilder,
   SortDirection,
@@ -36,7 +32,7 @@ import {
 } from "./converter";
 import { BlockProcessor } from "./processor";
 import { PageContentService } from "./page-content-service";
-import { DatabaseService, QueryOptions } from "./database-service";
+import { DatabaseService } from "./database-service";
 import { debug } from "./utils/debug";
 
 // Note: Property utility functions have been consolidated into DatabaseService
@@ -143,20 +139,6 @@ export class NotionCMS {
    */
   async getRecord<T extends DatabaseRecord>(pageId: string): Promise<T> {
     return this.databaseService.getRecord<T>(pageId);
-  }
-
-  /**
-   * Get all records from a database with automatic pagination
-   * Records include all access levels: simple, advanced, and raw
-   * @param databaseId The ID of the Notion database
-   * @param options Query options for filtering and sorting
-   * @returns A promise that resolves to all records from the database
-   */
-  async getAllDatabaseRecords<T extends DatabaseRecord>(
-    databaseId: string,
-    options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
-  ): Promise<T[]> {
-    return this.databaseService.getAllDatabaseRecords<T>(databaseId, options);
   }
 
   /**

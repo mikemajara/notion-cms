@@ -25,11 +25,7 @@ import {
   UserObjectResponse,
   UniqueIdPropertyItemObjectResponse,
 } from "@notionhq/client/build/src/api-endpoints";
-import {
-  DatabaseRecord,
-  processNotionRecord,
-  processNotionRecords,
-} from "./generator";
+import { DatabaseRecord } from "./generator";
 import { QueryBuilder, DatabaseFieldMetadata } from "./query-builder";
 import { debug } from "./utils/debug";
 import { FileManager } from "./file-manager";
