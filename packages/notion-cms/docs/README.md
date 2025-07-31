@@ -1,86 +1,76 @@
 # Notion CMS Documentation
 
-Welcome to the complete documentation for Notion CMS - a TypeScript-first library for using Notion as a headless CMS.
+Use Notion as a headless CMS with a simple, powerful TypeScript API.
 
-## 🚀 Getting Started
+## Quick Start
 
-New to Notion CMS? Start here:
+```typescript
+import { NotionCMS } from "@mikemajara/notion-cms";
 
-1. **[📚 Getting Started](./getting-started.md)** - Your first steps with Notion CMS
-2. **[⚙️ Installation Guide](./installation.md)** - Detailed setup and configuration
-3. **[🧠 Core Concepts](./core-concepts.md)** - Understand the layered API architecture
+const cms = new NotionCMS("your-notion-api-key");
 
-## 📖 Documentation Sections
+// Get database records with clean JavaScript types
+const { results } = await cms.getDatabase("database-id");
+console.log(results[0].Title); // Clean string access
+```
 
-### API Reference
+## Core Features
 
-Complete technical documentation for all APIs and methods.
+### 📊 **Layered API Access**
+- **Simple API**: Clean JavaScript types (`record.Title`, `record.Tags`)
+- **Advanced API**: Rich metadata (`record.advanced.Tags[0].color`)
+- **Raw API**: Complete Notion response (`record.raw.properties`)
 
-- **[Database Operations](./api-reference/database-operations.md)** - CRUD operations
-- **[Query Builder](./api-reference/query-builder.md)** - Type-safe queries
-- **[Type Generation](./api-reference/type-generation.md)** - CLI and code generation
-- **[Content Blocks](./api-reference/content-blocks.md)** - Page content handling
-- **[Configuration](./api-reference/configuration.md)** - Setup options
+### 🎯 **Type-Safe Queries**
+```typescript
+// Generate types and get full autocomplete
+const posts = await cms.query("blog-db")
+  .where("Status").equals("Published")
+  .sort("Date", "desc")
+  .execute();
+```
 
-### Guides
+### 🔄 **Content Conversion**
+```typescript
+// Convert Notion blocks to Markdown or HTML
+const blocks = await cms.getPageContent("page-id");
+const markdown = cms.blocksToMarkdown(blocks);
+const html = cms.blocksToHtml(blocks);
+```
 
-In-depth guides for advanced usage patterns and best practices.
+### 📁 **Smart File Management**
+- **Direct**: Link to Notion files (default)
+- **Local Cache**: Download and cache locally
+- **Remote Cache**: Store in S3-compatible storage
 
-- **[Working with Properties](./guides/working-with-properties.md)** - All property types
-- **[Pagination](./guides/pagination.md)** - Large dataset handling
-- **[Error Handling](./guides/error-handling.md)** - Debugging and error recovery
-- **[Migrating from Notion API](./guides/migrating-from-notion-api.md)** - Migration guide
+## Documentation
+
+### Getting Started
+- **[Getting Started](./getting-started.md)** - Setup and first query
+- **[Core Concepts](./core-concepts.md)** - Understand the layered API
+
+### API Guide
+- **[Simplified API](./api-guide/simplified-api.md)** - Most common use cases
+- **[Advanced API](./api-guide/advanced-api.md)** - Rich metadata and formatting
+- **[Type Generation](./api-guide/type-generation.md)** - Generate TypeScript types
+- **[Querying & Filtering](./api-guide/querying-and-filtering.md)** - Find and sort content
+- **[Content Parsing](./api-guide/content-parsing.md)** - Markdown and HTML conversion
+- **[File Management](./api-guide/file-management.md)** - Handle images and attachments
 
 ### Examples
+- **[Basic Usage](./examples/basic-usage.md)** - Simple blog and CMS patterns
+- **[Common Patterns](./examples/common-patterns.md)** - Real-world use cases
 
-Real-world code samples and usage patterns.
+## Need Help?
 
-- **[Basic Usage](./examples/basic-usage.md)** - Simple operations
-- **[Advanced Queries](./examples/advanced-queries.md)** - Complex filtering
-- **[Layered API Examples](./examples/layered-api-examples.md)** - All API levels
-- **[Real-World Use Cases](./examples/real-world-use-cases.md)** - Complete applications
+- Check [Basic Usage](./examples/basic-usage.md) for common patterns
+- Review [Core Concepts](./core-concepts.md) to understand the layered API
+- Browse [Common Patterns](./examples/common-patterns.md) for real-world examples
 
-## 🎯 Quick Navigation
+## Installation
 
-### By Use Case
+```bash
+npm install @mikemajara/notion-cms
+```
 
-- **Building a Blog?** → [Getting Started](./getting-started.md) → [Basic Usage](./examples/basic-usage.md)
-- **Need Type Safety?** → [Type Generation](./api-reference/type-generation.md)
-- **Complex Queries?** → [Query Builder](./api-reference/query-builder.md) → [Advanced Queries](./examples/advanced-queries.md)
-- **Rich Content?** → [Content Blocks](./api-reference/content-blocks.md) → [Layered API Examples](./examples/layered-api-examples.md)
-
-### By Experience Level
-
-- **Beginner**: [Getting Started](./getting-started.md) → [Core Concepts](./core-concepts.md) → [Basic Usage](./examples/basic-usage.md)
-- **Intermediate**: [Query Builder](./api-reference/query-builder.md) → [Working with Properties](./guides/working-with-properties.md)
-- **Advanced**: [Layered API Examples](./examples/layered-api-examples.md) → [Error Handling](./guides/error-handling.md)
-
-## 🛠 Development Status
-
-| Section            | Status      | Phase   |
-| ------------------ | ----------- | ------- |
-| Getting Started    | ✅ Complete | Phase 1 |
-| Installation Guide | ✅ Complete | Phase 1 |
-| Core Concepts      | ✅ Complete | Phase 1 |
-| API Reference      | ✅ Complete | Phase 2 |
-| Guides             | ✅ Complete | Phase 3 |
-| Examples           | ✅ Complete | Phase 3 |
-| Troubleshooting    | 📋 Planned  | Phase 4 |
-
-## 🤝 Contributing
-
-We welcome contributions to our documentation! Here's how you can help:
-
-1. **Found an error?** Open an issue or submit a pull request
-2. **Have an example to share?** Add it to the examples section
-3. **Want to improve a guide?** We'd love your input
-
-## 💬 Community & Support
-
-- **GitHub Issues**: Report bugs and request features
-- **Discussions**: Ask questions and share ideas
-- **Examples**: Check out community-contributed patterns
-
-## 📄 License
-
-This documentation is part of the Notion CMS project and is licensed under MIT.
+See [Getting Started](./getting-started.md) for complete setup instructions.
