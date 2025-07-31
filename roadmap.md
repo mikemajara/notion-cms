@@ -7,6 +7,7 @@
   - [ ] Formula: Can't parse based in simple layer based on type. Should be able to.
   - [x] Images: not sure if supported. Need to implement proper cache handling and availability from bucket. WIP
   - [x] Code: language attribute pass as parameter.
+- [ ] Enhance the generator: The generate command should include an --env option which when present, should read from .env by default or from the file provided as parameter to --env. Then the generator will use to generate the types file (1) the ENV variables that were passed to the generator if --env was used (2) the plain ID strings if no --env was passed.
 
 # Tasks
 
