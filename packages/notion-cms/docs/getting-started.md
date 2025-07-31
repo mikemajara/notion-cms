@@ -1,3 +1,9 @@
+---
+title: "Getting Started with Notion CMS"
+description: "Welcome to Notion CMS! This guide will help you get up and running quickly with using Notion as a headless CMS."
+date: "2024-01-15"
+---
+
 # Getting Started
 
 Welcome to Notion CMS! This guide will help you get up and running quickly with using Notion as a headless CMS.
@@ -57,18 +63,18 @@ https://www.notion.so/your-workspace/DATABASE_ID?v=...
 ### 5. Initialize and Use
 
 ```typescript
-import { NotionCMS } from "@mikemajara/notion-cms";
+import { NotionCMS } from "@mikemajara/notion-cms"
 
 // Initialize with your Notion API key
-const notionCms = new NotionCMS("your-notion-api-key");
+const notionCms = new NotionCMS("your-notion-api-key")
 
 // Fetch all records from a database
-const { results } = await notionCms.getDatabase("your-database-id");
+const { results } = await notionCms.getDatabase("your-database-id")
 
 // Work with the simplified records
-console.log(results[0].Title); // Directly access a title property
-console.log(results[0].Tags); // Access a multi-select property (as string[])
-console.log(results[0].CreatedAt); // JavaScript Date object
+console.log(results[0].Title) // Directly access a title property
+console.log(results[0].Tags) // Access a multi-select property (as string[])
+console.log(results[0].CreatedAt) // JavaScript Date object
 ```
 
 ## Your First Query
@@ -82,18 +88,17 @@ Let's try a more practical example. Suppose you have a blog database with these 
 
 ```typescript
 // Get all published blog posts
-const { results } = await notionCms
+const results = await notionCms
   .query("your-blog-database-id")
-  .where("Status")
-  .equals("Published")
+  .filter("Status", "equals", "Published")
   .sort("Published Date", "descending")
-  .execute();
+  .all()
 
 // Display the posts
 results.forEach((post) => {
-  console.log(`${post.Title} - ${post["Published Date"]}`);
-  console.log(`Tags: ${post.Tags.join(", ")}`);
-});
+  console.log(`${post.Title} - ${post["Published Date"]}`)
+  console.log(`Tags: ${post.Tags.join(", ")}`)
+})
 ```
 
 ## Environment Variables
@@ -108,8 +113,8 @@ BLOG_DATABASE_ID=your_database_id_here
 
 ```typescript
 // In your code
-const notionCms = new NotionCMS(process.env.NOTION_API_KEY);
-const { results } = await notionCms.getDatabase(process.env.BLOG_DATABASE_ID);
+const notionCms = new NotionCMS(process.env.NOTION_API_KEY)
+const { results } = await notionCms.getDatabase(process.env.BLOG_DATABASE_ID)
 ```
 
 ## What's Next?

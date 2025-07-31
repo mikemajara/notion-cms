@@ -1,3 +1,9 @@
+---
+title: "Core Concepts"
+description: "Understand the fundamental concepts behind Notion CMS and how to use them effectively."
+date: "2024-01-16"
+---
+
 # Core Concepts
 
 This guide explains the fundamental concepts behind Notion CMS and how its layered API architecture works.
@@ -19,14 +25,14 @@ The Simple API transforms Notion's complex property types into clean JavaScript 
 ### How It Works
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId);
-const record = results[0];
+const { results } = await notionCms.getDatabase(databaseId)
+const record = results[0]
 
 // Direct property access - clean and simple
-console.log(record.Title); // "My Blog Post" (string)
-console.log(record.Tags); // ["react", "typescript"] (string[])
-console.log(record.CreatedAt); // Date object
-console.log(record.Priority); // 5 (number)
+console.log(record.Title) // "My Blog Post" (string)
+console.log(record.Tags) // ["react", "typescript"] (string[])
+console.log(record.CreatedAt) // Date object
+console.log(record.Priority) // 5 (number)
 ```
 
 ### Property Type Conversions
@@ -63,17 +69,17 @@ The Advanced API preserves rich metadata from Notion properties while still prov
 ### How It Works
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId);
-const record = results[0];
+const { results } = await notionCms.getDatabase(databaseId)
+const record = results[0]
 
 // Simple access still works
-console.log(record.Title); // "My Blog Post"
+console.log(record.Title) // "My Blog Post"
 
 // Advanced access provides more details
-console.log(record.advanced.Title);
+console.log(record.advanced.Title)
 // [{ content: "My Blog Post", annotations: {...}, href: null }]
 
-console.log(record.advanced.Tags);
+console.log(record.advanced.Tags)
 // [
 //   { id: "abc123", name: "react", color: "blue" },
 //   { id: "def456", name: "typescript", color: "orange" }
@@ -86,10 +92,10 @@ console.log(record.advanced.Tags);
 
 ```typescript
 // Simple: Markdown string
-record.Description; // "This is **bold** and *italic* text"
+record.Description // "This is **bold** and *italic* text"
 
 // Advanced: Array with formatting details
-record.advanced.Description;
+record.advanced.Description
 // [
 //   { content: "This is ", annotations: { bold: false, italic: false } },
 //   { content: "bold", annotations: { bold: true, italic: false } },
@@ -103,10 +109,10 @@ record.advanced.Description;
 
 ```typescript
 // Simple: Array of strings
-record.Tags; // ["urgent", "bug-fix"]
+record.Tags // ["urgent", "bug-fix"]
 
 // Advanced: Array with metadata
-record.advanced.Tags;
+record.advanced.Tags
 // [
 //   { id: "tag1", name: "urgent", color: "red" },
 //   { id: "tag2", name: "bug-fix", color: "yellow" }
@@ -117,10 +123,10 @@ record.advanced.Tags;
 
 ```typescript
 // Simple: Array of names
-record.Assignees; // ["John Doe", "Jane Smith"]
+record.Assignees // ["John Doe", "Jane Smith"]
 
 // Advanced: Array with user details
-record.advanced.Assignees;
+record.advanced.Assignees
 // [
 //   {
 //     id: "user1",
@@ -147,14 +153,14 @@ The Raw API gives you complete access to Notion's unmodified API response.
 ### How It Works
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId);
-const record = results[0];
+const { results } = await notionCms.getDatabase(databaseId)
+const record = results[0]
 
 // Access the raw Notion API response
-console.log(record.raw.properties.Title);
+console.log(record.raw.properties.Title)
 // Complete Notion API response for the Title property
 
-console.log(record.raw.properties.Tags.multi_select);
+console.log(record.raw.properties.Tags.multi_select)
 // Raw multi_select property with all Notion metadata
 ```
 
@@ -183,22 +189,22 @@ console.log(record.raw.properties.Tags.multi_select);
 You can use different API levels for different properties:
 
 ```typescript
-const record = results[0];
+const record = results[0]
 
 // Use simple for content
-const title = record.Title;
-const publishDate = record.PublishDate;
+const title = record.Title
+const publishDate = record.PublishDate
 
 // Use advanced for styling information
-const priorityColor = record.advanced.Priority?.color;
+const priorityColor = record.advanced.Priority?.color
 const tagColors = record.advanced.Tags?.map((tag) => ({
   name: tag.name,
   color: tag.color,
-}));
+}))
 
 // Use raw for debugging
 if (process.env.NODE_ENV === "development") {
-  console.log("Raw property data:", record.raw.properties);
+  console.log("Raw property data:", record.raw.properties)
 }
 ```
 
@@ -210,15 +216,15 @@ All three API layers maintain full TypeScript support:
 // Generate types for your database
 // Run: npx notion-cms generate --database-id your-id
 
-import { BlogPostRecord } from "./generated-types";
+import { BlogPostRecord } from "./generated-types"
 
-const { results } = await notionCms.getDatabase<BlogPostRecord>(databaseId);
+const { results } = await notionCms.getDatabase<BlogPostRecord>(databaseId)
 
 // All layers are typed
-const record = results[0];
-record.Title; // TypeScript knows this is a string
-record.advanced.Tags; // TypeScript knows this is TagOption[]
-record.raw.properties.Title; // TypeScript knows the Notion API shape
+const record = results[0]
+record.Title // TypeScript knows this is a string
+record.advanced.Tags // TypeScript knows this is TagOption[]
+record.raw.properties.Title // TypeScript knows the Notion API shape
 ```
 
 ## Performance Considerations
@@ -247,18 +253,18 @@ record.raw.properties.Title; // TypeScript knows the Notion API shape
 Every response from Notion CMS includes all three API layers:
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId);
+const { results } = await notionCms.getDatabase(databaseId)
 
 results.forEach((record) => {
   // Simple layer (default properties)
-  console.log(record.Title);
+  console.log(record.Title)
 
   // Advanced layer (nested under .advanced)
-  console.log(record.advanced?.Title);
+  console.log(record.advanced?.Title)
 
   // Raw layer (nested under .raw)
-  console.log(record.raw?.properties?.Title);
-});
+  console.log(record.raw?.properties?.Title)
+})
 ```
 
 This unified approach means you can switch between API layers without changing your data fetching code.

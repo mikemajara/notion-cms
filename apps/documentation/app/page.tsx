@@ -1,15 +1,15 @@
-import { getAllDocPages, buildDocumentationTree } from "@/lib/notion";
-import { RecordNotionCMS } from "@/notion";
-import Link from "next/link";
+import { getAllDocPages, buildDocumentationTree } from "@/lib/notion"
+import { RecordNotionCMS } from "@/notion"
+import Link from "next/link"
 
 export const metadata = {
   title: "Notion CMS Documentation",
   description: "Comprehensive documentation for Notion CMS library",
-};
+}
 
 // Create page component for individual documentation items
 function DocumentationItem({ page }: { page: RecordNotionCMS }) {
-  const slug = page.slug;
+  const slug = page.slug
 
   return (
     <div className="block group">
@@ -46,12 +46,12 @@ function DocumentationItem({ page }: { page: RecordNotionCMS }) {
         </div>
       </Link>
     </div>
-  );
+  )
 }
 
 export default async function HomePage() {
-  const pages = await getAllDocPages();
-  const sortedPages = buildDocumentationTree(pages);
+  const pages = await getAllDocPages()
+  const sortedPages = buildDocumentationTree(pages)
 
   return (
     <div className="max-w-[90%]">
@@ -170,7 +170,31 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
+
+        <section className="p-6 rounded-lg bg-primary-50">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-primary-900">
+              Blog & Articles
+            </h3>
+            <Link
+              href="/blog"
+              className="text-sm text-primary-600 hover:text-primary-800 transition-colors"
+            >
+              View all →
+            </Link>
+          </div>
+          <p className="text-primary-700 mb-4">
+            Read our latest articles, guides, and insights about Notion CMS
+            development.
+          </p>
+          <Link
+            href="/blog"
+            className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Explore Blog
+          </Link>
+        </section>
       </div>
     </div>
-  );
+  )
 }

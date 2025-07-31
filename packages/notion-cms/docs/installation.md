@@ -1,4 +1,10 @@
-# Installation Guide
+---
+title: "Installation Guide"
+description: "Complete installation and setup guide for Notion CMS library."
+date: "2024-01-17"
+---
+
+# Installation
 
 This guide covers different ways to install and configure Notion CMS in your project.
 
@@ -67,12 +73,12 @@ PRODUCTS_DATABASE_ID=your_products_database_id
 
 ```typescript
 // Load environment variables
-import dotenv from "dotenv";
-dotenv.config();
+import dotenv from "dotenv"
+dotenv.config()
 
-import { NotionCMS } from "@mikemajara/notion-cms";
+import { NotionCMS } from "@mikemajara/notion-cms"
 
-const notionCms = new NotionCMS(process.env.NOTION_API_KEY!);
+const notionCms = new NotionCMS(process.env.NOTION_API_KEY!)
 ```
 
 #### Next.js Applications
@@ -81,9 +87,9 @@ Next.js automatically loads `.env.local` files:
 
 ```typescript
 // pages/api/blog.ts or app/api/blog/route.ts
-import { NotionCMS } from "@mikemajara/notion-cms";
+import { NotionCMS } from "@mikemajara/notion-cms"
 
-const notionCms = new NotionCMS(process.env.NOTION_API_KEY!);
+const notionCms = new NotionCMS(process.env.NOTION_API_KEY!)
 ```
 
 #### Vercel Deployment
@@ -162,9 +168,9 @@ https://www.notion.so/workspace/32_character_database_id?v=view_id
 const searchResults = await notionCms.search({
   query: "My Blog Database",
   filter: { property: "object", value: "database" },
-});
+})
 
-console.log(searchResults.results[0].id); // Your database ID
+console.log(searchResults.results[0].id) // Your database ID
 ```
 
 ## Verification
@@ -173,32 +179,32 @@ Test your installation with this simple script:
 
 ```typescript
 // test-installation.ts
-import { NotionCMS } from "@mikemajara/notion-cms";
+import { NotionCMS } from "@mikemajara/notion-cms"
 
 async function testInstallation() {
   try {
-    const notionCms = new NotionCMS(process.env.NOTION_API_KEY!);
+    const notionCms = new NotionCMS(process.env.NOTION_API_KEY!)
 
     // Test API connection
-    const user = await notionCms.getUser();
-    console.log("✅ Connection successful!");
-    console.log("Bot user:", user.name);
+    const user = await notionCms.getUser()
+    console.log("✅ Connection successful!")
+    console.log("Bot user:", user.name)
 
     // Test database access (replace with your database ID)
     if (process.env.TEST_DATABASE_ID) {
       const { results } = await notionCms.getDatabase(
         process.env.TEST_DATABASE_ID
-      );
+      )
       console.log(
         `✅ Database access successful! Found ${results.length} records.`
-      );
+      )
     }
   } catch (error) {
-    console.error("❌ Installation test failed:", error);
+    console.error("❌ Installation test failed:", error)
   }
 }
 
-testInstallation();
+testInstallation()
 ```
 
 Run the test:

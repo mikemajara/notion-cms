@@ -1,19 +1,19 @@
-import type { MDXComponents } from "mdx/types";
-import type { FC } from "react";
-import { codeToHtml } from "shiki";
-import Link from "next/link";
-import Image from "next/image";
-import { LinkIcon } from "lucide-react";
+import type { MDXComponents } from "mdx/types"
+import type { FC } from "react"
+import { codeToHtml } from "shiki"
+import Link from "next/link"
+import Image from "next/image"
+import { LinkIcon } from "lucide-react"
 import {
   transformerNotationDiff,
   transformerNotationHighlight,
-} from "@shikijs/transformers";
+} from "@shikijs/transformers"
 
 // @ts-ignore
-import { InlineMath, BlockMath } from "react-katex";
+import { InlineMath, BlockMath } from "react-katex"
 
-import { BlockSideTitle } from "@/components/block-sidetitle";
-import CopyButton from "@/components/copy-button";
+import { BlockSideTitle } from "@/components/block-sidetitle"
+import CopyButton from "@/components/copy-button"
 
 export const components: Record<string, FC<any>> = {
   h1: (props) => (
@@ -79,7 +79,7 @@ export const components: Record<string, FC<any>> = {
           : {})}
         {...props}
       />
-    );
+    )
   },
   strong: (props) => <strong className="font-bold" {...props} />,
   p: (props) => <p className="mt-2" {...props} />,
@@ -110,26 +110,26 @@ export const components: Record<string, FC<any>> = {
             // tags should be removed.
             pre: (hast) => {
               if (hast.children.length !== 1) {
-                throw new Error("<pre>: Expected a single <code> child");
+                throw new Error("<pre>: Expected a single <code> child")
               }
               if (hast.children[0].type !== "element") {
-                throw new Error("<pre>: Expected a <code> child");
+                throw new Error("<pre>: Expected a <code> child")
               }
-              return hast.children[0];
+              return hast.children[0]
             },
             postprocess(html) {
-              return html.replace(/^<code>|<\/code>$/g, "");
+              return html.replace(/^<code>|<\/code>$/g, "")
             },
           },
           transformerNotationHighlight(),
           transformerNotationDiff(),
         ],
-      });
+      })
 
       return (
         <>
           <code
-            className="block text-xs sm:text-sm"
+            className="text-xs sm:text-sm pl-2"
             dangerouslySetInnerHTML={{ __html: code }}
           />
           <CopyButton
@@ -137,10 +137,10 @@ export const components: Record<string, FC<any>> = {
             className="absolute w-3 h-3 top-2 right-2"
           />
         </>
-      );
+      )
     }
 
-    return <code className="inline" {...props} />;
+    return <code className="inline" {...props} />
   },
   Image,
   hr: (props) => <hr className="w-24 my-14 border-secondary" {...props} />,
@@ -172,11 +172,11 @@ export const components: Record<string, FC<any>> = {
   BlockSideTitle,
   InlineMath,
   BlockMath,
-};
+}
 
 export function useMDXComponents(inherited: MDXComponents): MDXComponents {
   return {
     ...inherited,
     ...components,
-  };
+  }
 }
