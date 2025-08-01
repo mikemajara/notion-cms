@@ -225,7 +225,7 @@ export async function generateTypes(
   );
 
   // Generate database-specific types file that imports directly from notion-cms
-  generateDatabaseSpecificFile(sourceFile, properties, typeName, databaseName);
+  generateDatabaseSpecificFile(sourceFile, properties, typeName, databaseName, databaseId);
 
   // Save the file
   await sourceFile.save();
@@ -261,12 +261,13 @@ function updateIndexFile(outputPath: string, fileName: string): void {
   }
 }
 
-// Generate database-specific types that extend NotionCMS with database methods
+// Generate database-specific types with registry approach  
 function generateDatabaseSpecificFile(
   sourceFile: SourceFile,
   properties: DatabaseObjectResponse["properties"],
   typeName: string,
-  databaseName: string
+  databaseName: string,
+  databaseId: string
 ): void {
   try {
     // Add a comment at the top of the file warning that it's auto-generated
@@ -441,31 +442,32 @@ function generateDatabaseSpecificFile(
       isExported: true,
     });
 
-    // Generate camelCase method name from database name
-    const methodName = `query${databaseName
+    // Generate camelCase database key from database name  
+    const databaseKey = databaseName
       .replace(/[^\w\s]/g, "")
       .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
       .replace(/\s/g, "")
-      .replace(/^./, (c) => c.toUpperCase())}`;
+      .replace(/^./, (c) => c.toLowerCase()); // Start with lowercase for registry key
 
-    // Generate module augmentation to extend NotionCMS class
+    // Generate DatabaseRegistry interface extension and configuration
     sourceFile.addStatements(`
-// Extend NotionCMS class with database-specific method
-/* eslint-disable */
+// Extend DatabaseRegistry interface with this database
 declare module "@mikemajara/notion-cms" {
-  interface NotionCMS {
-    /**
-     * Type-safe query method for the ${databaseName} database
-     * @param databaseId The ID of the database to query
-     * @returns A type-safe QueryBuilder for the ${typeName} record type
-     */
-    ${methodName}(databaseId: string): QueryBuilder<${typeName}, typeof ${typeName}FieldTypes>;
+  interface DatabaseRegistry {
+    ${databaseKey}: {
+      record: ${typeName};
+      fields: typeof ${typeName}FieldTypes;
+    };
   }
 }
 
-// Implement the method on the NotionCMS prototype
-NotionCMS.prototype.${methodName} = function(databaseId: string): QueryBuilder<${typeName}, typeof ${typeName}FieldTypes> {
-  return this.query<${typeName}, typeof ${typeName}FieldTypes>(databaseId, ${typeName}FieldTypes);
+// Add database configuration to the registry
+if (!NotionCMS.prototype.databases) {
+  NotionCMS.prototype.databases = {};
+}
+NotionCMS.prototype.databases.${databaseKey} = {
+  id: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATABASE_ID || "${databaseId}",
+  fields: ${typeName}FieldTypes,
 };
 `);
   } catch (error) {

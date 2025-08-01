@@ -21,7 +21,7 @@ export const fetchProductsAction = async ({
   const cms = new NotionCMS(process.env.NOTION_API_KEY!, {
     debug: { enabled: true },
   })
-  let products = cms.queryProductCatalog(process.env.NOTION_CMS_DATABASE_ID!)
+  let products = cms.query("productCatalog")
 
   if (category) products = products.filter("Category", "equals", category)
   if (priceRange)

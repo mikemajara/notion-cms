@@ -66,6 +66,13 @@ export type {
   TypeSafeFilterCondition,
 };
 
+// Database Registry Interface - extended by generated types
+export interface DatabaseRegistry {
+  // This will be extended by generated database-specific types
+  // Each database will add a key like:
+  // productCatalog: { record: RecordProductCatalog; fields: typeof RecordProductCatalogFieldTypes; }
+}
+
 export type { NotionPropertyType, NotionProperty };
 
 export class NotionCMS {
@@ -118,13 +125,29 @@ export class NotionCMS {
   // HIGH-LEVEL PUBLIC API
 
   /**
-   * Creates a query builder for a Notion database with type safety
+   * Creates a query builder for a Notion database with type safety using semantic database keys
    * This is the recommended way to interact with databases
+   * @param databaseKey The semantic key for the database (e.g., "productCatalog", "blogPosts")
+   * @returns A type-safe QueryBuilder for the specified database
+   */
+  query<K extends keyof DatabaseRegistry>(
+    databaseKey: K
+  ): QueryBuilder<DatabaseRegistry[K]['record'], DatabaseRegistry[K]['fields']> {
+    const databaseConfig = (this as any).databases?.[databaseKey];
+    if (!databaseConfig) {
+      throw new Error(`Database "${String(databaseKey)}" not found in registry. Make sure you've imported the generated types file.`);
+    }
+    return this._query(databaseConfig.id, databaseConfig.fields);
+  }
+
+  /**
+   * Internal query method for direct database access
    * @param databaseId The ID of the Notion database
    * @param fieldMetadata Optional metadata about field types for type-safe operations
    * @returns A query builder instance for the specified database
+   * @private
    */
-  query<T extends DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
+  private _query<T extends DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
     databaseId: string,
     fieldMetadata?: M
   ): QueryBuilder<T, M> {
