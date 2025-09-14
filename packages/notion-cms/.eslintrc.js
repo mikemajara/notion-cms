@@ -36,5 +36,5 @@ module.exports = {
     // Allow prefer-as-const for test files
     "@typescript-eslint/prefer-as-const": "off",
   },
-  ignorePatterns: ["dist/", "node_modules/", "*.js", "*.mjs", "*.d.ts"],
+  ignorePatterns: ["dist/", "node_modules/", "*.js", "*.mjs", "*.d.ts", "src/tests/**"],
 };

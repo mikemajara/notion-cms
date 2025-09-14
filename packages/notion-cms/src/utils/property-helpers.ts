@@ -1,7 +1,4 @@
-import {
-  PropertyItemObjectResponse,
-  PageObjectResponse,
-} from "@notionhq/client/build/src/api-endpoints";
+import { PropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 
 export type NotionPropertyType =
   | "title"

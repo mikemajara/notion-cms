@@ -360,7 +360,7 @@ export class ContentConverter {
     tableBlock: SimpleTableBlock,
     baseIndent: string
   ): string {
-    const { content, children } = tableBlock;
+    const { children } = tableBlock;
 
     if (!children || children.length === 0) {
       return `${baseIndent}<!-- Empty table -->`;

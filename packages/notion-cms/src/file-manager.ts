@@ -1,5 +1,4 @@
 import { NotionCMSConfig } from "./config";
-import { debug } from "./utils/debug";
 
 /**
  * Interface for file information
@@ -22,7 +21,7 @@ export interface FileStrategy {
  * Direct strategy - returns original Notion URLs (current behavior)
  */
 export class DirectStrategy implements FileStrategy {
-  async processFileUrl(url: string, fileName: string): Promise<string> {
+  async processFileUrl(url: string, _fileName: string): Promise<string> {
     return url;
   }
 }

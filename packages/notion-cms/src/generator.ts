@@ -1,32 +1,5 @@
 import { Client } from "@notionhq/client";
-import {
-  DatabaseObjectResponse,
-  PropertyItemObjectResponse,
-  RichTextItemResponse,
-  SelectPropertyItemObjectResponse,
-  MultiSelectPropertyItemObjectResponse,
-  DatePropertyItemObjectResponse,
-  PeoplePropertyItemObjectResponse,
-  FilesPropertyItemObjectResponse,
-  CheckboxPropertyItemObjectResponse,
-  NumberPropertyItemObjectResponse,
-  FormulaPropertyItemObjectResponse,
-  RelationPropertyItemObjectResponse,
-  RollupPropertyItemObjectResponse,
-  CreatedTimePropertyItemObjectResponse,
-  CreatedByPropertyItemObjectResponse,
-  LastEditedTimePropertyItemObjectResponse,
-  LastEditedByPropertyItemObjectResponse,
-  TitlePropertyItemObjectResponse,
-  RichTextPropertyItemObjectResponse,
-  UrlPropertyItemObjectResponse,
-  EmailPropertyItemObjectResponse,
-  PhoneNumberPropertyItemObjectResponse,
-  UserObjectResponse,
-  PageObjectResponse,
-  GetDatabaseResponse,
-  UniqueIdPropertyItemObjectResponse,
-} from "@notionhq/client/build/src/api-endpoints";
+import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import * as fs from "fs";
 import * as path from "path";
 import { Project, SourceFile } from "ts-morph";
@@ -156,8 +129,7 @@ function generateFileName(databaseName: string): string {
 export async function generateTypes(
   databaseId: string,
   outputPath: string,
-  token: string,
-  force: boolean = false
+  token: string
 ): Promise<void> {
   // Create a new notion client with the provided token
   const notion = new Client({
@@ -354,8 +326,6 @@ function generateDatabaseSpecificFile(
     metadataStatements.push(`  "id": { type: "unique_id" },`);
 
     for (const [propertyName, propertyValue] of Object.entries(properties)) {
-      let fieldType: string;
-
       // For select and multi_select, add options data
       if (
         propertyValue.type === "select" ||
@@ -482,187 +452,6 @@ NotionCMS.prototype.databases.${databaseKey} = {
 }
 
 /**
- * Process a Notion page into a record with layered access (simple, advanced, raw)
- * @deprecated Use DatabaseService.getRecord() or DatabaseService.getDatabase() instead.
- * @param page The Notion page object from the API
- * @param fileManager Optional FileManager for file processing (deprecated, ignored)
- * @returns A processed record with simple, advanced, and raw access
- */
-export function processNotionRecord(
-  page: PageObjectResponse,
-  fileManager?: any
-): DatabaseRecord {
-  console.warn(
-    "processNotionRecord is deprecated. Use DatabaseService.processNotionRecord() for the unified processing method with proper file handling and layered access."
-  );
-
-  // Basic implementation without file processing for backward compatibility
-  const simple: Record<string, any> = {
-    id: page.id,
-  };
-
-  const advanced: Record<string, any> = {
-    id: page.id,
-  };
-
-  // Basic property processing without the deleted functions
-  for (const [key, value] of Object.entries(page.properties)) {
-    const property = value as PropertyItemObjectResponse;
-
-    // Simple version - just extract basic values
-    simple[key] = extractBasicPropertyValue(property);
-
-    // Advanced version - same as simple for now in this deprecated function
-    advanced[key] = extractBasicPropertyValue(property);
-  }
-
-  // Construct unified record with all three access levels
-  const result: DatabaseRecord = {
-    id: page.id,
-    ...simple,
-    advanced: {
-      id: page.id,
-      ...advanced,
-    },
-    raw: {
-      id: page.id,
-      properties: page.properties,
-    },
-  };
-
-  return result;
-}
-
-/**
- * Basic property value extraction without file processing
- * @private
- */
-function extractBasicPropertyValue(property: PropertyItemObjectResponse): any {
-  switch (property.type) {
-    case "title":
-      const titleProp = property as any;
-      return titleProp.title?.[0]?.plain_text ?? "";
-    case "rich_text":
-      const richTextProp = property as any;
-      return richTextProp.rich_text?.[0]?.plain_text ?? "";
-    case "number":
-      return (property as any).number;
-    case "select":
-      return (property as any).select?.name ?? null;
-    case "multi_select":
-      return (
-        (property as any).multi_select?.map((select: any) => select.name) ?? []
-      );
-    case "date":
-      const dateProp = property as any;
-      return dateProp.date ? new Date(dateProp.date.start) : null;
-    case "people":
-      const peopleProp = property as any;
-      return peopleProp.people?.map((person: any) => person.name || "") ?? [];
-    case "files":
-      const filesProp = property as any;
-      return (
-        filesProp.files?.map((file: any) => ({
-          name: file.name,
-          url: file.type === "external" ? file.external?.url : file.file?.url,
-        })) ?? []
-      );
-    case "checkbox":
-      return (property as any).checkbox;
-    case "url":
-      return (property as any).url;
-    case "email":
-      return (property as any).email;
-    case "phone_number":
-      return (property as any).phone_number;
-    case "formula":
-      return (property as any).formula;
-    case "relation":
-      const relationProp = property as any;
-      return relationProp.relation?.map((rel: any) => rel.id) ?? [];
-    case "rollup":
-      return (property as any).rollup;
-    case "created_time":
-      return (property as any).created_time;
-    case "created_by":
-      const createdBy = (property as any).created_by;
-      return createdBy
-        ? {
-            id: createdBy.id,
-            name: createdBy.name,
-            avatar_url: createdBy.avatar_url,
-          }
-        : null;
-    case "last_edited_time":
-      return (property as any).last_edited_time;
-    case "last_edited_by":
-      const lastEditedBy = (property as any).last_edited_by;
-      return lastEditedBy
-        ? {
-            id: lastEditedBy.id,
-            name: lastEditedBy.name,
-            avatar_url: lastEditedBy.avatar_url,
-          }
-        : null;
-    case "unique_id":
-      const uniqueId = (property as any).unique_id;
-      return uniqueId?.number ?? null;
-    default:
-      return null;
-  }
-}
-
-/**
- * Process multiple Notion pages into records with layered access
- * @param pages An array of Notion page objects
- * @returns An array of processed records with layered access
- * @deprecated Use DatabaseService.processNotionRecords() for the unified processing method with proper file handling and layered access.
- */
-export function processNotionRecords(
-  pages: PageObjectResponse[],
-  fileManager?: any
-): DatabaseRecord[] {
-  console.warn(
-    "processNotionRecords is deprecated. Use DatabaseService.processNotionRecords() for the unified processing method with proper file handling and layered access."
-  );
-  return pages.map((page) => processNotionRecord(page, fileManager));
-}
-
-/**
- * @deprecated Use processNotionRecord instead which provides advanced and raw access as well
- */
-export function simplifyNotionRecord(page: PageObjectResponse): DatabaseRecord {
-  return processNotionRecord(page);
-}
-
-/**
- * @deprecated Use processNotionRecords instead which provides advanced and raw access as well
- */
-export function simplifyNotionRecords(
-  pages: PageObjectResponse[]
-): DatabaseRecord[] {
-  return processNotionRecords(pages);
-}
-
-/**
- * @deprecated Use processNotionRecord instead which provides simplified, advanced and raw access
- */
-export function advancedNotionRecord(
-  page: PageObjectResponse
-): AdvancedDatabaseRecord {
-  return processNotionRecord(page) as AdvancedDatabaseRecord;
-}
-
-/**
- * @deprecated Use processNotionRecords instead which provides simplified, advanced and raw access
- */
-export function advancedNotionRecords(
-  pages: PageObjectResponse[]
-): AdvancedDatabaseRecord[] {
-  return processNotionRecords(pages) as AdvancedDatabaseRecord[];
-}
-
-/**
  * Generate types for multiple databases in a single file
  * @param databaseIds Array of database IDs to generate types for
  * @param outputPath Path where to generate the types file
@@ -672,8 +461,7 @@ export function advancedNotionRecords(
 export async function generateMultipleDatabaseTypes(
   databaseIds: string[],
   outputPath: string,
-  token: string,
-  force: boolean = false
+  token: string
 ): Promise<void> {
   // Create a new notion client with the provided token
   const notion = new Client({
@@ -683,14 +471,7 @@ export async function generateMultipleDatabaseTypes(
   const combinedFileName = "notion-types-combined.ts";
   const combinedFilePath = path.join(outputPath, combinedFileName);
 
-  // Check if file exists and handle overwrite logic
-  if (fs.existsSync(combinedFilePath) && !force) {
-    // This would need a prompt, but for now we'll just warn
-    console.warn(
-      `File ${combinedFilePath} already exists. Use --force to overwrite.`
-    );
-    return;
-  }
+  // Always overwrite combined file
 
   // Initialize ts-morph project
   const project = new Project();

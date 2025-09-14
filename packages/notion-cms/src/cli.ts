@@ -4,32 +4,8 @@ import { Command } from "commander";
 import { generateTypes, generateMultipleDatabaseTypes } from "./generator";
 import * as path from "path";
 import * as fs from "fs";
-import * as readline from "readline";
 
 const program = new Command();
-
-// Helper function to create readline interface for user prompts
-function createPrompt() {
-  return readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-}
-
-// Helper function to prompt user for confirmation
-async function confirmOverwrite(filePath: string): Promise<boolean> {
-  const rl = createPrompt();
-
-  return new Promise((resolve) => {
-    rl.question(
-      `File already exists: ${filePath}\nDo you want to overwrite it? (y/N): `,
-      (answer) => {
-        rl.close();
-        resolve(answer.toLowerCase() === "y");
-      }
-    );
-  });
-}
 
 program
   .name("notion-cms")
@@ -45,10 +21,8 @@ program
   )
   .option("-o, --output <path>", "Output path", "./notion")
   .requiredOption("-t, --token <token>", "Notion API token")
-  .option("-f, --force", "Force overwrite existing files without asking", false)
   .action(async (options) => {
     try {
-      // Validate that either --database or --databases is provided
       if (!options.database && !options.databases) {
         console.error(
           "Error: Either --database or --databases must be provided"
@@ -65,7 +39,6 @@ program
 
       const outputPath = path.resolve(process.cwd(), options.output);
 
-      // Parse database IDs
       const databaseIds = options.databases
         ? options.databases.split(",").map((id: string) => id.trim())
         : [options.database];
@@ -77,41 +50,22 @@ program
       );
       console.log(`Output path: ${outputPath}`);
 
-      // Create output directory if it doesn't exist
       if (!fs.existsSync(outputPath)) {
         fs.mkdirSync(outputPath, { recursive: true });
       }
 
-      // For multiple databases, we'll generate a combined file
       if (databaseIds.length > 1) {
         await generateMultipleDatabaseTypes(
           databaseIds,
           outputPath,
-          options.token,
-          options.force
+          options.token
         );
       } else {
-        // Single database - use existing logic
         const baseTypesFile = path.join(outputPath, "notion-types.ts");
-        if (fs.existsSync(baseTypesFile) && !options.force) {
-          const shouldOverwrite = await confirmOverwrite(baseTypesFile);
-          if (!shouldOverwrite) {
-            console.log("Keeping existing notion-types.ts file.");
-          } else {
-            fs.unlinkSync(baseTypesFile);
-            console.log("Overwriting existing notion-types.ts file.");
-          }
-        } else if (fs.existsSync(baseTypesFile) && options.force) {
+        if (fs.existsSync(baseTypesFile)) {
           fs.unlinkSync(baseTypesFile);
-          console.log("Force overwriting existing notion-types.ts file.");
         }
-
-        await generateTypes(
-          databaseIds[0],
-          outputPath,
-          options.token,
-          options.force
-        );
+        await generateTypes(databaseIds[0], outputPath, options.token);
       }
 
       console.log("Types generated successfully!");

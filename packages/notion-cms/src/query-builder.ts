@@ -408,7 +408,6 @@ export type ValueTypeMap = {
 export type ValueTypeFor<
   K extends keyof M,
   M extends DatabaseFieldMetadata,
-  T extends DatabaseRecord = DatabaseRecord,
   O extends OperatorsFor<K, M> = OperatorsFor<K, M>
 > = O extends "is_empty" | "is_not_empty"
   ? any // is_empty and is_not_empty operators ignore the value
@@ -429,12 +428,11 @@ export type ValueTypeFor<
  */
 export interface TypeSafeFilterCondition<
   K extends keyof M,
-  M extends DatabaseFieldMetadata,
-  T extends DatabaseRecord
+  M extends DatabaseFieldMetadata
 > {
   property: K;
   operator: OperatorsFor<K, M>;
-  value: ValueTypeFor<K, M, T>;
+  value: ValueTypeFor<K, M>;
   propertyType: FieldTypeFor<K, M>;
 }
 
@@ -509,7 +507,7 @@ export class QueryBuilder<
   filter<K extends keyof M & keyof T & string, O extends OperatorsFor<K, M>>(
     property: K,
     operator: O,
-    value: ValueTypeFor<K, M, T, O>
+    value: ValueTypeFor<K, M, O>
   ): QueryBuilder<T, M> {
     // Validate that the operator is valid for the field type
     if (!this.isValidOperatorForField(property, operator as string)) {
@@ -960,8 +958,8 @@ export class QueryBuilder<
   isValidValueForField<K extends keyof M>(
     property: K,
     value: any
-  ): value is ValueTypeFor<K, M, T> {
-    const fieldType = this.getFieldTypeForFilter(property as keyof T & string);
+  ): value is ValueTypeFor<K, M> {
+    // Placeholder for future runtime validation based on field type
 
     // TODO: Implement comprehensive value validation
     // This will be expanded in Phase 2 with proper runtime validation
