@@ -5,7 +5,7 @@ import { ProductSearch } from "@/components/store/product-search"
 import { ProductGridSkeleton } from "@/components/store/product-grid-skeleton"
 
 export default function StorePage({
-  searchParams,
+  searchParams
 }: {
   searchParams: Promise<{ category: string; searchQuery: string }>
 }) {
@@ -50,5 +50,5 @@ export default function StorePage({
 export const metadata = {
   title: "Product Catalog - Store",
   description:
-    "Browse our complete product catalog with advanced filtering and search",
+    "Browse our complete product catalog with advanced filtering and search"
 }

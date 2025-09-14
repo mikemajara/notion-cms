@@ -5,9 +5,10 @@
  * Generated for database: Product Catalog
  */
 import {
-  DatabaseFieldMetadata,
   DatabaseRecord,
   NotionCMS,
+  QueryBuilder,
+  DatabaseFieldMetadata
 } from "@mikemajara/notion-cms"
 export const RecordProductCatalogFieldTypes = {
   id: { type: "unique_id" },
@@ -24,8 +25,8 @@ export const RecordProductCatalogFieldTypes = {
       "Home & Office",
       "Health & Nutrition",
       "Home & Wellness",
-      "Office Supplies",
-    ] as const,
+      "Office Supplies"
+    ] as const
   },
   "In Stock": { type: "checkbox" },
   Image: { type: "files" },
@@ -87,12 +88,13 @@ export const RecordProductCatalogFieldTypes = {
       "Earbuds",
       "Noise Cancellation",
       "Digital",
-      "Precise",
-    ] as const,
+      "Precise"
+    ] as const
   },
   Description: { type: "rich_text" },
+  ID: { type: "unique_id" },
   Price: { type: "number" },
-  Name: { type: "title" },
+  Name: { type: "title" }
 } as const satisfies DatabaseFieldMetadata
 
 export interface RecordProductCatalogAdvanced {
@@ -118,6 +120,7 @@ export interface RecordProductCatalogAdvanced {
     href: string | null
     link?: { url: string } | null
   }[]
+  ID: { prefix: string | null; number: number }
   Price: number
   Name: {
     content: string
@@ -207,6 +210,7 @@ export interface RecordProductCatalog extends DatabaseRecord {
     | "Precise"
   >
   Description: string
+  ID: any
   Price: number
   Name: string
   advanced: RecordProductCatalogAdvanced
@@ -231,5 +235,5 @@ NotionCMS.prototype.databases.productCatalog = {
   id:
     process.env.NOTION_CMS_PRODUCTCATALOG_DATABASE_ID ||
     "2362a789c1fc8170b076ee5cd46cdd87",
-  fields: RecordProductCatalogFieldTypes,
+  fields: RecordProductCatalogFieldTypes
 }

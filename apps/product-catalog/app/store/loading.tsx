@@ -1,4 +1,4 @@
-import { ProductGridSkeleton } from '@/components/store/product-grid-skeleton';
+import { ProductGridSkeleton } from "@/components/store/product-grid-skeleton"
 
 export default function StoreLoading() {
   return (
@@ -26,5 +26,5 @@ export default function StoreLoading() {
         </main>
       </div>
     </div>
-  );
+  )
 }

@@ -13,7 +13,7 @@ import { Toaster } from "@/components/ui/toaster"
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#000000",
+  themeColor: "#000000"
 }
 
 export const metadata: Metadata = {
@@ -31,12 +31,12 @@ export const metadata: Metadata = {
         url: "/meta.png",
         width: 1200,
         height: 630,
-        alt: "Next.js Template Collection Preview",
-      },
+        alt: "Next.js Template Collection Preview"
+      }
     ],
     locale: "en_US",
     type: "website",
-    siteName: "Next.js Template Collection",
+    siteName: "Next.js Template Collection"
   },
   twitter: {
     card: "summary_large_image",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     description:
       "Jump-start your project with three production-ready templates powered by Next.js 15 and Tailwind CSS.",
     images: ["/meta.png"],
-    creator: "@miguelalcalde",
+    creator: "@miguelalcalde"
   },
   robots: {
     index: true,
@@ -54,12 +54,12 @@ export const metadata: Metadata = {
       follow: true,
       "max-video-preview": -1,
       "max-image-preview": "large",
-      "max-snippet": -1,
-    },
+      "max-snippet": -1
+    }
   },
   icons: {
     icon: [{ url: "/favicon.ico", sizes: "48x48" }],
-    apple: "/apple-touch-icon.png",
+    apple: "/apple-touch-icon.png"
   },
   manifest: "/site.webmanifest",
   keywords: [
@@ -68,12 +68,12 @@ export const metadata: Metadata = {
     "Tailwind CSS",
     "shadcn/ui",
     "Templates",
-    "Web Development",
-  ],
+    "Web Development"
+  ]
 }
 
 export default async function RootLayout({
-  children,
+  children
 }: Readonly<{
   children: React.ReactNode
 }>) {

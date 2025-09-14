@@ -12,5 +12,5 @@ export function ProductGridSkeleton() {
         </div>
       ))}
     </div>
-  );
+  )
 }

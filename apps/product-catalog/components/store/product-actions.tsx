@@ -1,66 +1,66 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ShoppingCart, Heart, Share2, Minus, Plus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { ShoppingCart, Heart, Share2, Minus, Plus } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 interface ProductActionsProps {
-  productId: string;
+  productId: string
 }
 
 export function ProductActions({ productId }: ProductActionsProps) {
-  const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const { toast } = useToast();
+  const [quantity, setQuantity] = useState(1)
+  const [isWishlisted, setIsWishlisted] = useState(false)
+  const { toast } = useToast()
 
   const handleQuantityChange = (change: number) => {
-    const newQuantity = Math.max(1, Math.min(10, quantity + change));
-    setQuantity(newQuantity);
-  };
+    const newQuantity = Math.max(1, Math.min(10, quantity + change))
+    setQuantity(newQuantity)
+  }
 
   const handleAddToCart = () => {
     toast({
       title: "Added to cart",
-      description: `${quantity} item(s) added to your cart`,
-    });
-  };
+      description: `${quantity} item(s) added to your cart`
+    })
+  }
 
   const handleWishlist = () => {
-    setIsWishlisted(!isWishlisted);
+    setIsWishlisted(!isWishlisted)
     toast({
       title: isWishlisted ? "Removed from wishlist" : "Added to wishlist",
-      description: isWishlisted 
-        ? "Item removed from your wishlist" 
-        : "Item added to your wishlist",
-    });
-  };
+      description: isWishlisted
+        ? "Item removed from your wishlist"
+        : "Item added to your wishlist"
+    })
+  }
 
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Check out this product',
-          url: window.location.href,
-        });
+          title: "Check out this product",
+          url: window.location.href
+        })
       } catch (error) {
         // Fallback to clipboard
-        navigator.clipboard.writeText(window.location.href);
+        navigator.clipboard.writeText(window.location.href)
         toast({
           title: "Link copied",
-          description: "Product link copied to clipboard",
-        });
+          description: "Product link copied to clipboard"
+        })
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(window.location.href)
       toast({
         title: "Link copied",
-        description: "Product link copied to clipboard",
-      });
+        description: "Product link copied to clipboard"
+      })
     }
-  };
+  }
 
   return (
     <div className="space-y-4">
@@ -82,7 +82,11 @@ export function ProductActions({ productId }: ProductActionsProps) {
             min="1"
             max="10"
             value={quantity}
-            onChange={(e) => setQuantity(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+            onChange={(e) =>
+              setQuantity(
+                Math.max(1, Math.min(10, parseInt(e.target.value) || 1))
+              )
+            }
             className="w-20 text-center"
           />
           <Button
@@ -98,11 +102,7 @@ export function ProductActions({ productId }: ProductActionsProps) {
 
       {/* Action Buttons */}
       <div className="space-y-3">
-        <Button 
-          size="lg" 
-          className="w-full"
-          onClick={handleAddToCart}
-        >
+        <Button size="lg" className="w-full" onClick={handleAddToCart}>
           <ShoppingCart className="h-4 w-4 mr-2" />
           Add to Cart
         </Button>
@@ -113,14 +113,13 @@ export function ProductActions({ productId }: ProductActionsProps) {
             onClick={handleWishlist}
             className={isWishlisted ? "text-red-600 border-red-600" : ""}
           >
-            <Heart className={`h-4 w-4 mr-2 ${isWishlisted ? "fill-current" : ""}`} />
+            <Heart
+              className={`h-4 w-4 mr-2 ${isWishlisted ? "fill-current" : ""}`}
+            />
             {isWishlisted ? "Wishlisted" : "Wishlist"}
           </Button>
 
-          <Button
-            variant="outline"
-            onClick={handleShare}
-          >
+          <Button variant="outline" onClick={handleShare}>
             <Share2 className="h-4 w-4 mr-2" />
             Share
           </Button>
@@ -132,5 +131,5 @@ export function ProductActions({ productId }: ProductActionsProps) {
         Buy Now
       </Button>
     </div>
-  );
+  )
 }

@@ -14,7 +14,7 @@ const mockImages = [
   { url: "/placeholder.svg", name: "main-image.jpg" },
   { url: "/placeholder.svg", name: "side-view.jpg" },
   { url: "/placeholder.svg", name: "detail-view.jpg" },
-  { url: "/placeholder.svg", name: "packaging.jpg" },
+  { url: "/placeholder.svg", name: "packaging.jpg" }
 ]
 
 export function ProductImages({ productId }: ProductImagesProps) {

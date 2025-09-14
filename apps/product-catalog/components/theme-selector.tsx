@@ -1,16 +1,16 @@
-"use client";
+"use client"
 
-import { THEMES } from "@/lib/themes";
-import { useThemeConfig } from "@/components/theme-active";
-import * as React from "react";
-import * as SelectPrimitive from "@radix-ui/react-select";
-import { CheckIcon, ChevronDownIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ThemeCircle } from "@/components/theme-circle";
+import { THEMES } from "@/lib/themes"
+import { useThemeConfig } from "@/components/theme-active"
+import * as React from "react"
+import * as SelectPrimitive from "@radix-ui/react-select"
+import { CheckIcon, ChevronDownIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { ThemeCircle } from "@/components/theme-circle"
 
 export function ThemeSelector() {
-  const { activeTheme, setActiveTheme } = useThemeConfig();
-  const currentTheme = THEMES.find((t) => t.value === activeTheme);
+  const { activeTheme, setActiveTheme } = useThemeConfig()
+  const currentTheme = THEMES.find((t) => t.value === activeTheme)
 
   return (
     <SelectPrimitive.Root value={activeTheme} onValueChange={setActiveTheme}>
@@ -53,5 +53,5 @@ export function ThemeSelector() {
         </SelectPrimitive.Content>
       </SelectPrimitive.Portal>
     </SelectPrimitive.Root>
-  );
+  )
 }

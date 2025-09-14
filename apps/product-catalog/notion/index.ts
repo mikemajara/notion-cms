@@ -1,4 +1,4 @@
 // Auto-generated index file for Notion CMS types
 
 // Export database-specific types
-export * from './notion-types-product-catalog';
+export * from "./notion-types-product-catalog"

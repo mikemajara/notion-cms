@@ -20,7 +20,7 @@ const categories = [
   { value: "Home & Office", label: "Home & Office" },
   { value: "Health & Nutrition", label: "Health & Nutrition" },
   { value: "Home & Wellness", label: "Home & Wellness" },
-  { value: "Office Supplies", label: "Office Supplies" },
+  { value: "Office Supplies", label: "Office Supplies" }
 ]
 
 const priceRanges = [
@@ -28,12 +28,12 @@ const priceRanges = [
   { value: "25-50", label: "$25 - $50" },
   { value: "50-100", label: "$50 - $100" },
   { value: "100-200", label: "$100 - $200" },
-  { value: "200+", label: "Over $200" },
+  { value: "200+", label: "Over $200" }
 ]
 
 const availabilityOptions = [
   { value: "In Stock", label: "In Stock" },
-  { value: "Out of Stock", label: "Out of Stock" },
+  { value: "Out of Stock", label: "Out of Stock" }
 ]
 
 export function ProductFilters({ selectedCategory }: ProductFiltersProps) {

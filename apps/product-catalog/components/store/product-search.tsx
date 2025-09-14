@@ -1,35 +1,35 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Search, X } from "lucide-react"
 
 export function ProductSearch() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get('search') || '');
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [query, setQuery] = useState(searchParams.get("search") || "")
 
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams(searchParams);
-    
+    e.preventDefault()
+    const params = new URLSearchParams(searchParams)
+
     if (query.trim()) {
-      params.set('search', query.trim());
+      params.set("search", query.trim())
     } else {
-      params.delete('search');
+      params.delete("search")
     }
-    
-    router.push(`/store?${params.toString()}`);
-  };
+
+    router.push(`/store?${params.toString()}`)
+  }
 
   const clearSearch = () => {
-    setQuery('');
-    const params = new URLSearchParams(searchParams);
-    params.delete('search');
-    router.push(`/store?${params.toString()}`);
-  };
+    setQuery("")
+    const params = new URLSearchParams(searchParams)
+    params.delete("search")
+    router.push(`/store?${params.toString()}`)
+  }
 
   return (
     <form onSubmit={handleSearch} className="relative">
@@ -62,5 +62,5 @@ export function ProductSearch() {
         </Button>
       </div>
     </form>
-  );
+  )
 }

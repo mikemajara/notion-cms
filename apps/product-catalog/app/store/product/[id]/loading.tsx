@@ -9,7 +9,10 @@ export default function ProductLoading() {
           <div className="aspect-square bg-muted animate-pulse rounded-lg" />
           <div className="grid grid-cols-4 gap-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="aspect-square bg-muted animate-pulse rounded" />
+              <div
+                key={i}
+                className="aspect-square bg-muted animate-pulse rounded"
+              />
             ))}
           </div>
         </div>
@@ -26,7 +29,10 @@ export default function ProductLoading() {
             </div>
             <div className="flex gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-6 bg-muted animate-pulse rounded w-16" />
+                <div
+                  key={i}
+                  className="h-6 bg-muted animate-pulse rounded w-16"
+                />
               ))}
             </div>
           </div>
@@ -52,5 +58,5 @@ export default function ProductLoading() {
         </div>
       </section>
     </div>
-  );
+  )
 }

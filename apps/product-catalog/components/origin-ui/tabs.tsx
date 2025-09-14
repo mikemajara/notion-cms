@@ -1,9 +1,9 @@
 // Dependencies: pnpm install lucide-react
 
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookMarked, Box, Home } from "lucide-react";
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { BookMarked, Box, Home } from "lucide-react"
 
 export default function TabDemo() {
   return (
@@ -65,5 +65,5 @@ export default function TabDemo() {
         </p>
       </TabsContent>
     </Tabs>
-  );
+  )
 }

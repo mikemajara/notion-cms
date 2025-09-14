@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "next/link"
 import {
   Calendar,
   Store,
@@ -6,8 +6,8 @@ import {
   Home,
   LayoutDashboard,
   Settings,
-  Link as LinkIcon,
-} from "lucide-react";
+  Link as LinkIcon
+} from "lucide-react"
 
 import {
   NavigationMenu,
@@ -16,24 +16,24 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { ThemeSelector } from "./theme-selector";
-import { ModeToggle } from "./mode-toggle";
+  navigationMenuTriggerStyle
+} from "@/components/ui/navigation-menu"
+import { ThemeSelector } from "./theme-selector"
+import { ModeToggle } from "./mode-toggle"
 
 // Menu items - reusing the same items from the sidebar
 const items = [
   {
     title: "Home",
     url: "/",
-    icon: Home,
+    icon: Home
   },
   {
     title: "Store",
     url: "/store",
-    icon: Store,
-  },
-];
+    icon: Store
+  }
+]
 
 export function SiteNavbar() {
   return (
@@ -61,5 +61,5 @@ export function SiteNavbar() {
         </div>
       </div>
     </div>
-  );
+  )
 }

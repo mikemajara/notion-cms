@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import Link from "next/link"
+import { ChevronRight } from "lucide-react"
 
 interface CategoryBreadcrumbProps {
-  category: string;
+  category: string
 }
 
 export function CategoryBreadcrumb({ category }: CategoryBreadcrumbProps) {
@@ -14,5 +14,5 @@ export function CategoryBreadcrumb({ category }: CategoryBreadcrumbProps) {
       <ChevronRight className="h-4 w-4" />
       <span className="text-foreground">{category}</span>
     </nav>
-  );
+  )
 }

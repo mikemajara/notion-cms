@@ -16,30 +16,34 @@ export const fetchProductsAction = async ({
   category,
   priceRange,
   availability,
-  searchQuery,
+  searchQuery
 }: FetchProductsActionProps = {}) => {
   const cms = new NotionCMS(process.env.NOTION_API_KEY!, {
-    debug: { enabled: true },
+    files: {
+      strategy: "local"
+    },
+    debug: { enabled: true }
   })
-  let products = cms.query("productCatalog")
+  let result = cms.query("productCatalog")
 
-  if (category) products = products.filter("Category", "equals", category)
+  if (category) result = result.filter("Category", "equals", category)
   if (priceRange)
-    products = products
+    result = result
       .filter("Price", "greater_than_or_equal_to", priceRange.from)
       .filter("Price", "less_than_or_equal_to", priceRange.to)
-  if (availability)
-    products = products.filter("In Stock", "equals", availability)
-  if (searchQuery) products = products.filter("Name", "contains", searchQuery)
+  if (availability) result = result.filter("In Stock", "equals", availability)
+  if (searchQuery) result = result.filter("Name", "contains", searchQuery)
 
-  console.log(`fetchProductsAction: ${products.all()}`)
+  const products = await result.all()
+
+  console.log(`fetchProductsAction: ${products}`)
 
   return products
 }
 
 export const fetchProductAction = async ({ id }: { id: string }) => {
   const cms = new NotionCMS(process.env.NOTION_API_KEY!, {
-    debug: { enabled: true },
+    debug: { enabled: true }
   })
   const product = cms.getRecord(id)
   return product

@@ -7,11 +7,11 @@ import { ShoppingCart, Heart } from "lucide-react"
 import { fetchProductsAction } from "@/actions/products"
 import {
   RecordProductCatalog,
-  RecordProductCatalogFieldTypes,
+  RecordProductCatalogFieldTypes
 } from "@/notion/notion-types-product-catalog"
 
 export async function ProductGrid({
-  searchParams,
+  searchParams
 }: {
   searchParams: Promise<{
     category: (typeof RecordProductCatalogFieldTypes.Category.options)[number]
@@ -32,9 +32,9 @@ export async function ProductGrid({
       params.availability === "In Stock"
         ? true
         : params.availability === "Out of Stock"
-        ? false
-        : undefined,
-    searchQuery: searchQuery,
+          ? false
+          : undefined,
+    searchQuery: searchQuery
   })) as RecordProductCatalog[]
 
   return (

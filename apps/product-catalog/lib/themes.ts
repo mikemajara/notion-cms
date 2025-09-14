@@ -1,39 +1,39 @@
 export const THEMES = [
   {
     name: "Default",
-    value: "default",
+    value: "default"
   },
   {
     name: "Neutral",
-    value: "neutral",
+    value: "neutral"
   },
   {
     name: "Stone",
-    value: "stone",
+    value: "stone"
   },
   {
     name: "Zinc",
-    value: "zinc",
+    value: "zinc"
   },
   {
     name: "Gray",
-    value: "gray",
+    value: "gray"
   },
   {
     name: "Slate",
-    value: "slate",
+    value: "slate"
   },
   {
     name: "Scaled",
-    value: "scaled",
+    value: "scaled"
   },
   {
     name: "Bold tech",
-    value: "bold-tech",
+    value: "bold-tech"
   },
   {
     name: "Brutalist",
-    value: "brutalist",
-  },
-];
-export type Theme = (typeof THEMES)[number];
+    value: "brutalist"
+  }
+]
+export type Theme = (typeof THEMES)[number]

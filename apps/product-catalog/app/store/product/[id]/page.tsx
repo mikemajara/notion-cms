@@ -1,22 +1,22 @@
-import { Suspense } from "react";
-import { ProductImages } from "@/components/store/product-images";
-import { ProductInfo } from "@/components/store/product-info";
-import { ProductActions } from "@/components/store/product-actions";
-import { ProductRecommendations } from "@/components/store/product-recommendations";
-import { ProductBreadcrumb } from "@/components/store/product-breadcrumb";
-import { fetchProductAction } from "@/actions/products";
-import { RecordProductCatalog } from "@/notion/notion-types-product-catalog";
+import { Suspense } from "react"
+import { ProductImages } from "@/components/store/product-images"
+import { ProductInfo } from "@/components/store/product-info"
+import { ProductActions } from "@/components/store/product-actions"
+import { ProductRecommendations } from "@/components/store/product-recommendations"
+import { ProductBreadcrumb } from "@/components/store/product-breadcrumb"
+import { fetchProductAction } from "@/actions/products"
+import { RecordProductCatalog } from "@/notion/notion-types-product-catalog"
 
 interface ProductPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { id } = await params;
+  const { id } = await params
 
   const product: RecordProductCatalog = (await fetchProductAction({
-    id,
-  })) as RecordProductCatalog;
+    id
+  })) as RecordProductCatalog
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -88,16 +88,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </Suspense>
       </section>
     </div>
-  );
+  )
 }
 
 export async function generateMetadata({ params }: ProductPageProps) {
-  const { id } = await params;
+  const { id } = await params
 
   // This would typically fetch product data for metadata
   // For now, return generic metadata
   return {
     title: "Product Details - Store",
-    description: "View detailed information about this product",
-  };
+    description: "View detailed information about this product"
+  }
 }

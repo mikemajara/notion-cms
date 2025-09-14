@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import React from "react";
-import { cn } from "@/lib/utils";
+import React from "react"
+import { cn } from "@/lib/utils"
 
 interface ThemeCircleProps {
-  theme: string;
-  className?: string;
+  theme: string
+  className?: string
 }
 
 export function ThemeCircle({ theme, className }: ThemeCircleProps) {
@@ -24,5 +24,5 @@ export function ThemeCircle({ theme, className }: ThemeCircleProps) {
         <div className="absolute top-0 right-0 h-1/2 w-1/2 bg-secondary" />
       </div>
     </div>
-  );
+  )
 }
