@@ -2,9 +2,12 @@
  * Configuration options for NotionCMS file management
  */
 
-const DEFAULT_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-const DEFAULT_CACHE_MAX_SIZE = 100 * 1024 * 1024; // 100MB in bytes
 const DEFAULT_LOCAL_PATH = "./public/assets/notion-files";
+
+/**
+ * File management strategies
+ */
+export type FileStrategy = "direct" | "local" | "remote";
 
 /**
  * Configuration options for debug logging
@@ -24,40 +27,64 @@ export interface DebugConfig {
 }
 
 /**
- * Configuration options for file management
+ * Unified storage configuration
  */
-export interface FileConfig {
-  strategy: "direct" | "cache";
-  storage?: {
-    type: "local" | "s3-compatible";
-    // For local storage
-    path?: string; // default: "./public/assets/notion-files"
-    // For S3-compatible storage
-    endpoint?: string;
-    bucket?: string;
-    accessKey?: string;
-    secretKey?: string;
-    region?: string; // AWS region or equivalent for other providers
-  };
-  cache?: {
-    ttl: number;
-    maxSize: number;
-  };
+export interface StorageConfig {
+  /**
+   * Storage path - used for:
+   * - Local strategy: Local directory path (e.g., "./public/notion-files")
+   * - Remote strategy: S3 key prefix (e.g., "uploads/notion/")
+   */
+  path?: string;
+  /**
+   * S3-compatible endpoint (required for remote strategy)
+   */
+  endpoint: string;
+  /**
+   * S3 bucket name (required for remote strategy)
+   */
+  bucket?: string;
+  /**
+   * S3 access key (required for remote strategy)
+   */
+  accessKey: string;
+  /**
+   * S3 secret key (required for remote strategy)
+   */
+  secretKey: string;
+  /**
+   * S3 region (optional)
+   */
+  region?: string;
 }
 
 export interface NotionCMSConfig {
-  files?: FileConfig;
+  /**
+   * File handling configuration
+   */
+  files?: {
+    /**
+     * File handling strategy
+     * - "direct": Link directly to Notion files (default)
+     * - "local": Download and cache files locally
+     * - "remote": Store files in S3-compatible storage
+     */
+    strategy?: FileStrategy;
+    /**
+     * Storage configuration (used for local and remote strategies)
+     */
+    storage?: StorageConfig;
+  };
   debug?: DebugConfig;
 }
 
 /**
  * Default configuration values
  */
-export const DEFAULT_CONFIG: Required<NotionCMSConfig> = {
+export const DEFAULT_CONFIG = {
   files: {
-    strategy: "direct",
+    strategy: "direct" as FileStrategy,
     storage: {
-      type: "local",
       path: DEFAULT_LOCAL_PATH,
       endpoint: "",
       bucket: "",
@@ -65,53 +92,34 @@ export const DEFAULT_CONFIG: Required<NotionCMSConfig> = {
       secretKey: "",
       region: "",
     },
-    cache: {
-      ttl: DEFAULT_CACHE_TTL,
-      maxSize: DEFAULT_CACHE_MAX_SIZE,
-    },
   },
   debug: {
     enabled: false,
-    level: "info",
+    level: "info" as const,
   },
-};
+} as const;
 
 /**
  * Merge user config with defaults
  */
-export function mergeConfig(
-  userConfig?: NotionCMSConfig
-): Required<NotionCMSConfig> {
+export function mergeConfig(userConfig?: NotionCMSConfig) {
   if (!userConfig) return DEFAULT_CONFIG;
-
-  const defaultFiles = DEFAULT_CONFIG.files;
-  const defaultStorage = defaultFiles.storage!;
-  const defaultCache = defaultFiles.cache!;
-  const defaultDebug = DEFAULT_CONFIG.debug;
 
   return {
     files: {
-      strategy: userConfig.files?.strategy ?? defaultFiles.strategy,
+      strategy: userConfig.files?.strategy ?? DEFAULT_CONFIG.files.strategy,
       storage: {
-        type: userConfig.files?.storage?.type ?? defaultStorage.type,
-        path: userConfig.files?.storage?.path ?? defaultStorage.path,
-        endpoint:
-          userConfig.files?.storage?.endpoint ?? defaultStorage.endpoint,
-        bucket: userConfig.files?.storage?.bucket ?? defaultStorage.bucket,
-        accessKey:
-          userConfig.files?.storage?.accessKey ?? defaultStorage.accessKey,
-        secretKey:
-          userConfig.files?.storage?.secretKey ?? defaultStorage.secretKey,
-        region: userConfig.files?.storage?.region ?? defaultStorage.region,
-      },
-      cache: {
-        ttl: userConfig.files?.cache?.ttl ?? defaultCache.ttl,
-        maxSize: userConfig.files?.cache?.maxSize ?? defaultCache.maxSize,
+        path: userConfig.files?.storage?.path ?? DEFAULT_CONFIG.files.storage.path,
+        endpoint: userConfig.files?.storage?.endpoint ?? DEFAULT_CONFIG.files.storage.endpoint,
+        bucket: userConfig.files?.storage?.bucket ?? DEFAULT_CONFIG.files.storage.bucket,
+        accessKey: userConfig.files?.storage?.accessKey ?? DEFAULT_CONFIG.files.storage.accessKey,
+        secretKey: userConfig.files?.storage?.secretKey ?? DEFAULT_CONFIG.files.storage.secretKey,
+        region: userConfig.files?.storage?.region ?? DEFAULT_CONFIG.files.storage.region,
       },
     },
     debug: {
-      enabled: userConfig.debug?.enabled ?? defaultDebug.enabled,
-      level: userConfig.debug?.level ?? defaultDebug.level,
+      enabled: userConfig.debug?.enabled ?? DEFAULT_CONFIG.debug.enabled,
+      level: userConfig.debug?.level ?? DEFAULT_CONFIG.debug.level,
     },
   };
 }

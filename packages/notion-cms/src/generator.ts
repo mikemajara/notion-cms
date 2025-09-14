@@ -225,7 +225,13 @@ export async function generateTypes(
   );
 
   // Generate database-specific types file that imports directly from notion-cms
-  generateDatabaseSpecificFile(sourceFile, properties, typeName, databaseName, databaseId);
+  generateDatabaseSpecificFile(
+    sourceFile,
+    properties,
+    typeName,
+    databaseName,
+    databaseId
+  );
 
   // Save the file
   await sourceFile.save();
@@ -261,7 +267,7 @@ function updateIndexFile(outputPath: string, fileName: string): void {
   }
 }
 
-// Generate database-specific types with registry approach  
+// Generate database-specific types with registry approach
 function generateDatabaseSpecificFile(
   sourceFile: SourceFile,
   properties: DatabaseObjectResponse["properties"],
@@ -442,7 +448,7 @@ function generateDatabaseSpecificFile(
       isExported: true,
     });
 
-    // Generate camelCase database key from database name  
+    // Generate camelCase database key from database name
     const databaseKey = databaseName
       .replace(/[^\w\s]/g, "")
       .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
@@ -703,12 +709,7 @@ export async function generateMultipleDatabaseTypes(
   // Add imports
   sourceFile.addImportDeclaration({
     moduleSpecifier: "@mikemajara/notion-cms",
-    namedImports: [
-      "DatabaseRecord",
-      "NotionCMS",
-      "QueryBuilder",
-      "DatabaseFieldMetadata",
-    ],
+    namedImports: ["DatabaseRecord", "NotionCMS", "DatabaseFieldMetadata"],
   });
 
   // Track method names to avoid conflicts

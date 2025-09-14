@@ -28,9 +28,9 @@ export class DirectStrategy implements FileStrategy {
 }
 
 /**
- * Cache strategy - stores files locally or in S3-compatible storage
+ * Local strategy - stores files locally
  */
-export class CacheStrategy implements FileStrategy {
+export class LocalStrategy implements FileStrategy {
   private config: NotionCMSConfig["files"];
 
   constructor(config: NotionCMSConfig["files"]) {
@@ -38,55 +38,18 @@ export class CacheStrategy implements FileStrategy {
   }
 
   async processFileUrl(url: string, fileName: string): Promise<string> {
-    // Handle both local and S3-compatible storage
-    if (!this.config?.storage?.type) {
-      return url;
-    }
-
     try {
       // Generate stable filename
       const fileId = generateFileId(url);
       const extension = getFileExtension(fileName);
       const stableFileName = `${fileId}${extension}`;
 
-      // Create appropriate storage interface
+      // Create local storage
       const storage = await this.createStorage();
 
       // Check if file is already cached
       if (await storage.exists(stableFileName)) {
-        // Check TTL if configured (for local storage only - S3 uses bucket policies)
-        if (this.config?.cache?.ttl && this.config.storage.type === "local") {
-          const fs = await import("fs/promises");
-          const storagePath =
-            this.config.storage.path || "./public/assets/notion-files";
-          const fullPath = `${storagePath}/${stableFileName}`;
-          const stats = await fs.stat(fullPath);
-          const age = Date.now() - stats.mtime.getTime();
-
-          if (age > this.config.cache.ttl) {
-            // File expired, delete and re-download
-            await storage.delete(stableFileName);
-          } else {
-            // File is valid, return cached URL
-            return storage.getPublicUrl(stableFileName);
-          }
-        } else {
-          // No TTL configured or S3 storage, use cached file
-          return storage.getPublicUrl(stableFileName);
-        }
-      }
-
-      // Check cache size limits before downloading (local storage only)
-      if (this.config?.cache?.maxSize && this.config.storage.type === "local") {
-        const storagePath =
-          this.config.storage.path || "./public/assets/notion-files";
-        const { calculateDirSize } = await import("./utils/file-utils");
-        const currentSize = await calculateDirSize(storagePath);
-
-        if (currentSize > this.config.cache.maxSize) {
-          // Clean up old files to make space
-          await this.cleanupCache(storagePath);
-        }
+        return storage.getPublicUrl(stableFileName);
       }
 
       // Download and cache the file
@@ -96,78 +59,81 @@ export class CacheStrategy implements FileStrategy {
 
       return storage.getPublicUrl(stableFileName);
     } catch (error) {
-      console.warn(`Failed to cache file: ${fileName} from ${url}`, {
+      console.warn(`Failed to cache file locally: ${fileName} from ${url}`, {
         fileName,
         url,
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
       });
-      // Fallback to original URL if caching fails
       return url;
     }
   }
 
-  /**
-   * Generate public URL for cached file
-   */
-  private generatePublicUrl(storagePath: string, fileName: string): string {
-    // Convert storage path to public URL
-    // Assumes files are stored in public directory
-    if (storagePath.startsWith("./public")) {
-      return storagePath.replace("./public", "") + "/" + fileName;
-    } else if (storagePath.startsWith("public")) {
-      return "/" + storagePath.substring(6) + "/" + fileName;
-    } else {
-      // For non-public paths, return file path (may need framework-specific handling)
-      return `/${fileName}`;
-    }
-  }
-
-  /**
-   * Create appropriate storage interface based on configuration
-   */
   private async createStorage(): Promise<any> {
-    if (this.config?.storage?.type === "s3-compatible") {
-      try {
-        const { S3Storage } = await import("./storage/s3-storage");
-        return new S3Storage({
-          endpoint: this.config.storage.endpoint || "",
-          bucket: this.config.storage.bucket || "",
-          accessKey: this.config.storage.accessKey,
-          secretKey: this.config.storage.secretKey,
-          region: this.config.storage.region,
-        });
-      } catch (error) {
-        // If S3 setup fails, fall back to local storage
-        console.warn(
-          "S3 storage failed, falling back to local storage:",
-          error
-        );
-        const { LocalStorage } = await import("./storage/s3-storage");
-        const storagePath = "./public/assets/notion-files";
-        return new LocalStorage(storagePath);
-      }
-    } else {
-      // Default to local storage
-      const { LocalStorage } = await import("./storage/s3-storage");
-      const storagePath =
-        this.config?.storage?.path || "./public/assets/notion-files";
-      return new LocalStorage(storagePath);
-    }
+    const { LocalStorage } = await import("./storage/s3-storage");
+    const storagePath = this.config?.storage?.path || "./public/assets/notion-files";
+    return new LocalStorage(storagePath);
+  }
+}
+
+/**
+ * Remote strategy - stores files in S3-compatible storage
+ */
+export class RemoteStrategy implements FileStrategy {
+  private config: NotionCMSConfig["files"];
+
+  constructor(config: NotionCMSConfig["files"]) {
+    this.config = config;
   }
 
-  /**
-   * Clean up old files to make space in cache
-   */
-  private async cleanupCache(storagePath: string): Promise<void> {
-    if (!this.config?.cache?.ttl) return;
+  async processFileUrl(url: string, fileName: string): Promise<string> {
+    if (!this.config?.storage) {
+      return url;
+    }
 
     try {
-      const { cleanupOldFiles } = await import("./utils/file-utils");
-      await cleanupOldFiles(storagePath, this.config.cache.ttl);
+      // Generate stable filename with bucket prefix
+      const fileId = generateFileId(url);
+      const extension = getFileExtension(fileName);
+      const bucketPath = this.config.storage.path || "";
+      const stableFileName = bucketPath ? `${bucketPath}${fileId}${extension}` : `${fileId}${extension}`;
+
+      // Create S3 storage
+      const storage = await this.createStorage();
+
+      // Check if file is already in S3
+      if (await storage.exists(stableFileName)) {
+        return storage.getPublicUrl(stableFileName);
+      }
+
+      // Download and store in S3
+      const { downloadFile } = await import("./utils/file-utils");
+      const fileData = await downloadFile(url);
+      await storage.store(stableFileName, fileData);
+
+      return storage.getPublicUrl(stableFileName);
     } catch (error) {
-      console.warn(`Failed to cleanup cache in ${storagePath}:`, error);
+      console.warn(`Failed to store file remotely: ${fileName} from ${url}`, {
+        fileName,
+        url,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return url;
     }
+  }
+
+  private async createStorage(): Promise<any> {
+    if (!this.config?.storage) {
+      throw new Error("S3 storage configuration is required for remote strategy");
+    }
+
+    const { S3Storage } = await import("./storage/s3-storage");
+    return new S3Storage({
+      endpoint: this.config.storage.endpoint,
+      bucket: this.config.storage.bucket || "default-bucket",
+      accessKey: this.config.storage.accessKey,
+      secretKey: this.config.storage.secretKey,
+      region: this.config.storage.region,
+    });
   }
 }
 
@@ -181,8 +147,11 @@ export class FileManager {
     const fileConfig = config.files;
 
     switch (fileConfig?.strategy) {
-      case "cache":
-        this.strategy = new CacheStrategy(fileConfig);
+      case "local":
+        this.strategy = new LocalStrategy(fileConfig);
+        break;
+      case "remote":
+        this.strategy = new RemoteStrategy(fileConfig);
         break;
       case "direct":
       default:
@@ -195,7 +164,7 @@ export class FileManager {
    * Check if file caching is enabled
    */
   isCacheEnabled(): boolean {
-    return this.strategy instanceof CacheStrategy;
+    return this.strategy instanceof LocalStrategy || this.strategy instanceof RemoteStrategy;
   }
 
   /**

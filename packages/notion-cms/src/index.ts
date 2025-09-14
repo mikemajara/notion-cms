@@ -84,6 +84,11 @@ export class NotionCMS {
   private pageContentService: PageContentService;
   private databaseService: DatabaseService;
 
+  /**
+   * Initialize the NotionCMS instance
+   * @param {string} token The Notion API token
+   * @param {NotionCMSConfig} [config] configuration object
+   */
   constructor(token: string, config?: NotionCMSConfig) {
     this.client = new Client({ auth: token });
     this.config = mergeConfig(config);
@@ -132,12 +137,33 @@ export class NotionCMS {
    */
   query<K extends keyof DatabaseRegistry>(
     databaseKey: K
-  ): QueryBuilder<DatabaseRegistry[K]['record'], DatabaseRegistry[K]['fields']> {
+  ): QueryBuilder<
+    DatabaseRegistry[K]["record"],
+    DatabaseRegistry[K]["fields"]
+  > {
     const databaseConfig = (this as any).databases?.[databaseKey];
     if (!databaseConfig) {
-      throw new Error(`Database "${String(databaseKey)}" not found in registry. Make sure you've imported the generated types file.`);
+      throw new Error(
+        `Database "${String(
+          databaseKey
+        )}" not found in registry. Make sure you've imported the generated types file.`
+      );
     }
     return this._query(databaseConfig.id, databaseConfig.fields);
+  }
+
+  /**
+   * Creates a query builder for a Notion database using direct database ID
+   * Use this for testing or when you don't have generated types
+   * @param databaseId The ID of the Notion database
+   * @param fieldMetadata Optional metadata about field types for type-safe operations
+   * @returns A query builder instance for the specified database
+   */
+  queryDatabase<T extends DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
+    databaseId: string,
+    fieldMetadata?: M
+  ): QueryBuilder<T, M> {
+    return this._query<T, M>(databaseId, fieldMetadata);
   }
 
   /**
@@ -147,10 +173,10 @@ export class NotionCMS {
    * @returns A query builder instance for the specified database
    * @private
    */
-  private _query<T extends DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
-    databaseId: string,
-    fieldMetadata?: M
-  ): QueryBuilder<T, M> {
+  private _query<
+    T extends DatabaseRecord,
+    M extends DatabaseFieldMetadata = {}
+  >(databaseId: string, fieldMetadata?: M): QueryBuilder<T, M> {
     return this.databaseService.query<T, M>(databaseId, fieldMetadata);
   }
 
