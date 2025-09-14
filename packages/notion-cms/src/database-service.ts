@@ -1,4 +1,4 @@
-import { Client } from "@notionhq/client";
+import { Client } from "@notionhq/client"
 import {
   PageObjectResponse,
   PropertyItemObjectResponse,
@@ -23,25 +23,28 @@ import {
   EmailPropertyItemObjectResponse,
   PhoneNumberPropertyItemObjectResponse,
   UserObjectResponse,
-  UniqueIdPropertyItemObjectResponse,
-} from "@notionhq/client/build/src/api-endpoints";
-import { DatabaseRecord } from "./generator";
-import { QueryBuilder, DatabaseFieldMetadata } from "./query-builder";
-import { debug } from "./utils/debug";
-import { FileManager } from "./file-manager";
+  UniqueIdPropertyItemObjectResponse
+} from "@notionhq/client/build/src/api-endpoints"
+import { DatabaseRecord } from "./generator"
+import { QueryBuilder, DatabaseFieldMetadata } from "./query-builder"
+import { debug } from "./utils/debug"
+import { FileManager } from "./file-manager"
 
 export interface QueryOptions {
-  filter?: QueryDatabaseParameters["filter"];
-  sorts?: QueryDatabaseParameters["sorts"];
-  pageSize?: number;
-  startCursor?: string;
+  filter?: QueryDatabaseParameters["filter"]
+  sorts?: QueryDatabaseParameters["sorts"]
+  pageSize?: number
+  startCursor?: string
 }
 
 /**
  * Database service for handling all Notion database operations
  */
 export class DatabaseService {
-  constructor(private client: Client, private fileManager: FileManager) {}
+  constructor(
+    private client: Client,
+    private fileManager: FileManager
+  ) {}
 
   /**
    * Creates a query builder for a Notion database with type safety
@@ -59,14 +62,14 @@ export class DatabaseService {
         databaseId,
         fieldMetadata,
         this.fileManager
-      );
+      )
     } else {
       return new QueryBuilder<T, M>(
         this.client,
         databaseId,
         {} as M,
         this.fileManager
-      );
+      )
     }
   }
 
@@ -87,35 +90,35 @@ export class DatabaseService {
         filter: options.filter,
         sorts: options.sorts,
         page_size: options.pageSize,
-        start_cursor: options.startCursor,
-      });
+        start_cursor: options.startCursor
+      })
 
       const response = await this.client.databases.query({
         database_id: databaseId,
         filter: options.filter,
         sorts: options.sorts,
         page_size: options.pageSize,
-        start_cursor: options.startCursor,
-      });
+        start_cursor: options.startCursor
+      })
 
-      debug.log(`Query returned ${response.results.length} results`);
+      debug.log(`Query returned ${response.results.length} results`)
 
-      const pages = response.results as PageObjectResponse[];
+      const pages = response.results as PageObjectResponse[]
 
       // Use the new unified processing method
-      const results = await this.processNotionRecords<T>(pages);
+      const results = await this.processNotionRecords<T>(pages)
 
       return {
         results,
         nextCursor: response.next_cursor,
-        hasMore: response.has_more,
-      };
+        hasMore: response.has_more
+      }
     } catch (error) {
       debug.error(error, {
         databaseId,
-        options,
-      });
-      throw error;
+        options
+      })
+      throw error
     }
   }
 
@@ -127,11 +130,11 @@ export class DatabaseService {
    */
   async getRecord<T extends DatabaseRecord>(pageId: string): Promise<T> {
     const page = (await this.client.pages.retrieve({
-      page_id: pageId,
-    })) as PageObjectResponse;
+      page_id: pageId
+    })) as PageObjectResponse
 
     // Use the new unified processing method
-    return await this.processNotionRecord<T>(page);
+    return await this.processNotionRecord<T>(page)
   }
 
   /**
@@ -145,26 +148,26 @@ export class DatabaseService {
     databaseId: string,
     options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
   ): Promise<T[]> {
-    const results: T[] = [];
-    let hasMore = true;
-    let startCursor: string | null = null;
+    const results: T[] = []
+    let hasMore = true
+    let startCursor: string | null = null
 
     while (hasMore) {
       const response: {
-        results: T[];
-        nextCursor: string | null;
-        hasMore: boolean;
+        results: T[]
+        nextCursor: string | null
+        hasMore: boolean
       } = await this.getDatabase<T>(databaseId, {
         ...options,
-        startCursor: startCursor || undefined,
-      });
+        startCursor: startCursor || undefined
+      })
 
-      results.push(...response.results);
-      hasMore = response.hasMore;
-      startCursor = response.nextCursor;
+      results.push(...response.results)
+      hasMore = response.hasMore
+      startCursor = response.nextCursor
     }
 
-    return results;
+    return results
   }
 
   /**
@@ -183,48 +186,48 @@ export class DatabaseService {
   ): QueryDatabaseParameters["filter"] {
     console.warn(
       "createFilter() is deprecated. Use the new type-safe filter method: queryBuilder.filter(property, operator, value)"
-    );
+    )
 
     const filter: any = {
-      property: property,
-    };
+      property: property
+    }
 
     switch (type) {
       case "equals":
-        filter.equals = value;
-        break;
+        filter.equals = value
+        break
       case "contains":
-        filter.contains = value;
-        break;
+        filter.contains = value
+        break
       case "startsWith":
-        filter.starts_with = value;
-        break;
+        filter.starts_with = value
+        break
       case "endsWith":
-        filter.ends_with = value;
-        break;
+        filter.ends_with = value
+        break
       case "greaterThan":
-        filter.greater_than = value;
-        break;
+        filter.greater_than = value
+        break
       case "lessThan":
-        filter.less_than = value;
-        break;
+        filter.less_than = value
+        break
       case "greaterThanOrEqualTo":
-        filter.greater_than_or_equal_to = value;
-        break;
+        filter.greater_than_or_equal_to = value
+        break
       case "lessThanOrEqualTo":
-        filter.less_than_or_equal_to = value;
-        break;
+        filter.less_than_or_equal_to = value
+        break
       case "isEmpty":
-        filter.is_empty = true;
-        break;
+        filter.is_empty = true
+        break
       case "isNotEmpty":
-        filter.is_not_empty = true;
-        break;
+        filter.is_not_empty = true
+        break
       default:
-        throw new Error(`Unknown filter type: ${type}`);
+        throw new Error(`Unknown filter type: ${type}`)
     }
 
-    return filter;
+    return filter
   }
 
   /**
@@ -235,55 +238,55 @@ export class DatabaseService {
   async getPropertyValue(property: PropertyItemObjectResponse): Promise<any> {
     switch (property.type) {
       case "unique_id": {
-        const idProp = property as UniqueIdPropertyItemObjectResponse;
-        return idProp.unique_id.number;
+        const idProp = property as UniqueIdPropertyItemObjectResponse
+        return idProp.unique_id.number
       }
       case "title": {
-        const titleProp = property as TitlePropertyItemObjectResponse;
+        const titleProp = property as TitlePropertyItemObjectResponse
         const richText = titleProp.title as unknown as Array<{
-          plain_text: string;
-        }>;
-        return richText?.[0]?.plain_text ?? "";
+          plain_text: string
+        }>
+        return richText?.[0]?.plain_text ?? ""
       }
       case "rich_text": {
-        const richTextProp = property as RichTextPropertyItemObjectResponse;
+        const richTextProp = property as RichTextPropertyItemObjectResponse
         const richText = richTextProp.rich_text as unknown as Array<{
-          plain_text: string;
-        }>;
-        return richText?.[0]?.plain_text ?? "";
+          plain_text: string
+        }>
+        return richText?.[0]?.plain_text ?? ""
       }
       case "number":
-        return (property as NumberPropertyItemObjectResponse).number;
+        return (property as NumberPropertyItemObjectResponse).number
       case "select":
         return (
           (property as SelectPropertyItemObjectResponse).select?.name ?? null
-        );
+        )
       case "multi_select":
         return (
           property as MultiSelectPropertyItemObjectResponse
-        ).multi_select.map((select) => select.name);
+        ).multi_select.map((select) => select.name)
       case "date":
-        const dateProp = property as DatePropertyItemObjectResponse;
-        return dateProp.date ? new Date(dateProp.date.start) : null;
+        const dateProp = property as DatePropertyItemObjectResponse
+        return dateProp.date ? new Date(dateProp.date.start) : null
       case "people": {
-        const peopleProp = property as PeoplePropertyItemObjectResponse;
+        const peopleProp = property as PeoplePropertyItemObjectResponse
         return Array.isArray(peopleProp.people)
           ? peopleProp.people.map(
               (person: UserObjectResponse) => person.name || ""
             )
-          : [];
+          : []
       }
       case "files": {
-        const filesProp = property as FilesPropertyItemObjectResponse;
+        const filesProp = property as FilesPropertyItemObjectResponse
         const files = filesProp.files.map((file) => {
           if (file.type === "external") {
-            return { name: file.name, url: file.external.url };
+            return { name: file.name, url: file.external.url }
           } else if (file.type === "file") {
-            return { name: file.name, url: file.file.url };
+            return { name: file.name, url: file.file.url }
           } else {
-            return { name: file.name, url: "" };
+            return { name: file.name, url: "" }
           }
-        });
+        })
 
         // Always process files through the FileManager (strategy pattern handles behavior)
         const processedFiles = await Promise.all(
@@ -291,60 +294,60 @@ export class DatabaseService {
             const processedUrl = await this.fileManager.processFileUrl(
               file.url,
               file.name
-            );
+            )
             return {
               ...file,
-              url: processedUrl,
-            };
+              url: processedUrl
+            }
           })
-        );
+        )
 
-        return processedFiles;
+        return processedFiles
       }
       case "checkbox":
-        return (property as CheckboxPropertyItemObjectResponse).checkbox;
+        return (property as CheckboxPropertyItemObjectResponse).checkbox
       case "url":
-        return (property as UrlPropertyItemObjectResponse).url;
+        return (property as UrlPropertyItemObjectResponse).url
       case "email":
-        return (property as EmailPropertyItemObjectResponse).email;
+        return (property as EmailPropertyItemObjectResponse).email
       case "phone_number":
-        return (property as PhoneNumberPropertyItemObjectResponse).phone_number;
+        return (property as PhoneNumberPropertyItemObjectResponse).phone_number
       case "formula":
-        return (property as FormulaPropertyItemObjectResponse).formula;
+        return (property as FormulaPropertyItemObjectResponse).formula
       case "relation": {
-        const relationProp = property as RelationPropertyItemObjectResponse;
+        const relationProp = property as RelationPropertyItemObjectResponse
         return Array.isArray(relationProp.relation)
           ? relationProp.relation.map((rel: { id: string }) => rel.id)
-          : [];
+          : []
       }
       case "rollup":
-        return (property as RollupPropertyItemObjectResponse).rollup;
+        return (property as RollupPropertyItemObjectResponse).rollup
       case "created_time":
-        return (property as CreatedTimePropertyItemObjectResponse).created_time;
+        return (property as CreatedTimePropertyItemObjectResponse).created_time
       case "created_by": {
         const createdBy = (property as CreatedByPropertyItemObjectResponse)
-          .created_by as UserObjectResponse;
+          .created_by as UserObjectResponse
         return {
           id: createdBy.id,
           name: createdBy.name,
-          avatar_url: createdBy.avatar_url,
-        };
+          avatar_url: createdBy.avatar_url
+        }
       }
       case "last_edited_time":
         return (property as LastEditedTimePropertyItemObjectResponse)
-          .last_edited_time;
+          .last_edited_time
       case "last_edited_by": {
         const lastEditedBy = (
           property as LastEditedByPropertyItemObjectResponse
-        ).last_edited_by as UserObjectResponse;
+        ).last_edited_by as UserObjectResponse
         return {
           id: lastEditedBy.id,
           name: lastEditedBy.name,
-          avatar_url: lastEditedBy.avatar_url,
-        };
+          avatar_url: lastEditedBy.avatar_url
+        }
       }
       default:
-        return null;
+        return null
     }
   }
 
@@ -358,10 +361,10 @@ export class DatabaseService {
   ): Promise<any> {
     switch (property.type) {
       case "title": {
-        const titleProp = property as TitlePropertyItemObjectResponse;
+        const titleProp = property as TitlePropertyItemObjectResponse
         // Ensure we're working with an array of rich text items
         if (!Array.isArray(titleProp.title)) {
-          return [];
+          return []
         }
         // Return full rich text array with all formatting information
         return titleProp.title.map((item) => ({
@@ -369,15 +372,15 @@ export class DatabaseService {
           annotations: item.annotations,
           href: item.href,
           ...(item.type === "text" && {
-            link: item.text.link,
-          }),
-        }));
+            link: item.text.link
+          })
+        }))
       }
       case "rich_text": {
-        const richTextProp = property as RichTextPropertyItemObjectResponse;
+        const richTextProp = property as RichTextPropertyItemObjectResponse
         // Ensure we're working with an array of rich text items
         if (!Array.isArray(richTextProp.rich_text)) {
-          return [];
+          return []
         }
         // Return full rich text array with all formatting information
         return richTextProp.rich_text.map((item) => ({
@@ -385,38 +388,37 @@ export class DatabaseService {
           annotations: item.annotations,
           href: item.href,
           ...(item.type === "text" && {
-            link: item.text.link,
-          }),
-        }));
+            link: item.text.link
+          })
+        }))
       }
       case "number":
-        return (property as NumberPropertyItemObjectResponse).number;
+        return (property as NumberPropertyItemObjectResponse).number
       case "select": {
-        const selectProp = (property as SelectPropertyItemObjectResponse)
-          .select;
+        const selectProp = (property as SelectPropertyItemObjectResponse).select
         // Return full select object with id, name, and color
         return selectProp
           ? {
               id: selectProp.id,
               name: selectProp.name,
-              color: selectProp.color,
+              color: selectProp.color
             }
-          : null;
+          : null
       }
       case "multi_select": {
         const multiSelectProp = (
           property as MultiSelectPropertyItemObjectResponse
-        ).multi_select;
+        ).multi_select
         // Return array of full select objects with id, name, and color
         return multiSelectProp.map((select) => ({
           id: select.id,
           name: select.name,
-          color: select.color,
-        }));
+          color: select.color
+        }))
       }
       case "date": {
-        const dateProp = property as DatePropertyItemObjectResponse;
-        if (!dateProp.date) return null;
+        const dateProp = property as DatePropertyItemObjectResponse
+        if (!dateProp.date) return null
 
         // Return complete date information including end date if available
         return {
@@ -427,11 +429,11 @@ export class DatabaseService {
           parsedStart: dateProp.date.start
             ? new Date(dateProp.date.start)
             : null,
-          parsedEnd: dateProp.date.end ? new Date(dateProp.date.end) : null,
-        };
+          parsedEnd: dateProp.date.end ? new Date(dateProp.date.end) : null
+        }
       }
       case "people": {
-        const peopleProp = property as PeoplePropertyItemObjectResponse;
+        const peopleProp = property as PeoplePropertyItemObjectResponse
         // Return more complete user information
         return Array.isArray(peopleProp.people)
           ? peopleProp.people.map((person: UserObjectResponse) => ({
@@ -442,13 +444,13 @@ export class DatabaseService {
               type: person.type,
               ...(person.type === "person" &&
                 person.person && {
-                  email: person.person.email,
-                }),
+                  email: person.person.email
+                })
             }))
-          : [];
+          : []
       }
       case "files": {
-        const filesProp = property as FilesPropertyItemObjectResponse;
+        const filesProp = property as FilesPropertyItemObjectResponse
         // Return more complete file information
         const files = filesProp.files.map((file) => {
           if (file.type === "external") {
@@ -456,58 +458,58 @@ export class DatabaseService {
               name: file.name,
               type: file.type,
               external: {
-                url: file.external.url,
-              },
-            };
+                url: file.external.url
+              }
+            }
           } else if (file.type === "file") {
             return {
               name: file.name,
               type: file.type,
               file: {
                 url: file.file.url,
-                expiry_time: file.file.expiry_time,
-              },
-            };
+                expiry_time: file.file.expiry_time
+              }
+            }
           } else {
-            return { name: file.name, type: file.type };
+            return { name: file.name, type: file.type }
           }
-        });
+        })
 
         // Always process files through the FileManager (strategy pattern handles behavior)
         const processedFiles = await Promise.all(
           files.map(async (file) => {
             const originalUrl =
-              file.type === "external" ? file.external?.url : file.file?.url;
+              file.type === "external" ? file.external?.url : file.file?.url
             if (originalUrl) {
               const processedUrl = await this.fileManager.processFileUrl(
                 originalUrl,
                 file.name
-              );
+              )
 
               // Update the URL in the appropriate location
               if (file.type === "external" && file.external) {
-                file.external.url = processedUrl;
+                file.external.url = processedUrl
               } else if (file.type === "file" && file.file) {
-                file.file.url = processedUrl;
+                file.file.url = processedUrl
               }
             }
-            return file;
+            return file
           })
-        );
+        )
 
-        return processedFiles;
+        return processedFiles
       }
       case "checkbox":
-        return (property as CheckboxPropertyItemObjectResponse).checkbox;
+        return (property as CheckboxPropertyItemObjectResponse).checkbox
       case "url":
-        return (property as UrlPropertyItemObjectResponse).url;
+        return (property as UrlPropertyItemObjectResponse).url
       case "email":
-        return (property as EmailPropertyItemObjectResponse).email;
+        return (property as EmailPropertyItemObjectResponse).email
       case "phone_number":
-        return (property as PhoneNumberPropertyItemObjectResponse).phone_number;
+        return (property as PhoneNumberPropertyItemObjectResponse).phone_number
       case "formula": {
         const formulaProp = (property as FormulaPropertyItemObjectResponse)
-          .formula;
+          .formula
         // Return the complete formula result with type information
         return {
           type: formulaProp.type,
@@ -516,40 +518,39 @@ export class DatabaseService {
             formulaProp.type === "string"
               ? formulaProp.string
               : formulaProp.type === "number"
-              ? formulaProp.number
-              : formulaProp.type === "boolean"
-              ? formulaProp.boolean
-              : formulaProp.type === "date"
-              ? formulaProp.date
-              : null,
-        };
+                ? formulaProp.number
+                : formulaProp.type === "boolean"
+                  ? formulaProp.boolean
+                  : formulaProp.type === "date"
+                    ? formulaProp.date
+                    : null
+        }
       }
       case "relation": {
-        const relationProp = property as RelationPropertyItemObjectResponse;
+        const relationProp = property as RelationPropertyItemObjectResponse
         // Return complete relation information
         return Array.isArray(relationProp.relation)
           ? relationProp.relation.map((rel) => ({
-              id: rel.id,
+              id: rel.id
             }))
-          : [];
+          : []
       }
       case "rollup": {
-        const rollupProp = (property as RollupPropertyItemObjectResponse)
-          .rollup;
+        const rollupProp = (property as RollupPropertyItemObjectResponse).rollup
         // Return the complete rollup with type information
         return {
           type: rollupProp.type,
           function: rollupProp.function,
           ...(rollupProp.type === "array" && {
-            array: rollupProp.array,
+            array: rollupProp.array
           }),
           ...(rollupProp.type === "number" && {
-            number: rollupProp.number,
+            number: rollupProp.number
           }),
           ...(rollupProp.type === "date" && {
-            date: rollupProp.date,
-          }),
-        };
+            date: rollupProp.date
+          })
+        }
       }
       case "created_time":
         return {
@@ -557,11 +558,11 @@ export class DatabaseService {
             .created_time,
           date: new Date(
             (property as CreatedTimePropertyItemObjectResponse).created_time
-          ),
-        };
+          )
+        }
       case "created_by": {
         const createdBy = (property as CreatedByPropertyItemObjectResponse)
-          .created_by as UserObjectResponse;
+          .created_by as UserObjectResponse
         // Return more complete user information
         return {
           id: createdBy.id,
@@ -571,9 +572,9 @@ export class DatabaseService {
           type: createdBy.type,
           ...(createdBy.type === "person" &&
             createdBy.person && {
-              email: createdBy.person.email,
-            }),
-        };
+              email: createdBy.person.email
+            })
+        }
       }
       case "last_edited_time":
         return {
@@ -583,12 +584,12 @@ export class DatabaseService {
             (
               property as LastEditedTimePropertyItemObjectResponse
             ).last_edited_time
-          ),
-        };
+          )
+        }
       case "last_edited_by": {
         const lastEditedBy = (
           property as LastEditedByPropertyItemObjectResponse
-        ).last_edited_by as UserObjectResponse;
+        ).last_edited_by as UserObjectResponse
         // Return more complete user information
         return {
           id: lastEditedBy.id,
@@ -598,33 +599,33 @@ export class DatabaseService {
           type: lastEditedBy.type,
           ...(lastEditedBy.type === "person" &&
             lastEditedBy.person && {
-              email: lastEditedBy.person.email,
-            }),
-        };
+              email: lastEditedBy.person.email
+            })
+        }
       }
       case "status": {
-        const statusProp = (property as any).status;
+        const statusProp = (property as any).status
         // Return full status object with id, name, and color
         return statusProp
           ? {
               id: statusProp.id,
               name: statusProp.name,
-              color: statusProp.color,
+              color: statusProp.color
             }
-          : null;
+          : null
       }
       case "unique_id": {
-        const uniqueIdProp = (property as any).unique_id;
+        const uniqueIdProp = (property as any).unique_id
         // Return the unique ID object with prefix and number
         return uniqueIdProp
           ? {
               prefix: uniqueIdProp.prefix,
-              number: uniqueIdProp.number,
+              number: uniqueIdProp.number
             }
-          : null;
+          : null
       }
       default:
-        return null;
+        return null
     }
   }
 
@@ -639,25 +640,25 @@ export class DatabaseService {
   ): Promise<T> {
     // Simple values (base level access)
     const simple: Record<string, any> = {
-      id: page.id,
-    };
+      id: page.id
+    }
 
     // More detailed but still processed values (advanced access)
     const advanced: Record<string, any> = {
-      id: page.id,
-    };
+      id: page.id
+    }
 
     // Process each property with appropriate level of detail
     for (const [key, value] of Object.entries(page.properties)) {
       // Simple version (direct access) - async to support file processing
       simple[key] = await this.getPropertyValue(
         value as PropertyItemObjectResponse
-      );
+      )
 
       // Advanced version (detailed access) - async to support file processing
       advanced[key] = await this.getPropertyValueAdvanced(
         value as PropertyItemObjectResponse
-      );
+      )
     }
 
     // Construct unified record with all three access levels
@@ -666,15 +667,15 @@ export class DatabaseService {
       ...simple,
       advanced: {
         id: page.id,
-        ...advanced,
+        ...advanced
       },
       raw: {
         id: page.id,
-        properties: page.properties,
-      },
-    } as T;
+        properties: page.properties
+      }
+    } as T
 
-    return result;
+    return result
   }
 
   /**
@@ -687,6 +688,6 @@ export class DatabaseService {
     pages: PageObjectResponse[]
   ): Promise<T[]> {
     // Process all records in parallel for better performance
-    return Promise.all(pages.map((page) => this.processNotionRecord<T>(page)));
+    return Promise.all(pages.map((page) => this.processNotionRecord<T>(page)))
   }
 }

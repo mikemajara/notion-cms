@@ -1,4 +1,4 @@
-import { PropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import { PropertyItemObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 
 export type NotionPropertyType =
   | "title"
@@ -21,10 +21,10 @@ export type NotionPropertyType =
   | "last_edited_time"
   | "last_edited_by"
   | "status"
-  | "unique_id";
+  | "unique_id"
 
 export interface DatabaseRecord {
-  id: string;
+  id: string
 }
 
-export type NotionProperty = PropertyItemObjectResponse;
+export type NotionProperty = PropertyItemObjectResponse

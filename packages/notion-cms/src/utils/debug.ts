@@ -1,39 +1,39 @@
 export interface DebugConfig {
-  enabled?: boolean;
-  level?: "error" | "warn" | "info" | "debug";
+  enabled?: boolean
+  level?: "error" | "warn" | "info" | "debug"
 }
 
 class DebugLogger {
   private config: DebugConfig = {
     enabled: false,
-    level: "info",
-  };
+    level: "info"
+  }
 
   configure(config: DebugConfig) {
-    this.config = { ...this.config, ...config };
+    this.config = { ...this.config, ...config }
   }
 
   private normalizeLevel(level?: string): "error" | "warn" | "info" | "debug" {
-    const validLevels = ["error", "warn", "info", "debug"];
+    const validLevels = ["error", "warn", "info", "debug"]
     if (level && validLevels.includes(level)) {
-      return level as "error" | "warn" | "info" | "debug";
+      return level as "error" | "warn" | "info" | "debug"
     }
-    return "info"; // Default fallback for invalid levels
+    return "info" // Default fallback for invalid levels
   }
 
   private shouldLog(level: string): boolean {
-    if (!this.config.enabled) return false;
+    if (!this.config.enabled) return false
 
-    const levels = ["error", "warn", "info", "debug"];
-    const configLevel = levels.indexOf(this.normalizeLevel(this.config.level));
-    const messageLevel = levels.indexOf(level);
+    const levels = ["error", "warn", "info", "debug"]
+    const configLevel = levels.indexOf(this.normalizeLevel(this.config.level))
+    const messageLevel = levels.indexOf(level)
 
-    return messageLevel <= configLevel;
+    return messageLevel <= configLevel
   }
 
   log(...args: any[]) {
     if (this.shouldLog("info")) {
-      console.log("[NotionCMS Debug]:", ...args);
+      console.log("[NotionCMS Debug]:", ...args)
     }
   }
 
@@ -45,8 +45,8 @@ class DebugLogger {
         sorts: options.sorts,
         pageSize: options.page_size,
         startCursor: options.start_cursor,
-        timestamp: new Date().toISOString(),
-      });
+        timestamp: new Date().toISOString()
+      })
     }
   }
 
@@ -56,10 +56,10 @@ class DebugLogger {
         message: error.message,
         code: error.code,
         context,
-        timestamp: new Date().toISOString(),
-      });
+        timestamp: new Date().toISOString()
+      })
     }
   }
 }
 
-export const debug = new DebugLogger();
+export const debug = new DebugLogger()

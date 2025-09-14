@@ -1,5 +1,5 @@
-import { Client } from "@notionhq/client";
-import { NotionPropertyType, DatabaseRecord } from "./generator";
+import { Client } from "@notionhq/client"
+import { NotionPropertyType, DatabaseRecord } from "./generator"
 import {
   QueryBuilder,
   SortDirection,
@@ -15,12 +15,12 @@ import {
   SelectOptionsFor,
   ValueTypeFor,
   ValueTypeMap,
-  TypeSafeFilterCondition,
-} from "./query-builder";
+  TypeSafeFilterCondition
+} from "./query-builder"
 
-import { NotionProperty } from "./utils/property-helpers";
-import { NotionCMSConfig, mergeConfig } from "./config";
-import { FileManager } from "./file-manager";
+import { NotionProperty } from "./utils/property-helpers"
+import { NotionCMSConfig, mergeConfig } from "./config"
+import { FileManager } from "./file-manager"
 import {
   ContentConverter,
   SimpleBlock,
@@ -28,12 +28,12 @@ import {
   TableRowCell,
   TableRowBlockContent,
   SimpleTableBlock,
-  SimpleTableRowBlock,
-} from "./converter";
-import { BlockProcessor } from "./processor";
-import { PageContentService } from "./page-content-service";
-import { DatabaseService } from "./database-service";
-import { debug } from "./utils/debug";
+  SimpleTableRowBlock
+} from "./converter"
+import { BlockProcessor } from "./processor"
+import { PageContentService } from "./page-content-service"
+import { DatabaseService } from "./database-service"
+import { debug } from "./utils/debug"
 
 // Note: Property utility functions have been consolidated into DatabaseService
 // Use the public API methods like query(), getRecord(), and getAllDatabaseRecords() for database operations
@@ -45,11 +45,11 @@ export type {
   TableRowBlockContent,
   SimpleTableBlock,
   SimpleTableRowBlock,
-  NotionCMSConfig,
-};
+  NotionCMSConfig
+}
 
 // Re-export query-builder types and values
-export { QueryBuilder, OPERATOR_MAP };
+export { QueryBuilder, OPERATOR_MAP }
 export type {
   SortDirection,
   LogicalOperator,
@@ -63,8 +63,8 @@ export type {
   SelectOptionsFor,
   ValueTypeFor,
   ValueTypeMap,
-  TypeSafeFilterCondition,
-};
+  TypeSafeFilterCondition
+}
 
 // Database Registry Interface - extended by generated types
 export interface DatabaseRegistry {
@@ -73,16 +73,16 @@ export interface DatabaseRegistry {
   // productCatalog: { record: RecordProductCatalog; fields: typeof RecordProductCatalogFieldTypes; }
 }
 
-export type { NotionPropertyType, NotionProperty };
+export type { NotionPropertyType, NotionProperty }
 
 export class NotionCMS {
-  private client: Client;
-  private config: Required<NotionCMSConfig>;
-  private fileManager: FileManager;
-  private contentConverter: ContentConverter;
-  private blockProcessor: BlockProcessor;
-  private pageContentService: PageContentService;
-  private databaseService: DatabaseService;
+  private client: Client
+  private config: Required<NotionCMSConfig>
+  private fileManager: FileManager
+  private contentConverter: ContentConverter
+  private blockProcessor: BlockProcessor
+  private pageContentService: PageContentService
+  private databaseService: DatabaseService
 
   /**
    * Initialize the NotionCMS instance
@@ -90,21 +90,21 @@ export class NotionCMS {
    * @param {NotionCMSConfig} [config] configuration object
    */
   constructor(token: string, config?: NotionCMSConfig) {
-    this.client = new Client({ auth: token });
-    this.config = mergeConfig(config);
+    this.client = new Client({ auth: token })
+    this.config = mergeConfig(config)
 
     // Configure debug logger with the merged config
-    debug.configure(this.config.debug);
+    debug.configure(this.config.debug)
 
-    this.fileManager = new FileManager(this.config);
+    this.fileManager = new FileManager(this.config)
     // Initialize services
-    this.contentConverter = new ContentConverter();
-    this.blockProcessor = new BlockProcessor(this.fileManager);
+    this.contentConverter = new ContentConverter()
+    this.blockProcessor = new BlockProcessor(this.fileManager)
     this.pageContentService = new PageContentService(
       this.client,
       this.blockProcessor
-    );
-    this.databaseService = new DatabaseService(this.client, this.fileManager);
+    )
+    this.databaseService = new DatabaseService(this.client, this.fileManager)
   }
 
   // UTILITY METHODS
@@ -115,7 +115,7 @@ export class NotionCMS {
    * @returns Markdown string
    */
   public blocksToMarkdown(blocks: SimpleBlock[]): string {
-    return this.contentConverter.blocksToMarkdown(blocks);
+    return this.contentConverter.blocksToMarkdown(blocks)
   }
 
   /**
@@ -124,7 +124,7 @@ export class NotionCMS {
    * @returns HTML string
    */
   public blocksToHtml(blocks: SimpleBlock[]): string {
-    return this.contentConverter.blocksToHtml(blocks);
+    return this.contentConverter.blocksToHtml(blocks)
   }
 
   // HIGH-LEVEL PUBLIC API
@@ -141,15 +141,15 @@ export class NotionCMS {
     DatabaseRegistry[K]["record"],
     DatabaseRegistry[K]["fields"]
   > {
-    const databaseConfig = (this as any).databases?.[databaseKey];
+    const databaseConfig = (this as any).databases?.[databaseKey]
     if (!databaseConfig) {
       throw new Error(
         `Database "${String(
           databaseKey
         )}" not found in registry. Make sure you've imported the generated types file.`
-      );
+      )
     }
-    return this._query(databaseConfig.id, databaseConfig.fields);
+    return this._query(databaseConfig.id, databaseConfig.fields)
   }
 
   /**
@@ -163,7 +163,7 @@ export class NotionCMS {
     databaseId: string,
     fieldMetadata?: M
   ): QueryBuilder<T, M> {
-    return this._query<T, M>(databaseId, fieldMetadata);
+    return this._query<T, M>(databaseId, fieldMetadata)
   }
 
   /**
@@ -177,7 +177,7 @@ export class NotionCMS {
     T extends DatabaseRecord,
     M extends DatabaseFieldMetadata = {}
   >(databaseId: string, fieldMetadata?: M): QueryBuilder<T, M> {
-    return this.databaseService.query<T, M>(databaseId, fieldMetadata);
+    return this.databaseService.query<T, M>(databaseId, fieldMetadata)
   }
 
   /**
@@ -187,7 +187,7 @@ export class NotionCMS {
    * @returns A promise that resolves to the record
    */
   async getRecord<T extends DatabaseRecord>(pageId: string): Promise<T> {
-    return this.databaseService.getRecord<T>(pageId);
+    return this.databaseService.getRecord<T>(pageId)
   }
 
   /**
@@ -200,16 +200,16 @@ export class NotionCMS {
     pageId: string,
     recursive: boolean = true
   ): Promise<SimpleBlock[]> {
-    return this.pageContentService.getPageContent(pageId, recursive);
+    return this.pageContentService.getPageContent(pageId, recursive)
   }
 }
 
 // Re-export types and utilities from ContentConverter, BlockProcessor, PageContentService, and DatabaseService
-export { ContentConverter } from "./converter";
-export { BlockProcessor } from "./processor";
-export { PageContentService } from "./page-content-service";
-export { DatabaseService } from "./database-service";
-export type { QueryOptions } from "./database-service";
+export { ContentConverter } from "./converter"
+export { BlockProcessor } from "./processor"
+export { PageContentService } from "./page-content-service"
+export { DatabaseService } from "./database-service"
+export type { QueryOptions } from "./database-service"
 
 // Re-export types and utilities
-export * from "./generator";
+export * from "./generator"

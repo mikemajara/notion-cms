@@ -3,13 +3,13 @@ module.exports = {
   parser: "@typescript-eslint/parser",
   parserOptions: {
     ecmaVersion: "latest",
-    sourceType: "module",
+    sourceType: "module"
   },
   plugins: ["@typescript-eslint"],
   extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   env: {
     node: true,
-    es2022: true,
+    es2022: true
   },
   rules: {
     // Allow any types for now since this is a library
@@ -20,8 +20,8 @@ module.exports = {
       {
         argsIgnorePattern: "^_",
         varsIgnorePattern: "^_",
-        ignoreRestSiblings: true,
-      },
+        ignoreRestSiblings: true
+      }
     ],
     // Allow require() in specific cases
     "@typescript-eslint/no-var-requires": "off",
@@ -34,7 +34,14 @@ module.exports = {
     // Allow case declarations (common pattern)
     "no-case-declarations": "off",
     // Allow prefer-as-const for test files
-    "@typescript-eslint/prefer-as-const": "off",
+    "@typescript-eslint/prefer-as-const": "off"
   },
-  ignorePatterns: ["dist/", "node_modules/", "*.js", "*.mjs", "*.d.ts", "src/tests/**"],
-};
+  ignorePatterns: [
+    "dist/",
+    "node_modules/",
+    "*.js",
+    "*.mjs",
+    "*.d.ts",
+    "src/tests/**"
+  ]
+}

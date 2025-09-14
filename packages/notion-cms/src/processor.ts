@@ -1,6 +1,6 @@
-import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
-import { FileManager } from "./file-manager";
-import { SimpleBlock } from "./converter";
+import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import { FileManager } from "./file-manager"
+import { SimpleBlock } from "./converter"
 
 /**
  * Block processing service for converting Notion blocks to simplified formats
@@ -14,17 +14,17 @@ export class BlockProcessor {
    * @returns A simplified representation of the block
    */
   async simplifyBlockAsync(block: BlockObjectResponse): Promise<SimpleBlock> {
-    const { id, type, has_children } = block;
+    const { id, type, has_children } = block
 
     // Extract the content based on the block type
-    const content = await this.extractBlockContentAsync(block);
+    const content = await this.extractBlockContentAsync(block)
 
     return {
       id,
       type,
       content,
-      hasChildren: has_children,
-    };
+      hasChildren: has_children
+    }
   }
 
   /**
@@ -33,11 +33,11 @@ export class BlockProcessor {
    * @returns The extracted content in a simplified format
    */
   async extractBlockContentAsync(block: BlockObjectResponse): Promise<any> {
-    const { type } = block;
+    const { type } = block
 
     // Accessing the block's content based on its type
     // @ts-ignore - Dynamic access to block properties
-    const typeData = block[type];
+    const typeData = block[type]
 
     switch (type) {
       case "paragraph":
@@ -51,14 +51,14 @@ export class BlockProcessor {
         // These blocks have rich text content
         return {
           text: this.extractRichText(typeData.rich_text),
-          richText: typeData.rich_text,
-        };
+          richText: typeData.rich_text
+        }
 
       case "code":
         return {
           text: this.extractRichText(typeData.rich_text),
-          language: typeData.language,
-        };
+          language: typeData.language
+        }
 
       case "image":
       case "file":
@@ -66,18 +66,18 @@ export class BlockProcessor {
       case "video":
       case "audio":
         // These blocks have file content
-        const fileType = typeData.type; // 'external' or 'file'
+        const fileType = typeData.type // 'external' or 'file'
         let url =
-          fileType === "external" ? typeData.external.url : typeData.file.url;
+          fileType === "external" ? typeData.external.url : typeData.file.url
 
         // Always process file through FileManager (strategy pattern handles behavior)
         try {
           url = await this.fileManager.processFileUrl(
             url,
             `content-block-${block.id}`
-          );
+          )
         } catch (error) {
-          console.warn(`Failed to process content block file: ${url}`, error);
+          console.warn(`Failed to process content block file: ${url}`, error)
           // Fall back to original URL
         }
 
@@ -85,8 +85,8 @@ export class BlockProcessor {
           caption: typeData.caption
             ? this.extractRichText(typeData.caption)
             : "",
-          url: url,
-        };
+          url: url
+        }
 
       case "bookmark":
       case "embed":
@@ -95,49 +95,49 @@ export class BlockProcessor {
           url: typeData.url,
           caption: typeData.caption
             ? this.extractRichText(typeData.caption)
-            : "",
-        };
+            : ""
+        }
 
       case "divider":
       case "equation":
       case "table_of_contents":
         // These blocks don't have additional content
-        return {};
+        return {}
 
       case "to_do":
         return {
           text: this.extractRichText(typeData.rich_text),
-          checked: typeData.checked,
-        };
+          checked: typeData.checked
+        }
 
       case "callout":
         return {
           text: this.extractRichText(typeData.rich_text),
-          icon: typeData.icon,
-        };
+          icon: typeData.icon
+        }
 
       case "table":
         return {
           tableWidth: typeData.table_width,
           hasColumnHeader: typeData.has_column_header,
-          hasRowHeader: typeData.has_row_header,
-        };
+          hasRowHeader: typeData.has_row_header
+        }
 
       case "table_row":
         return {
           cells: typeData.cells.map((cell: any[]) => ({
             plainText: this.extractRichText(cell),
-            richText: cell,
-          })),
-        };
+            richText: cell
+          }))
+        }
 
       case "column_list":
       case "column":
         // These are container blocks and their content is in children
-        return {};
+        return {}
 
       default:
-        return typeData || {};
+        return typeData || {}
     }
   }
 
@@ -147,17 +147,17 @@ export class BlockProcessor {
    * @returns A simplified representation of the block
    */
   simplifyBlock(block: BlockObjectResponse): SimpleBlock {
-    const { id, type, has_children } = block;
+    const { id, type, has_children } = block
 
     // Extract the content based on the block type
-    const content = this.extractBlockContent(block);
+    const content = this.extractBlockContent(block)
 
     return {
       id,
       type,
       content,
-      hasChildren: has_children,
-    };
+      hasChildren: has_children
+    }
   }
 
   /**
@@ -166,11 +166,11 @@ export class BlockProcessor {
    * @returns The extracted content in a simplified format
    */
   extractBlockContent(block: BlockObjectResponse): any {
-    const { type } = block;
+    const { type } = block
 
     // Accessing the block's content based on its type
     // @ts-ignore - Dynamic access to block properties
-    const typeData = block[type];
+    const typeData = block[type]
 
     switch (type) {
       case "paragraph":
@@ -184,14 +184,14 @@ export class BlockProcessor {
         // These blocks have rich text content
         return {
           text: this.extractRichText(typeData.rich_text),
-          richText: typeData.rich_text,
-        };
+          richText: typeData.rich_text
+        }
 
       case "code":
         return {
           text: this.extractRichText(typeData.rich_text),
-          language: typeData.language,
-        };
+          language: typeData.language
+        }
 
       case "image":
       case "file":
@@ -199,15 +199,15 @@ export class BlockProcessor {
       case "video":
       case "audio":
         // These blocks have file content
-        const fileType = typeData.type; // 'external' or 'file'
+        const fileType = typeData.type // 'external' or 'file'
         return {
           caption: typeData.caption
             ? this.extractRichText(typeData.caption)
             : "",
           // Get URL based on whether it's external or internal
           url:
-            fileType === "external" ? typeData.external.url : typeData.file.url,
-        };
+            fileType === "external" ? typeData.external.url : typeData.file.url
+        }
 
       case "bookmark":
       case "embed":
@@ -216,49 +216,49 @@ export class BlockProcessor {
           url: typeData.url,
           caption: typeData.caption
             ? this.extractRichText(typeData.caption)
-            : "",
-        };
+            : ""
+        }
 
       case "divider":
       case "equation":
       case "table_of_contents":
         // These blocks don't have additional content
-        return {};
+        return {}
 
       case "to_do":
         return {
           text: this.extractRichText(typeData.rich_text),
-          checked: typeData.checked,
-        };
+          checked: typeData.checked
+        }
 
       case "callout":
         return {
           text: this.extractRichText(typeData.rich_text),
-          icon: typeData.icon,
-        };
+          icon: typeData.icon
+        }
 
       case "table":
         return {
           tableWidth: typeData.table_width,
           hasColumnHeader: typeData.has_column_header,
-          hasRowHeader: typeData.has_row_header,
-        };
+          hasRowHeader: typeData.has_row_header
+        }
 
       case "table_row":
         return {
           cells: typeData.cells.map((cell: any[]) => ({
             plainText: this.extractRichText(cell),
-            richText: cell,
-          })),
-        };
+            richText: cell
+          }))
+        }
 
       case "column_list":
       case "column":
         // These are container blocks and their content is in children
-        return {};
+        return {}
 
       default:
-        return typeData || {};
+        return typeData || {}
     }
   }
 
@@ -268,7 +268,7 @@ export class BlockProcessor {
    * @returns Plain text string
    */
   private extractRichText(richText: any[] = []): string {
-    if (!richText || !Array.isArray(richText)) return "";
-    return richText.map((text) => text.plain_text || "").join("");
+    if (!richText || !Array.isArray(richText)) return ""
+    return richText.map((text) => text.plain_text || "").join("")
   }
 }

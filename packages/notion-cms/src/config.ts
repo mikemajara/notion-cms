@@ -2,12 +2,12 @@
  * Configuration options for NotionCMS file management
  */
 
-const DEFAULT_LOCAL_PATH = "./public/assets/notion-files";
+const DEFAULT_LOCAL_PATH = "./public/assets/notion-files"
 
 /**
  * File management strategies
  */
-export type FileStrategy = "direct" | "local" | "remote";
+export type FileStrategy = "direct" | "local" | "remote"
 
 /**
  * Configuration options for debug logging
@@ -17,13 +17,13 @@ export interface DebugConfig {
    * Enable/disable all logging
    * @default false
    */
-  enabled?: boolean;
+  enabled?: boolean
 
   /**
    * Log level - controls what gets logged
    * @default "info"
    */
-  level?: "error" | "warn" | "info" | "debug";
+  level?: "error" | "warn" | "info" | "debug"
 }
 
 /**
@@ -35,27 +35,27 @@ export interface StorageConfig {
    * - Local strategy: Local directory path (e.g., "./public/notion-files")
    * - Remote strategy: S3 key prefix (e.g., "uploads/notion/")
    */
-  path?: string;
+  path?: string
   /**
    * S3-compatible endpoint (required for remote strategy)
    */
-  endpoint: string;
+  endpoint: string
   /**
    * S3 bucket name (required for remote strategy)
    */
-  bucket?: string;
+  bucket?: string
   /**
    * S3 access key (required for remote strategy)
    */
-  accessKey: string;
+  accessKey: string
   /**
    * S3 secret key (required for remote strategy)
    */
-  secretKey: string;
+  secretKey: string
   /**
    * S3 region (optional)
    */
-  region?: string;
+  region?: string
 }
 
 export interface NotionCMSConfig {
@@ -69,13 +69,13 @@ export interface NotionCMSConfig {
      * - "local": Download and cache files locally
      * - "remote": Store files in S3-compatible storage
      */
-    strategy?: FileStrategy;
+    strategy?: FileStrategy
     /**
      * Storage configuration (used for local and remote strategies)
      */
-    storage?: StorageConfig;
-  };
-  debug?: DebugConfig;
+    storage?: StorageConfig
+  }
+  debug?: DebugConfig
 }
 
 /**
@@ -90,36 +90,47 @@ export const DEFAULT_CONFIG = {
       bucket: "",
       accessKey: "",
       secretKey: "",
-      region: "",
-    },
+      region: ""
+    }
   },
   debug: {
     enabled: false,
-    level: "info" as const,
-  },
-} as const;
+    level: "info" as const
+  }
+} as const
 
 /**
  * Merge user config with defaults
  */
 export function mergeConfig(userConfig?: NotionCMSConfig) {
-  if (!userConfig) return DEFAULT_CONFIG;
+  if (!userConfig) return DEFAULT_CONFIG
 
   return {
     files: {
       strategy: userConfig.files?.strategy ?? DEFAULT_CONFIG.files.strategy,
       storage: {
-        path: userConfig.files?.storage?.path ?? DEFAULT_CONFIG.files.storage.path,
-        endpoint: userConfig.files?.storage?.endpoint ?? DEFAULT_CONFIG.files.storage.endpoint,
-        bucket: userConfig.files?.storage?.bucket ?? DEFAULT_CONFIG.files.storage.bucket,
-        accessKey: userConfig.files?.storage?.accessKey ?? DEFAULT_CONFIG.files.storage.accessKey,
-        secretKey: userConfig.files?.storage?.secretKey ?? DEFAULT_CONFIG.files.storage.secretKey,
-        region: userConfig.files?.storage?.region ?? DEFAULT_CONFIG.files.storage.region,
-      },
+        path:
+          userConfig.files?.storage?.path ?? DEFAULT_CONFIG.files.storage.path,
+        endpoint:
+          userConfig.files?.storage?.endpoint ??
+          DEFAULT_CONFIG.files.storage.endpoint,
+        bucket:
+          userConfig.files?.storage?.bucket ??
+          DEFAULT_CONFIG.files.storage.bucket,
+        accessKey:
+          userConfig.files?.storage?.accessKey ??
+          DEFAULT_CONFIG.files.storage.accessKey,
+        secretKey:
+          userConfig.files?.storage?.secretKey ??
+          DEFAULT_CONFIG.files.storage.secretKey,
+        region:
+          userConfig.files?.storage?.region ??
+          DEFAULT_CONFIG.files.storage.region
+      }
     },
     debug: {
       enabled: userConfig.debug?.enabled ?? DEFAULT_CONFIG.debug.enabled,
-      level: userConfig.debug?.level ?? DEFAULT_CONFIG.debug.level,
-    },
-  };
+      level: userConfig.debug?.level ?? DEFAULT_CONFIG.debug.level
+    }
+  }
 }

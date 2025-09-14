@@ -8,12 +8,8 @@
  * will be implemented in Phase 2.
  */
 
-import { NotionCMS, DatabaseFieldMetadata } from "../index";
-import type {
-  OperatorsFor,
-  ValueTypeFor,
-  FieldTypeFor,
-} from "../query-builder";
+import { NotionCMS, DatabaseFieldMetadata } from "../index"
+import type { OperatorsFor, ValueTypeFor, FieldTypeFor } from "../query-builder"
 
 // ============================================================================
 // EXAMPLE: Resource Tracker Database (from existing types)
@@ -24,35 +20,35 @@ const ResourceTrackerFieldTypes = {
   Title: { type: "title" },
   "Resource Type": {
     type: "select",
-    options: ["EC2", "S3", "Lambda", "RDS", "ECS", "DynamoDB"] as const,
+    options: ["EC2", "S3", "Lambda", "RDS", "ECS", "DynamoDB"] as const
   },
   Environment: {
     type: "select",
-    options: ["Dev", "Staging", "Prod"] as const,
+    options: ["Dev", "Staging", "Prod"] as const
   },
   "Is Active": { type: "checkbox" },
   "Provision Date": { type: "date" },
   "Estimated Monthly Cost": { type: "number" },
   "Service Name": {
     type: "multi_select",
-    options: ["notifications", "analytics", "payment-gateway"] as const,
+    options: ["notifications", "analytics", "payment-gateway"] as const
   },
   Team: { type: "rich_text" },
-  Owner: { type: "people" },
-} as const satisfies DatabaseFieldMetadata;
+  Owner: { type: "people" }
+} as const satisfies DatabaseFieldMetadata
 
 // This would be the generated interface for the record
 interface ResourceTrackerRecord {
-  id: string;
-  Title: string;
-  "Resource Type": "EC2" | "S3" | "Lambda" | "RDS" | "ECS" | "DynamoDB";
-  Environment: "Dev" | "Staging" | "Prod";
-  "Is Active": boolean;
-  "Provision Date": Date | string;
-  "Estimated Monthly Cost": number;
-  "Service Name": Array<"notifications" | "analytics" | "payment-gateway">;
-  Team: string;
-  Owner: string[];
+  id: string
+  Title: string
+  "Resource Type": "EC2" | "S3" | "Lambda" | "RDS" | "ECS" | "DynamoDB"
+  Environment: "Dev" | "Staging" | "Prod"
+  "Is Active": boolean
+  "Provision Date": Date | string
+  "Estimated Monthly Cost": number
+  "Service Name": Array<"notifications" | "analytics" | "payment-gateway">
+  Team: string
+  Owner: string[]
 }
 
 // ============================================================================
@@ -69,8 +65,8 @@ interface ResourceTrackerRecord {
  * 4. Compile-time errors for invalid combinations
  */
 export async function demonstrateTargetAPI() {
-  const cms = new NotionCMS("notion_token_here");
-  const databaseId = "database_id_here";
+  const cms = new NotionCMS("notion_token_here")
+  const databaseId = "database_id_here"
 
   // ✅ PERFECT INTELLISENSE EXPERIENCE WE'RE TARGETING:
 
@@ -110,9 +106,9 @@ export async function demonstrateTargetAPI() {
     // .filter("Service Name", "greater_than", "analytics")                // ❌ Compile error!
 
     .sort("Provision Date", "descending") // ✅ Field names + direction constrained
-    .limit(10);
+    .limit(10)
 
-  return results;
+  return results
 }
 
 // ============================================================================
@@ -124,32 +120,32 @@ export async function demonstrateTargetAPI() {
  * by catching mistakes at compile time.
  */
 export function demonstrateTypeValidation() {
-  type FieldTypes = typeof ResourceTrackerFieldTypes;
+  type FieldTypes = typeof ResourceTrackerFieldTypes
 
   // ✅ Valid operator extractions
-  type TitleOps = OperatorsFor<"Title", FieldTypes>;
+  type TitleOps = OperatorsFor<"Title", FieldTypes>
   // Result: "equals" | "does_not_equal" | "contains" | "does_not_contain" | "starts_with" | "ends_with" | "is_empty" | "is_not_empty"
 
-  type ResourceTypeOps = OperatorsFor<"Resource Type", FieldTypes>;
+  type ResourceTypeOps = OperatorsFor<"Resource Type", FieldTypes>
   // Result: "equals" | "does_not_equal" | "is_empty" | "is_not_empty"
 
-  type CostOps = OperatorsFor<"Estimated Monthly Cost", FieldTypes>;
+  type CostOps = OperatorsFor<"Estimated Monthly Cost", FieldTypes>
   // Result: "equals" | "does_not_equal" | "greater_than" | "less_than" | "greater_than_or_equal_to" | "less_than_or_equal_to" | "is_empty" | "is_not_empty"
 
-  type CheckboxOps = OperatorsFor<"Is Active", FieldTypes>;
+  type CheckboxOps = OperatorsFor<"Is Active", FieldTypes>
   // Result: "equals"
 
   // ✅ Valid value type extractions
-  type TitleValue = ValueTypeFor<"Title", FieldTypes>;
+  type TitleValue = ValueTypeFor<"Title", FieldTypes>
   // Result: string
 
-  type ResourceTypeValue = ValueTypeFor<"Resource Type", FieldTypes>;
+  type ResourceTypeValue = ValueTypeFor<"Resource Type", FieldTypes>
   // Result: "EC2" | "S3" | "Lambda" | "RDS" | "ECS" | "DynamoDB"
 
-  type CostValue = ValueTypeFor<"Estimated Monthly Cost", FieldTypes>;
+  type CostValue = ValueTypeFor<"Estimated Monthly Cost", FieldTypes>
   // Result: number
 
-  type CheckboxValue = ValueTypeFor<"Is Active", FieldTypes>;
+  type CheckboxValue = ValueTypeFor<"Is Active", FieldTypes>
   // Result: boolean
 }
 
