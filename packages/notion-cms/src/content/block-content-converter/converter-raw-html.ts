@@ -1,6 +1,7 @@
 import type { ContentBlockRaw } from "../../content-types"
 import { groupConsecutiveListItems } from "../../utils/block-traversal"
 import { richTextToHtml, richTextToPlain } from "../../utils/rich-text"
+import { escapeHtml } from "../../utils/rich-text"
 
 export interface RawHtmlOptions {
   classPrefix?: string
@@ -141,7 +142,8 @@ function renderBlock(
     case "code": {
       const language = field?.language || ""
       const content = richTextToPlain(field?.rich_text ?? [])
-      return `<pre><code class="language-${language}">${content}</code></pre>`
+      const safeContent = escapeHtml(content)
+      return `<pre><code class="language-${language}">${safeContent}</code></pre>`
     }
     case "bookmark":
     case "embed":
