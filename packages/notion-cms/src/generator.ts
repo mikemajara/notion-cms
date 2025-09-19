@@ -231,7 +231,8 @@ function updateIndexFile(outputPath: string, fileName: string): void {
   let content = fs.readFileSync(indexPath, "utf8")
 
   // Check if this file is already exported
-  const exportLine = `export * from './${fileName.replace(".ts", "")}';`
+  let exportLine = `import './${fileName.replace(".ts", "")}';`
+  exportLine = `export * from './${fileName.replace(".ts", "")}';`
   if (!content.includes(exportLine)) {
     // Add export if not already there
     content += `${exportLine}\n`

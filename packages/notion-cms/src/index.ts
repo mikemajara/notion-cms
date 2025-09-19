@@ -114,8 +114,14 @@ export class NotionCMS {
    * @param blocks Array of blocks to convert
    * @returns Markdown string
    */
-  public blocksToMarkdown(blocks: SimpleBlock[]): string {
-    return this.contentConverter.blocksToMarkdown(blocks)
+  public blocksToMarkdown(
+    blocks: SimpleBlock[],
+    debugWarnings?: boolean
+  ): string {
+    return this.contentConverter.blocksToMarkdown(
+      blocks,
+      Boolean(debugWarnings)
+    )
   }
 
   /**

@@ -73,7 +73,10 @@ export class ContentConverter {
    * @param blocks Array of blocks to convert
    * @returns Markdown string
    */
-  public blocksToMarkdown(blocks: SimpleBlock[]): string {
+  public blocksToMarkdown(
+    blocks: SimpleBlock[],
+    debugWarnings: boolean = false
+  ): string {
     if (!blocks || !Array.isArray(blocks)) return ""
 
     const context: ListContext = {
@@ -83,7 +86,7 @@ export class ContentConverter {
       bulletStyles: ["-", "*", "+", "-"] // Cycle through different bullet styles
     }
 
-    return this.processBlocksGroup(blocks, context)
+    return this.processBlocksGroup(blocks, context, debugWarnings)
   }
 
   /**
@@ -106,7 +109,8 @@ export class ContentConverter {
    */
   private processBlocksGroup(
     blocks: SimpleBlock[],
-    context: ListContext
+    context: ListContext,
+    debugWarnings: boolean
   ): string {
     if (!blocks || blocks.length === 0) return ""
 
@@ -119,12 +123,20 @@ export class ContentConverter {
       if (this.isListItem(block.type)) {
         // Process consecutive list items as a group
         const listGroup = this.extractListGroup(blocks, i)
-        const listMarkdown = this.processListGroup(listGroup.blocks, context)
+        const listMarkdown = this.processListGroup(
+          listGroup.blocks,
+          context,
+          debugWarnings
+        )
         result.push(listMarkdown)
         i = listGroup.nextIndex
       } else {
         // Process single non-list block
-        const blockMarkdown = this.blockToMarkdown(block, context)
+        const blockMarkdown = this.blockToMarkdown(
+          block,
+          context,
+          debugWarnings
+        )
         if (blockMarkdown.trim()) {
           result.push(blockMarkdown)
         }
@@ -167,7 +179,8 @@ export class ContentConverter {
    */
   private processListGroup(
     blocks: SimpleBlock[],
-    parentContext: ListContext
+    parentContext: ListContext,
+    debugWarnings: boolean
   ): string {
     if (blocks.length === 0) return ""
 
@@ -193,7 +206,7 @@ export class ContentConverter {
     const result: string[] = []
 
     blocks.forEach((block) => {
-      const blockMarkdown = this.blockToMarkdown(block, context)
+      const blockMarkdown = this.blockToMarkdown(block, context, debugWarnings)
       if (blockMarkdown.trim()) {
         result.push(blockMarkdown)
       }
@@ -213,7 +226,11 @@ export class ContentConverter {
    * @param context Current list context and nesting information
    * @returns Markdown string
    */
-  private blockToMarkdown(block: SimpleBlock, context: ListContext): string {
+  private blockToMarkdown(
+    block: SimpleBlock,
+    context: ListContext,
+    debugWarnings: boolean
+  ): string {
     const { type, content, children } = block
 
     // Calculate proper indentation based on context
@@ -222,6 +239,10 @@ export class ContentConverter {
 
     switch (type) {
       case "paragraph":
+        // TODO: Check if the paragraph is inline code
+        // Also check formatting and figure out how to handle it
+        // Maybe this is better done having all kinds of blocks
+        // available (SimpleBlock, AdvancedBlock, and RawBlock)
         markdown = `${baseIndent}${content.text}`
         break
 
@@ -260,7 +281,11 @@ export class ContentConverter {
             ...context,
             level: context.level + 1
           }
-          markdown += this.processBlocksGroup(children, childContext)
+          markdown += this.processBlocksGroup(
+            children,
+            childContext,
+            debugWarnings
+          )
         }
         markdown += `\n${baseIndent}</details>`
         break
@@ -312,7 +337,7 @@ export class ContentConverter {
         if (content && content.text) {
           markdown = `${baseIndent}${content.text}`
         } else {
-          markdown = `${baseIndent}<!-- Unsupported block type: ${type} -->`
+          markdown = debugWarnings ? `${baseIndent}WARN: Unsupported block` : ""
         }
     }
 
@@ -324,7 +349,11 @@ export class ContentConverter {
           ...context,
           level: context.level + 1
         }
-        const childrenMarkdown = this.processBlocksGroup(children, childContext)
+        const childrenMarkdown = this.processBlocksGroup(
+          children,
+          childContext,
+          debugWarnings
+        )
         if (childrenMarkdown.trim()) {
           markdown += "\n" + childrenMarkdown
         }
@@ -334,7 +363,11 @@ export class ContentConverter {
           ...context,
           level: context.level + 1
         }
-        const childrenMarkdown = this.processBlocksGroup(children, childContext)
+        const childrenMarkdown = this.processBlocksGroup(
+          children,
+          childContext,
+          debugWarnings
+        )
         if (childrenMarkdown.trim()) {
           markdown += "\n\n" + childrenMarkdown
         }
@@ -357,7 +390,7 @@ export class ContentConverter {
     const { children } = tableBlock
 
     if (!children || children.length === 0) {
-      return `${baseIndent}<!-- Empty table -->`
+      return `${baseIndent} Empty table `
     }
 
     const rows = children as SimpleTableRowBlock[]
@@ -495,7 +528,7 @@ export class ContentConverter {
         if (content && content.text) {
           html = `<div>${content.text}</div>`
         } else {
-          html = `<!-- Unsupported block type: ${type} -->`
+          html = ` Unsupported block type: ${type} `
         }
     }
 
@@ -529,7 +562,7 @@ export class ContentConverter {
     const { content, children } = tableBlock
 
     if (!children || children.length === 0) {
-      return `<!-- Empty table -->`
+      return ` Empty table `
     }
 
     const rows = children as SimpleTableRowBlock[]
