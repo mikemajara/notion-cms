@@ -42,7 +42,7 @@ export function richTextToMarkdown(rich: RichTextItemResponse[] = []): string {
     .join("")
 }
 
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

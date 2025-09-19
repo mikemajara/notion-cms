@@ -156,7 +156,7 @@ async function mapBlock(
     case "table_row": {
       const cells: { text: string; text_md: string }[] =
         (field?.cells as any[] | undefined)?.map((c) => {
-          const rich = (c?.[0]?.rich_text as any[]) || []
+          const rich = Array.isArray(c) ? (c as any[]) : []
           return {
             text: richTextToPlain(rich),
             text_md: richTextToMarkdown(rich)

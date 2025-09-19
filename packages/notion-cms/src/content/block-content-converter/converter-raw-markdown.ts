@@ -66,9 +66,10 @@ function renderTable(
   const rowCells: string[][] = rows.map((r) => {
     const field = getBlockField<any>(r)
     const cells = (field?.cells as any[] | undefined) || []
-    return cells.map((cell) =>
-      richTextToMarkdown((cell?.[0]?.rich_text as any[]) || [])
-    )
+    return cells.map((cell) => {
+      const rich = Array.isArray(cell) ? (cell as any[]) : []
+      return richTextToMarkdown(rich)
+    })
   })
   const hasHeader = Boolean(table?.has_column_header)
   let out = ""
