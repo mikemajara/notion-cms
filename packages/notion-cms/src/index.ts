@@ -1,4 +1,6 @@
 import { Client } from "@notionhq/client"
+import type { ContentBlockRaw } from "./content-types"
+import type { RawHtmlOptions } from "./raw-html"
 import { NotionPropertyType, DatabaseRecord } from "./generator"
 import {
   QueryBuilder,
@@ -34,12 +36,17 @@ import { BlockProcessor } from "./processor"
 import { PageContentService } from "./page-content-service"
 import { DatabaseService } from "./database-service"
 import { debug } from "./utils/debug"
+export type {
+  ContentBlockAdvanced,
+  ContentTableRowAdvanced,
+  ContentBlockRaw
+} from "./content-types"
 
 // Note: Property utility functions have been consolidated into DatabaseService
 // Use the public API methods like query(), getRecord(), and getAllDatabaseRecords() for database operations
 export type {
   DatabaseRecord,
-  SimpleBlock,
+  /** @experimental */ SimpleBlock,
   TableBlockContent,
   TableRowCell,
   TableRowBlockContent,
@@ -115,13 +122,10 @@ export class NotionCMS {
    * @returns Markdown string
    */
   public blocksToMarkdown(
-    blocks: SimpleBlock[],
-    debugWarnings?: boolean
+    blocks: ContentBlockRaw[],
+    _debugWarnings?: boolean
   ): string {
-    return this.contentConverter.blocksToMarkdown(
-      blocks,
-      Boolean(debugWarnings)
-    )
+    return this.contentConverter.blocksToMarkdown(blocks)
   }
 
   /**
@@ -129,8 +133,11 @@ export class NotionCMS {
    * @param blocks Array of blocks to convert
    * @returns HTML string
    */
-  public blocksToHtml(blocks: SimpleBlock[]): string {
-    return this.contentConverter.blocksToHtml(blocks)
+  public blocksToHtml(
+    blocks: ContentBlockRaw[],
+    options?: RawHtmlOptions
+  ): string {
+    return this.contentConverter.blocksToHtml(blocks, options)
   }
 
   // HIGH-LEVEL PUBLIC API
@@ -208,6 +215,37 @@ export class NotionCMS {
   ): Promise<SimpleBlock[]> {
     return this.pageContentService.getPageContent(pageId, recursive)
   }
+
+  /**
+   * Retrieve raw content blocks for a Notion page
+   * @param pageId The ID of the Notion page
+   * @param recursive Whether to recursively fetch nested blocks (default: true)
+   */
+  async getPageContentRaw(pageId: string, recursive: boolean = true) {
+    return this.pageContentService.getPageContentRaw(pageId, recursive)
+  }
+
+  /**
+   * Retrieve advanced content blocks for a Notion page
+   */
+  async getPageContentAdvanced(pageId: string, recursive: boolean = true) {
+    const raw = await this.getPageContentRaw(pageId, recursive)
+    return this.contentConverter.blocksToAdvanced(raw, {
+      mediaUrlResolver: async (_block, field) => {
+        if (!field) return ""
+        const src =
+          field?.type === "external" ? field?.external?.url : field?.file?.url
+        try {
+          return await this.fileManager.processFileUrl(
+            src || "",
+            `content-block-${_block.id}`
+          )
+        } catch {
+          return src || ""
+        }
+      }
+    })
+  }
 }
 
 // Re-export types and utilities from ContentConverter, BlockProcessor, PageContentService, and DatabaseService
@@ -216,6 +254,15 @@ export { BlockProcessor } from "./processor"
 export { PageContentService } from "./page-content-service"
 export { DatabaseService } from "./database-service"
 export type { QueryOptions } from "./database-service"
+export { richTextToPlain, richTextToMarkdown } from "./utils/rich-text"
+export { richTextToHtml } from "./utils/rich-text"
+export {
+  groupConsecutiveListItems,
+  mapRawBlocksWithDepth,
+  walkRawBlocks
+} from "./utils/block-traversal"
+export { blocksToMarkdown } from "./raw-markdown"
+export { blocksToHtml } from "./raw-html"
 
 // Re-export types and utilities
 export * from "./generator"

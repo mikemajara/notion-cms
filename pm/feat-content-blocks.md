@@ -5,11 +5,10 @@
 - Refactor Markdown/HTML conversion to consume Raw blocks; reuse the same traversal/inline helpers to also build Advanced.
 
 ### Phase 0 — API decisions
-- Keep current `blocksToMarkdown(SimpleBlock[])` as-is for compatibility; mark as deprecated in docs.
-- Introduce new functions:
-  - `rawBlocksToMarkdown(rawBlocks, options?)`
-  - `rawBlocksToHtml(rawBlocks, options?)`
-  - `rawBlocksToAdvanced(rawBlocks, options?)`
+- Canonical single Markdown API: `blocksToMarkdown(rawBlocks, options?)` that consumes Raw Notion blocks.
+- Remove Simple-based Markdown path. No back-compat for `blocksToMarkdown(SimpleBlock[])`.
+- Migrate existing Raw Markdown implementation into the canonical `blocksToMarkdown` (do not introduce/keep a separate `rawBlocksToMarkdown` name going forward).
+- Keep Raw-based HTML and Advanced builders as separate functions for now; library entrypoint is the `ContentConverter` service methods.
 - Add a new fetch method returning nested Raw blocks: `getPageContentRaw(pageId, recursive=true)`.
 
 ### Phase 1 — Types
@@ -84,8 +83,8 @@ Naming aligns with repo rule: top-level term first (ContentBlockAdvanced).
   - Exported helpers from `packages/notion-cms/src/index.ts`.
   - Type check and build succeeded for `@mikemajara/notion-cms`.
 
-### Phase 5 — Markdown conversion (Raw)
-- `rawBlocksToMarkdown(rawBlocks, { listIndent = "  " })`:
+### Phase 5 — Markdown conversion (Raw, single API)
+- `blocksToMarkdown(rawBlocks, { listIndent = "  " })`:
   - Paragraph/quote/toggle/list items/to_do/headings: use `richTextToMarkdown`.
   - Code: fenced block with language; content from `richTextToPlain`.
   - Bookmark/embed/link_preview: URL on its own line; caption_md below (optional).
@@ -98,13 +97,12 @@ Naming aligns with repo rule: top-level term first (ContentBlockAdvanced).
     - Emit minimal placeholders or skip in Markdown; recurse into `children` where meaningful (columns/column/synced/template).
 
 - Status: Implemented
-  - Added `packages/notion-cms/src/raw-markdown.ts` with `rawBlocksToMarkdown`.
-  - Uses traversal and `richTextToMarkdown` helpers; supports grouping and indentation.
-  - Exported from `packages/notion-cms/src/index.ts`.
-  - Type check and build succeeded for `@mikemajara/notion-cms`.
+  - Canonical function `blocksToMarkdown` implemented and exported.
+  - `NotionCMS.blocksToMarkdown` now accepts Raw blocks and delegates to `ContentConverter.blocksToMarkdown` (service pattern).
+  - Legacy Simple-based path is no longer used.
 
 ### Phase 6 — HTML conversion (Raw)
-- `rawBlocksToHtml(rawBlocks, { classPrefix = "" })`:
+- `blocksToHtml(rawBlocks, { classPrefix = "" })`:
   - Similar traversal as Markdown.
   - Add class names compatible with Notion color classes; when color annotations exist, map to classes like `${classPrefix}color-<name>`, `${classPrefix}bg-<name>`.
   - Media as appropriate tags (`img`, `video`, `audio`) when possible; otherwise links.
@@ -112,12 +110,12 @@ Naming aligns with repo rule: top-level term first (ContentBlockAdvanced).
 
 - Status: Implemented
   - Added `packages/notion-cms/src/utils/rich-text.ts` `richTextToHtml` helper.
-  - Added `packages/notion-cms/src/raw-html.ts` with `rawBlocksToHtml` using traversal and inline helpers.
-  - Exported from `packages/notion-cms/src/index.ts`.
+  - Added `packages/notion-cms/src/raw-html.ts` with `blocksToHtml` using traversal and inline helpers.
+  - Service entrypoint: `ContentConverter.blocksToHtml`; `NotionCMS.blocksToHtml` delegates to service.
   - Type check and build succeeded for `@mikemajara/notion-cms`.
 
 ### Phase 7 — Advanced builder (derived from Raw)
-- `rawBlocksToAdvanced(rawBlocks, options?)`:
+- Internal builder: `blocksToAdvanced(rawBlocks, options?)`:
   - Use the same traversal.
   - For each block type, produce the corresponding `ContentBlockAdvanced` variant:
     - text/text_md from rich_text helpers.
@@ -128,15 +126,22 @@ Naming aligns with repo rule: top-level term first (ContentBlockAdvanced).
     - columns: normalize to `{ type: "columns", children: [{ type: "column", children }, ...] }`.
 
 - Status: Implemented
-  - Added `packages/notion-cms/src/raw-advanced.ts` with `rawBlocksToAdvanced`.
-  - Supports media resolution hook via `mediaUrlResolver` option.
-  - Exported from `packages/notion-cms/src/index.ts`.
+  - Added `packages/notion-cms/src/raw-advanced.ts` with internal `blocksToAdvanced`.
+  - Service entrypoint: `ContentConverter.blocksToAdvanced`.
+  - Public API: `NotionCMS.getPageContentAdvanced(pageId, recursive?)` (composes Raw fetch + builder).
   - Type check and build succeeded for `@mikemajara/notion-cms`.
 
 ### Phase 8 — Back-compat and migration
-- Keep `ContentConverter.blocksToMarkdown(SimpleBlock[])` as-is for now.
-- Add new public methods in `index.ts` for raw-based conversions and advanced builder.
-- Docs: mark Simple-based Markdown as legacy; recommend Raw-based functions.
+- No back-compat for Markdown. Replace `ContentConverter.blocksToMarkdown(SimpleBlock[])` with Raw-based implementation and update `NotionCMS.blocksToMarkdown` to accept Raw blocks.
+- Keep Raw-based HTML and Advanced builder APIs as they are.
+- apps/* updates will be handled separately (out of scope for notion-cms changes).
+
+- Status: Implemented (plus housekeeping)
+  - SimpleBlock-based conversion paths are marked `@experimental` and not part of the recommended API.
+  - `NotionCMS.getPageContentAdvanced` composes Raw fetch + Advanced builder (with media URL resolution via `FileManager`).
+
+Note:
+- Scope clarification from discussion: only change `packages/notion-cms` (library). Updates to `apps/` examples will be performed separately.
 
 ### Phase 9 — Edge cases and media resolution
 - Storage config: add a resolver interface already used by FileManager; ensure media URLs are resolved once during Advanced building and HTML/MD conversion.

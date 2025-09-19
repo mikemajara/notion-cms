@@ -1,9 +1,16 @@
 /**
  * Content conversion service for transforming Notion blocks to Markdown and HTML
  */
+import type { ContentBlockRaw } from "./content-types"
+import { blocksToMarkdown } from "./raw-markdown"
+import type { RawHtmlOptions } from "./raw-html"
+import type { RawAdvancedOptions } from "./raw-advanced"
+import { blocksToHtml } from "./raw-html"
+import { blocksToAdvanced } from "./raw-advanced"
 
 /**
  * Simplified representation of a Notion block
+ * @experimental
  */
 export interface SimpleBlock {
   id: string
@@ -74,19 +81,10 @@ export class ContentConverter {
    * @returns Markdown string
    */
   public blocksToMarkdown(
-    blocks: SimpleBlock[],
-    debugWarnings: boolean = false
+    blocks: ContentBlockRaw[],
+    _debugWarnings: boolean = false
   ): string {
-    if (!blocks || !Array.isArray(blocks)) return ""
-
-    const context: ListContext = {
-      type: null,
-      level: 0,
-      numbering: [],
-      bulletStyles: ["-", "*", "+", "-"] // Cycle through different bullet styles
-    }
-
-    return this.processBlocksGroup(blocks, context, debugWarnings)
+    return blocksToMarkdown(blocks)
   }
 
   /**
@@ -94,11 +92,18 @@ export class ContentConverter {
    * @param blocks Array of blocks to convert
    * @returns HTML string
    */
-  public blocksToHtml(blocks: SimpleBlock[]): string {
-    if (!blocks || !Array.isArray(blocks)) return ""
+  public blocksToHtml(
+    blocks: ContentBlockRaw[],
+    options?: RawHtmlOptions
+  ): string {
+    return blocksToHtml(blocks, options)
+  }
 
-    const html = blocks.map((block) => this.blockToHtml(block)).join("")
-    return html
+  public async blocksToAdvanced(
+    blocks: ContentBlockRaw[],
+    options?: RawAdvancedOptions
+  ) {
+    return blocksToAdvanced(blocks, options)
   }
 
   /**
@@ -107,6 +112,7 @@ export class ContentConverter {
    * @param context Current list context
    * @returns Processed markdown string
    */
+  /** @experimental */
   private processBlocksGroup(
     blocks: SimpleBlock[],
     context: ListContext,
@@ -149,6 +155,7 @@ export class ContentConverter {
 
   /**
    * Check if a block type is a list item
+   * @experimental
    */
   private isListItem(type: string): boolean {
     return type === "bulleted_list_item" || type === "numbered_list_item"
@@ -156,6 +163,7 @@ export class ContentConverter {
 
   /**
    * Extract consecutive list items of the same type
+   * @experimental
    */
   private extractListGroup(
     blocks: SimpleBlock[],
@@ -176,6 +184,7 @@ export class ContentConverter {
 
   /**
    * Process a group of list items with proper numbering and indentation
+   * @experimental
    */
   private processListGroup(
     blocks: SimpleBlock[],
@@ -225,6 +234,7 @@ export class ContentConverter {
    * @param block The block to convert
    * @param context Current list context and nesting information
    * @returns Markdown string
+   * @experimental
    */
   private blockToMarkdown(
     block: SimpleBlock,
@@ -417,6 +427,7 @@ export class ContentConverter {
    * @param block The block to convert
    * @param level Nesting level for recursive calls
    * @returns HTML string
+   * @experimental
    */
   private blockToHtml(block: SimpleBlock, level: number = 0): string {
     const { type, content, children } = block
@@ -557,6 +568,7 @@ export class ContentConverter {
    * Convert a table block to HTML format
    * @param tableBlock The table block to convert
    * @returns HTML string
+   * @experimental
    */
   private tableToHtml(tableBlock: SimpleTableBlock): string {
     const { content, children } = tableBlock
@@ -596,15 +608,5 @@ export class ContentConverter {
 
     tableHtml += "</table>"
     return tableHtml
-  }
-
-  /**
-   * Extract plain text from rich text objects
-   * @param richText Array of rich text objects
-   * @returns Plain text string
-   */
-  private extractRichText(richText: any[] = []): string {
-    if (!richText || !Array.isArray(richText)) return ""
-    return richText.map((text) => text.plain_text || "").join("")
   }
 }

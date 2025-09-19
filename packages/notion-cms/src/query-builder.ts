@@ -361,10 +361,12 @@ export type FieldTypeFor<
 > = M[K] extends { type: infer T } ? T : never
 
 // Get valid operators for a specific field based on its type
-export type OperatorsFor<K extends keyof M, M extends DatabaseFieldMetadata> =
-  FieldTypeFor<K, M> extends keyof OperatorMap
-    ? OperatorMap[FieldTypeFor<K, M>]
-    : never
+export type OperatorsFor<
+  K extends keyof M,
+  M extends DatabaseFieldMetadata
+> = FieldTypeFor<K, M> extends keyof OperatorMap
+  ? OperatorMap[FieldTypeFor<K, M>]
+  : never
 
 // Extract select options from field metadata
 export type SelectOptionsFor<
@@ -373,8 +375,8 @@ export type SelectOptionsFor<
 > = M[K] extends { type: "select"; options: readonly (infer U)[] }
   ? U
   : M[K] extends { type: "multi_select"; options: readonly (infer U)[] }
-    ? U
-    : never
+  ? U
+  : never
 
 // Map field types to their corresponding TypeScript value types
 export type ValueTypeMap = {
@@ -410,16 +412,16 @@ export type ValueTypeFor<
 > = O extends "is_empty" | "is_not_empty"
   ? any // is_empty and is_not_empty operators ignore the value
   : FieldTypeFor<K, M> extends "select"
-    ? SelectOptionsFor<K, M>
-    : FieldTypeFor<K, M> extends "multi_select"
-      ? SelectOptionsFor<K, M> // Single option value for contains/does_not_contain operations
-      : FieldTypeFor<K, M> extends "people" | "relation"
-        ? O extends "contains" | "does_not_contain"
-          ? string // People and relation contains/does_not_contain expect single ID
-          : ValueTypeMap[FieldTypeFor<K, M>]
-        : FieldTypeFor<K, M> extends keyof ValueTypeMap
-          ? ValueTypeMap[FieldTypeFor<K, M>]
-          : any
+  ? SelectOptionsFor<K, M>
+  : FieldTypeFor<K, M> extends "multi_select"
+  ? SelectOptionsFor<K, M> // Single option value for contains/does_not_contain operations
+  : FieldTypeFor<K, M> extends "people" | "relation"
+  ? O extends "contains" | "does_not_contain"
+    ? string // People and relation contains/does_not_contain expect single ID
+    : ValueTypeMap[FieldTypeFor<K, M>]
+  : FieldTypeFor<K, M> extends keyof ValueTypeMap
+  ? ValueTypeMap[FieldTypeFor<K, M>]
+  : any
 
 /**
  * Type-safe filter condition with operator and value validation
