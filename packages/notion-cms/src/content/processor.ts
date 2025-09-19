@@ -1,6 +1,6 @@
 import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import { FileManager } from "./file-processor/file-manager"
-import { SimpleBlock } from "./content/content-converter"
+import { FileManager } from "../file-processor/file-manager"
+import { SimpleBlock } from "./content-converter"
 
 /**
  * Block processing service for converting Notion blocks to simplified formats

@@ -32,7 +32,7 @@ import {
   SimpleTableBlock,
   SimpleTableRowBlock
 } from "./content/content-converter"
-import { BlockProcessor } from "./processor"
+import { BlockProcessor } from "./content/processor"
 import { PageContentService } from "./content/page-content-service"
 import { ContentProcessor } from "./content/content-processor"
 import { DatabaseService } from "./database/database-service"
@@ -254,7 +254,7 @@ export class NotionCMS {
 
 // Re-export types and utilities from ContentConverter, BlockProcessor, PageContentService, and DatabaseService
 export { ContentConverter } from "./content/content-converter"
-export { BlockProcessor } from "./processor"
+export { BlockProcessor } from "./content/processor"
 export { PageContentService } from "./content/page-content-service"
 export { ContentProcessor } from "./content/content-processor"
 export { DatabaseService } from "./database/database-service"
