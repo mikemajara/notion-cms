@@ -1,6 +1,6 @@
 import { Client } from "@notionhq/client"
-import type { ContentBlockRaw } from "./content-types"
-import type { RawHtmlOptions } from "./raw-html"
+import type { ContentBlockRaw } from "./types/content-types"
+import type { RawHtmlOptions } from "./content/block-content-converter/converter-raw-html"
 import { NotionPropertyType, DatabaseRecord } from "./generator"
 import {
   QueryBuilder,
@@ -18,11 +18,11 @@ import {
   ValueTypeFor,
   ValueTypeMap,
   TypeSafeFilterCondition
-} from "./query-builder"
+} from "./database/query-builder"
 
 import { NotionProperty } from "./utils/property-helpers"
 import { NotionCMSConfig, mergeConfig } from "./config"
-import { FileManager } from "./file-manager"
+import { FileManager } from "./file-processor/file-manager"
 import {
   ContentConverter,
   SimpleBlock,
@@ -31,16 +31,17 @@ import {
   TableRowBlockContent,
   SimpleTableBlock,
   SimpleTableRowBlock
-} from "./converter"
+} from "./content/content-converter"
 import { BlockProcessor } from "./processor"
-import { PageContentService } from "./page-content-service"
-import { DatabaseService } from "./database-service"
+import { PageContentService } from "./content/page-content-service"
+import { ContentProcessor } from "./content/content-processor"
+import { DatabaseService } from "./database/database-service"
 import { debug } from "./utils/debug"
 export type {
   ContentBlockAdvanced,
   ContentTableRowAdvanced,
   ContentBlockRaw
-} from "./content-types"
+} from "./types/content-types"
 
 // Note: Property utility functions have been consolidated into DatabaseService
 // Use the public API methods like query(), getRecord(), and getAllDatabaseRecords() for database operations
@@ -90,6 +91,7 @@ export class NotionCMS {
   private blockProcessor: BlockProcessor
   private pageContentService: PageContentService
   private databaseService: DatabaseService
+  private contentProcessor: ContentProcessor
 
   /**
    * Initialize the NotionCMS instance
@@ -112,6 +114,7 @@ export class NotionCMS {
       this.blockProcessor
     )
     this.databaseService = new DatabaseService(this.client, this.fileManager)
+    this.contentProcessor = new ContentProcessor(this.pageContentService)
   }
 
   // UTILITY METHODS
@@ -229,9 +232,10 @@ export class NotionCMS {
    * Retrieve advanced content blocks for a Notion page
    */
   async getPageContentAdvanced(pageId: string, recursive: boolean = true) {
-    const raw = await this.getPageContentRaw(pageId, recursive)
-    return this.contentConverter.blocksToAdvanced(raw, {
-      mediaUrlResolver: async (_block, field) => {
+    return this.contentProcessor.getAdvancedBlocks(
+      pageId,
+      recursive,
+      async (_block, field) => {
         if (!field) return ""
         const src =
           field?.type === "external" ? field?.external?.url : field?.file?.url
@@ -244,16 +248,17 @@ export class NotionCMS {
           return src || ""
         }
       }
-    })
+    )
   }
 }
 
 // Re-export types and utilities from ContentConverter, BlockProcessor, PageContentService, and DatabaseService
-export { ContentConverter } from "./converter"
+export { ContentConverter } from "./content/content-converter"
 export { BlockProcessor } from "./processor"
-export { PageContentService } from "./page-content-service"
-export { DatabaseService } from "./database-service"
-export type { QueryOptions } from "./database-service"
+export { PageContentService } from "./content/page-content-service"
+export { ContentProcessor } from "./content/content-processor"
+export { DatabaseService } from "./database/database-service"
+export type { QueryOptions } from "./database/database-service"
 export { richTextToPlain, richTextToMarkdown } from "./utils/rich-text"
 export { richTextToHtml } from "./utils/rich-text"
 export {
@@ -261,8 +266,8 @@ export {
   mapRawBlocksWithDepth,
   walkRawBlocks
 } from "./utils/block-traversal"
-export { blocksToMarkdown } from "./raw-markdown"
-export { blocksToHtml } from "./raw-html"
+export { blocksToMarkdown } from "./content/block-content-converter/converter-raw-markdown"
+export { blocksToHtml } from "./content/block-content-converter/converter-raw-html"
 
 // Re-export types and utilities
 export * from "./generator"

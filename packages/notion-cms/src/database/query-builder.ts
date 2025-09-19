@@ -3,15 +3,15 @@ import {
   QueryDatabaseParameters,
   PageObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import { DatabaseRecord } from "./generator"
-import { debug } from "./utils/debug"
-import { FileManager } from "./file-manager"
-import { DatabaseService } from "./database-service"
+import { DatabaseRecord } from "../generator"
+import { debug } from "../utils/debug"
+import { FileManager } from "../file-processor/file-manager"
+import { getPropertyValueSimple } from "./database-record-converter/converter-record-simple"
+import { getPropertyValueAdvanced } from "./database-record-converter/converter-record-advanced"
 
 export type SortDirection = "ascending" | "descending"
 export type LogicalOperator = "and" | "or"
 
-// Define all possible Notion field types
 export type NotionFieldType =
   | "title"
   | "rich_text"
@@ -37,16 +37,7 @@ export type NotionFieldType =
   | "verification"
   | "unknown"
 
-// ============================================================================
-// NEW TYPE SYSTEM FOUNDATION
-// ============================================================================
-
-/**
- * Comprehensive operator mapping for all Notion field types
- * Each field type has specific operators that make sense for that data type
- */
 export type OperatorMap = {
-  // Text-based fields
   title:
     | "equals"
     | "does_not_equal"
@@ -92,8 +83,6 @@ export type OperatorMap = {
     | "ends_with"
     | "is_empty"
     | "is_not_empty"
-
-  // Numeric fields
   number:
     | "equals"
     | "does_not_equal"
@@ -103,13 +92,9 @@ export type OperatorMap = {
     | "less_than_or_equal_to"
     | "is_empty"
     | "is_not_empty"
-
-  // Selection fields
   select: "equals" | "does_not_equal" | "is_empty" | "is_not_empty"
   multi_select: "contains" | "does_not_contain" | "is_empty" | "is_not_empty"
   status: "equals" | "does_not_equal" | "is_empty" | "is_not_empty"
-
-  // Date/time fields
   date:
     | "equals"
     | "before"
@@ -125,20 +110,12 @@ export type OperatorMap = {
     | "after"
     | "on_or_before"
     | "on_or_after"
-
-  // Boolean fields
   checkbox: "equals"
-
-  // Relation fields
   people: "contains" | "does_not_contain" | "is_empty" | "is_not_empty"
   relation: "contains" | "does_not_contain" | "is_empty" | "is_not_empty"
   created_by: "contains" | "does_not_contain"
   last_edited_by: "contains" | "does_not_contain"
-
-  // File fields
   files: "is_empty" | "is_not_empty"
-
-  // Special fields
   formula:
     | "equals"
     | "does_not_equal"
@@ -169,17 +146,10 @@ export type OperatorMap = {
     | "greater_than_or_equal_to"
     | "less_than_or_equal_to"
   verification: "equals" | "before" | "after" | "on_or_before" | "on_or_after"
-
-  // Fallback
   unknown: "equals" | "does_not_equal" | "is_empty" | "is_not_empty"
 }
 
-/**
- * Runtime version of OperatorMap for validation purposes
- * This allows us to check valid operators at runtime
- */
 export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
-  // Text-based fields
   title: [
     "equals",
     "does_not_equal",
@@ -230,8 +200,6 @@ export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
     "is_empty",
     "is_not_empty"
   ] as const,
-
-  // Numeric fields
   number: [
     "equals",
     "does_not_equal",
@@ -242,8 +210,6 @@ export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
     "is_empty",
     "is_not_empty"
   ] as const,
-
-  // Selection fields
   select: ["equals", "does_not_equal", "is_empty", "is_not_empty"] as const,
   multi_select: [
     "contains",
@@ -252,8 +218,6 @@ export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
     "is_not_empty"
   ] as const,
   status: ["equals", "does_not_equal", "is_empty", "is_not_empty"] as const,
-
-  // Date/time fields
   date: [
     "equals",
     "before",
@@ -277,11 +241,7 @@ export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
     "on_or_before",
     "on_or_after"
   ] as const,
-
-  // Boolean fields
   checkbox: ["equals"] as const,
-
-  // Relation fields
   people: ["contains", "does_not_contain", "is_empty", "is_not_empty"] as const,
   relation: [
     "contains",
@@ -291,11 +251,7 @@ export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
   ] as const,
   created_by: ["contains", "does_not_contain"] as const,
   last_edited_by: ["contains", "does_not_contain"] as const,
-
-  // File fields
   files: ["is_empty", "is_not_empty"] as const,
-
-  // Special fields
   formula: [
     "equals",
     "does_not_equal",
@@ -335,14 +291,9 @@ export const OPERATOR_MAP: Record<keyof OperatorMap, readonly string[]> = {
     "on_or_before",
     "on_or_after"
   ] as const,
-  // Fallback
   unknown: ["equals", "does_not_equal", "is_empty", "is_not_empty"] as const
 } as const
 
-/**
- * Enhanced interface for database field metadata with full type constraints
- * Supports all Notion field types with proper option constraints for select fields
- */
 export interface DatabaseFieldMetadata {
   [fieldName: string]:
     | { type: Exclude<NotionFieldType, "select" | "multi_select"> }
@@ -350,25 +301,16 @@ export interface DatabaseFieldMetadata {
     | { type: "multi_select"; options: readonly string[] }
 }
 
-/**
- * Conditional type utilities for type-safe query building
- */
-
-// Extract the field type from metadata for a specific field
 export type FieldTypeFor<
   K extends keyof M,
   M extends DatabaseFieldMetadata
 > = M[K] extends { type: infer T } ? T : never
-
-// Get valid operators for a specific field based on its type
 export type OperatorsFor<
   K extends keyof M,
   M extends DatabaseFieldMetadata
 > = FieldTypeFor<K, M> extends keyof OperatorMap
   ? OperatorMap[FieldTypeFor<K, M>]
   : never
-
-// Extract select options from field metadata
 export type SelectOptionsFor<
   K extends keyof M,
   M extends DatabaseFieldMetadata
@@ -378,54 +320,49 @@ export type SelectOptionsFor<
   ? U
   : never
 
-// Map field types to their corresponding TypeScript value types
 export type ValueTypeMap = {
   title: string
   rich_text: string
   number: number
-  select: string // Will be further constrained by SelectOptionsFor
-  multi_select: string[] // Will be further constrained by MultiSelectOptionsFor
-  date: Date | string // Allow both Date objects and ISO strings
-  people: string[] // Array of user IDs
+  select: string
+  multi_select: string[]
+  date: Date | string
+  people: string[]
   files: Array<{ name: string; url: string }>
   checkbox: boolean
   url: string
   email: string
   phone_number: string
-  formula: any // Formula results can be various types
-  relation: string[] // Array of related page IDs
-  rollup: any // Rollup results can be various types
+  formula: any
+  relation: string[]
+  rollup: any
   created_time: Date | string
-  created_by: string // User ID
+  created_by: string
   last_edited_time: Date | string
-  last_edited_by: string // User ID
+  last_edited_by: string
   status: string
   unique_id: number
   unknown: any
 }
 
-// Get the expected value type for a field based on its metadata type
 export type ValueTypeFor<
   K extends keyof M,
   M extends DatabaseFieldMetadata,
   O extends OperatorsFor<K, M> = OperatorsFor<K, M>
 > = O extends "is_empty" | "is_not_empty"
-  ? any // is_empty and is_not_empty operators ignore the value
+  ? any
   : FieldTypeFor<K, M> extends "select"
   ? SelectOptionsFor<K, M>
   : FieldTypeFor<K, M> extends "multi_select"
-  ? SelectOptionsFor<K, M> // Single option value for contains/does_not_contain operations
+  ? SelectOptionsFor<K, M>
   : FieldTypeFor<K, M> extends "people" | "relation"
   ? O extends "contains" | "does_not_contain"
-    ? string // People and relation contains/does_not_contain expect single ID
+    ? string
     : ValueTypeMap[FieldTypeFor<K, M>]
   : FieldTypeFor<K, M> extends keyof ValueTypeMap
   ? ValueTypeMap[FieldTypeFor<K, M>]
   : any
 
-/**
- * Type-safe filter condition with operator and value validation
- */
 export interface TypeSafeFilterCondition<
   K extends keyof M,
   M extends DatabaseFieldMetadata
@@ -436,9 +373,6 @@ export interface TypeSafeFilterCondition<
   propertyType: FieldTypeFor<K, M>
 }
 
-/**
- * Generic filter condition for internal use
- */
 export interface FilterCondition {
   property: string
   operator: string
@@ -451,10 +385,6 @@ export interface QueryResult<T extends DatabaseRecord> {
   hasMore: boolean
   nextCursor: string | null
 }
-
-// ============================================================================
-// QUERY BUILDER FOUNDATION (placeholder for Phase 2)
-// ============================================================================
 
 export class QueryBuilder<
   T extends DatabaseRecord,
@@ -472,7 +402,6 @@ export class QueryBuilder<
   private startCursor?: string
   private singleMode: "required" | "optional" | null = null
   private fileManager?: FileManager
-  private databaseService: DatabaseService
 
   constructor(
     client: Client,
@@ -484,32 +413,14 @@ export class QueryBuilder<
     this.databaseId = databaseId
     this.fieldTypes = fieldTypes
     this.fileManager = fileManager
-    // Create DatabaseService instance for unified record processing
-    this.databaseService = new DatabaseService(
-      client,
-      fileManager || new FileManager({})
-    )
+    // no DatabaseService import to avoid cycles
   }
 
-  /**
-   * Type-safe filter method with perfect IntelliSense support
-   *
-   * Provides:
-   * 1. Field name suggestions from database metadata
-   * 2. Operator suggestions based on field type
-   * 3. Value type validation based on field type and select options
-   *
-   * @param property - Database field name (with IntelliSense suggestions)
-   * @param operator - Valid operator for the field type (with IntelliSense suggestions)
-   * @param value - Value matching the field type constraints
-   * @returns QueryBuilder for chaining
-   */
   filter<K extends keyof M & keyof T & string, O extends OperatorsFor<K, M>>(
     property: K,
     operator: O,
     value: ValueTypeFor<K, M, O>
   ): QueryBuilder<T, M> {
-    // Validate that the operator is valid for the field type
     if (!this.isValidOperatorForField(property, operator as string)) {
       throw new Error(
         `Invalid operator "${operator}" for field "${property}" of type "${this.getFieldTypeForFilter(
@@ -518,11 +429,9 @@ export class QueryBuilder<
       )
     }
 
-    // Get the property type for the Notion API
     const fieldType = this.getFieldTypeForFilter(property)
     const propertyType = this.mapFieldTypeToNotionProperty(fieldType)
 
-    // Add the filter condition
     this.filterConditions.push({
       property: property as string,
       operator: operator as string,
@@ -533,15 +442,10 @@ export class QueryBuilder<
     return this
   }
 
-  /**
-   * Map our field types to Notion API property types
-   * @private
-   */
   private mapFieldTypeToNotionProperty(
     fieldType: NotionFieldType | undefined
   ): string {
-    if (!fieldType) return "rich_text" // fallback
-
+    if (!fieldType) return "rich_text"
     switch (fieldType) {
       case "title":
         return "title"
@@ -586,21 +490,14 @@ export class QueryBuilder<
     }
   }
 
-  /**
-   * Prepare filter value for Notion API
-   * @private
-   */
   private prepareFilterValue(
     fieldType: NotionFieldType | undefined,
     operator: string,
     value: any
   ): any {
-    // Handle empty/not empty operators
     if (operator === "is_empty" || operator === "is_not_empty") {
       return true
     }
-
-    // Handle date values
     if (
       fieldType === "date" ||
       fieldType === "created_time" ||
@@ -609,87 +506,38 @@ export class QueryBuilder<
       if (value instanceof Date) {
         return value.toISOString()
       }
-      return value // assume it's already a valid date string
+      return value
     }
-
-    // Handle multi-select contains (expects a string, not array)
     if (
       fieldType === "multi_select" &&
       (operator === "contains" || operator === "does_not_contain")
     ) {
-      // If value is an array, take the first element
       if (Array.isArray(value)) {
         return value[0] || ""
       }
       return value
     }
-
     return value
   }
 
-  /**
-   * Add sorting to the query with type-safe field name suggestions
-   *
-   * Supports both single and multiple (nested) sorting. When multiple sorts are applied,
-   * the first sort takes precedence, then the second, and so on.
-   *
-   * All field types support sorting in Notion, including:
-   * - Text fields (title, rich_text, url, email, phone_number)
-   * - Number fields
-   * - Date fields (date, created_time, last_edited_time)
-   * - Select and multi-select fields
-   * - Checkbox fields
-   * - People and relation fields
-   * - Status fields
-   * - Formula and rollup fields
-   *
-   * @param property - Field name to sort by (with IntelliSense suggestions from database schema)
-   * @param direction - Sort direction: "ascending" (default) or "descending"
-   * @returns QueryBuilder for method chaining
-   *
-   * @example
-   * ```typescript
-   * // Single sort
-   * query(cms, databaseId)
-   *   .sort("Created Date", "descending")
-   *
-   * // Multiple (nested) sorts - priority order matters
-   * query(cms, databaseId)
-   *   .sort("Priority", "descending")    // Primary sort
-   *   .sort("Created Date", "ascending") // Secondary sort
-   *   .sort("Name", "ascending")         // Tertiary sort
-   *
-   * // Sort by different field types
-   * query(cms, databaseId)
-   *   .sort("Environment", "ascending")           // Select field
-   *   .sort("Estimated Cost", "descending")       // Number field
-   *   .sort("Is Active", "descending")            // Checkbox field
-   * ```
-   */
   sort(
     property: keyof M & keyof T & string,
     direction: SortDirection = "ascending"
   ): QueryBuilder<T, M> {
-    // Validate that the property exists in the field metadata
     if (!this.isValidSortField(property)) {
       throw new Error(
-        `Invalid sort property "${property}". Property not found in database schema. ` +
-          `Available fields: ${Object.keys(this.fieldTypes).join(", ")}`
+        `Invalid sort property "${property}". Property not found in database schema. Available fields: ${Object.keys(
+          this.fieldTypes
+        ).join(", ")}`
       )
     }
-
-    // Validate sort direction
     if (direction !== "ascending" && direction !== "descending") {
       throw new Error(
         `Invalid sort direction "${direction}". Must be "ascending" or "descending".`
       )
     }
-
     debug.log(`Adding sort: ${property} ${direction}`)
-    ;(this.sortOptions as any[]).push({
-      property,
-      direction
-    })
+    ;(this.sortOptions as any[]).push({ property, direction })
     return this
   }
 
@@ -705,14 +553,12 @@ export class QueryBuilder<
 
   single(): QueryBuilder<T, M> {
     this.singleMode = "required"
-    // Limit to 2 to check if there are multiple matches
     this.pageLimit = 2
     return this
   }
 
   maybeSingle(): QueryBuilder<T, M> {
     this.singleMode = "optional"
-    // Limit to 1 since we only need the first match
     this.pageLimit = 1
     return this
   }
@@ -726,13 +572,8 @@ export class QueryBuilder<
     return this.execute().then(onfulfilled, onrejected)
   }
 
-  /**
-   * Execute the query and return the results
-   * @private
-   */
   private async execute(): Promise<T[] | T | null> {
     const { results } = await this.paginate(this.pageLimit)
-
     if (this.singleMode === "required") {
       if (results.length === 0) {
         throw new Error("No records found matching the query")
@@ -742,17 +583,14 @@ export class QueryBuilder<
       }
       return results[0]
     }
-
     if (this.singleMode === "optional") {
       return results.length > 0 ? results[0] : null
     }
-
     return results
   }
 
   async paginate(pageSize: number = 100): Promise<QueryResult<T>> {
     const filter = this.buildFilter()
-
     try {
       debug.query(this.databaseId, {
         database_id: this.databaseId,
@@ -777,18 +615,36 @@ export class QueryBuilder<
 
       const pages = response.results as PageObjectResponse[]
 
-      // Debug logging
       debug.log(`[QueryBuilder] FileManager present:`, !!this.fileManager)
       debug.log(
         `[QueryBuilder] Cache enabled:`,
         this.fileManager?.isCacheEnabled()
       )
-
-      // Always use unified processing - FileManager strategy handles caching behavior
       debug.log(
         `[QueryBuilder] Using unified processing with ${pages.length} pages`
       )
-      const results = await this.databaseService.processNotionRecords<T>(pages)
+      const results: T[] = await Promise.all(
+        pages.map(async (page) => {
+          const simple: Record<string, any> = { id: page.id }
+          const advanced: Record<string, any> = { id: page.id }
+          for (const [key, value] of Object.entries(page.properties)) {
+            simple[key] = await getPropertyValueSimple(
+              value as any,
+              this.fileManager || new FileManager({} as any)
+            )
+            advanced[key] = await getPropertyValueAdvanced(
+              value as any,
+              this.fileManager || new FileManager({} as any)
+            )
+          }
+          return {
+            id: page.id,
+            ...simple,
+            advanced: { id: page.id, ...advanced },
+            raw: { id: page.id, properties: page.properties }
+          } as T
+        })
+      )
       debug.log(
         `[QueryBuilder] Processed ${results.length} records with unified processing`
       )
@@ -814,120 +670,62 @@ export class QueryBuilder<
     let allResults: T[] = []
     let hasMore = true
     let cursor: string | null = null
-
     while (hasMore) {
       if (cursor) {
         this.startAfter(cursor)
       }
-
       const response = await this.paginate(100)
       allResults = [...allResults, ...response.results]
       hasMore = response.hasMore
       cursor = response.nextCursor
     }
-
     return allResults
   }
 
-  /**
-   * Build the Notion API filter from the filter conditions
-   * @private
-   */
   private buildFilter(): any {
     const filters: any[] = []
-
-    // Add simple filters
     this.filterConditions.forEach((condition) => {
       const { property, operator, value, propertyType } = condition
-
-      // Create properly nested filter object based on Notion API requirements
-      const filter: any = {
-        property
-      }
-
-      // Use the property type from the condition
+      const filter: any = { property }
       if (!propertyType) {
         throw new Error(
           `Property type not determined for property: ${String(property)}`
         )
       }
-
-      // Map our operators to Notion API operators
       const notionOperator = this.mapToNotionOperator(operator)
-
-      // Add the appropriate property for the filter type
-      // Notion expects filters to have a nested structure based on property type
-      filter[propertyType] = {
-        [notionOperator]: value
-      }
-
+      filter[propertyType] = { [notionOperator]: value }
       filters.push(filter)
     })
-
-    // Add nested filters
     filters.push(...this.nestedFilters)
-
-    // Combine filters with the logical operator
-    if (filters.length === 0) {
-      return undefined
-    }
-
-    if (filters.length === 1) {
-      return filters[0]
-    }
-
-    return {
-      [this.logicalOperator]: filters
-    }
+    if (filters.length === 0) return undefined
+    if (filters.length === 1) return filters[0]
+    return { [this.logicalOperator]: filters }
   }
 
-  /**
-   * Map our operator names to Notion API operator names
-   * @private
-   */
   private mapToNotionOperator(operator: string): string {
     switch (operator) {
       case "equals":
-        return "equals"
       case "does_not_equal":
-        return "does_not_equal"
       case "contains":
-        return "contains"
       case "does_not_contain":
-        return "does_not_contain"
       case "starts_with":
-        return "starts_with"
       case "ends_with":
-        return "ends_with"
       case "greater_than":
-        return "greater_than"
       case "less_than":
-        return "less_than"
       case "greater_than_or_equal_to":
-        return "greater_than_or_equal_to"
       case "less_than_or_equal_to":
-        return "less_than_or_equal_to"
       case "before":
-        return "before"
       case "after":
-        return "after"
       case "on_or_before":
-        return "on_or_before"
       case "on_or_after":
-        return "on_or_after"
       case "is_empty":
-        return "is_empty"
       case "is_not_empty":
-        return "is_not_empty"
+        return operator
       default:
-        return operator // fallback to the same name
+        return operator
     }
   }
 
-  /**
-   * Get field type from metadata for a given property
-   * This is used internally for type validation and filter building
-   */
   getFieldTypeForFilter(
     property: keyof T & string
   ): NotionFieldType | undefined {
@@ -935,9 +733,6 @@ export class QueryBuilder<
     return metadata?.type
   }
 
-  /**
-   * Type guard to validate if an operator is valid for a given field type
-   */
   isValidOperatorForField<K extends keyof M>(
     property: K,
     operator: string
@@ -946,28 +741,10 @@ export class QueryBuilder<
     if (!fieldType || !(fieldType in OPERATOR_MAP)) {
       return false
     }
-
     const validOperators = OPERATOR_MAP[fieldType as keyof typeof OPERATOR_MAP]
     return validOperators.includes(operator)
   }
 
-  /**
-   * Validate that a value is appropriate for a given field type
-   */
-  isValidValueForField<K extends keyof M>(
-    property: K,
-    value: any
-  ): value is ValueTypeFor<K, M> {
-    // Placeholder for future runtime validation based on field type
-
-    // TODO: Implement comprehensive value validation
-    // This will be expanded in Phase 2 with proper runtime validation
-    return true
-  }
-
-  /**
-   * Type guard to validate if a sort property is valid in the field metadata
-   */
   private isValidSortField(property: keyof M & string): boolean {
     const fieldType = this.getFieldTypeForFilter(property)
     return fieldType !== undefined

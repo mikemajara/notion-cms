@@ -1,29 +1,18 @@
 import { Client } from "@notionhq/client"
 import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import type { ContentBlockRaw } from "./content-types"
-import { BlockProcessor } from "./processor"
-import { SimpleBlock } from "./converter"
+import type { ContentBlockRaw } from "../content-types"
+import { BlockProcessor } from "../processor"
+import { SimpleBlock } from "./content-converter"
 
-/**
- * Page content service for retrieving and processing Notion page content
- */
 export class PageContentService {
   constructor(private client: Client, private blockProcessor: BlockProcessor) {}
 
-  /**
-   * Retrieve the content blocks of a Notion page
-   * @param pageId The ID of the Notion page
-   * @param recursive Whether to recursively fetch nested blocks (default: true)
-   * @returns A promise that resolves to an array of simplified blocks
-   */
   async getPageContent(
     pageId: string,
     recursive: boolean = true
   ): Promise<SimpleBlock[]> {
     const blocks = await this.getBlocks(pageId)
-
     if (recursive) {
-      // For each block with children, recursively fetch those children
       for (const block of blocks) {
         if (block.hasChildren) {
           block.children = await this.getPageContent(block.id, true)
@@ -33,18 +22,11 @@ export class PageContentService {
     return blocks
   }
 
-  /**
-   * Retrieve the raw content blocks of a Notion page
-   * @param pageId The ID of the Notion page
-   * @param recursive Whether to recursively fetch nested blocks (default: true)
-   * @returns A promise that resolves to an array of raw blocks with optional nested children
-   */
   async getPageContentRaw(
     pageId: string,
     recursive: boolean = true
   ): Promise<ContentBlockRaw[]> {
     const blocks = await this.getBlocksRaw(pageId)
-
     if (recursive) {
       for (const block of blocks) {
         if ((block as any).has_children) {
@@ -55,11 +37,6 @@ export class PageContentService {
     return blocks
   }
 
-  /**
-   * Fetch blocks for a specific page or block
-   * @param blockId The ID of the page or block to fetch children for
-   * @returns A promise that resolves to an array of simplified blocks
-   */
   private async getBlocks(blockId: string): Promise<SimpleBlock[]> {
     let allBlocks: SimpleBlock[] = []
     let hasMore = true
@@ -84,11 +61,6 @@ export class PageContentService {
     return allBlocks
   }
 
-  /**
-   * Fetch raw blocks for a specific page or block
-   * @param blockId The ID of the page or block to fetch children for
-   * @returns A promise that resolves to an array of raw blocks
-   */
   private async getBlocksRaw(blockId: string): Promise<ContentBlockRaw[]> {
     let allBlocks: ContentBlockRaw[] = []
     let hasMore = true

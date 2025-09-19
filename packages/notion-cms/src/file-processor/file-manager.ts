@@ -1,8 +1,5 @@
-import { NotionCMSConfig } from "./config"
+import { NotionCMSConfig } from "../config"
 
-/**
- * Interface for file information
- */
 export interface FileInfo {
   name: string
   url: string
@@ -10,25 +7,16 @@ export interface FileInfo {
   expiry_time?: string
 }
 
-/**
- * File processing strategy interface
- */
 export interface FileStrategy {
   processFileUrl(url: string, fileName: string): Promise<string>
 }
 
-/**
- * Direct strategy - returns original Notion URLs (current behavior)
- */
 export class DirectStrategy implements FileStrategy {
   async processFileUrl(url: string, _fileName: string): Promise<string> {
     return url
   }
 }
 
-/**
- * Local strategy - stores files locally
- */
 export class LocalStrategy implements FileStrategy {
   private config: NotionCMSConfig["files"]
 
@@ -38,21 +26,17 @@ export class LocalStrategy implements FileStrategy {
 
   async processFileUrl(url: string, fileName: string): Promise<string> {
     try {
-      // Generate stable filename
       const fileId = generateFileId(url)
       const extension = getFileExtension(fileName)
       const stableFileName = `${fileId}${extension}`
 
-      // Create local storage
       const storage = await this.createStorage()
 
-      // Check if file is already cached
       if (await storage.exists(stableFileName)) {
         return storage.getPublicUrl(stableFileName)
       }
 
-      // Download and cache the file
-      const { downloadFile } = await import("./utils/file-utils")
+      const { downloadFile } = await import("../utils/file-utils")
       const fileData = await downloadFile(url)
       await storage.store(stableFileName, fileData)
 
@@ -68,16 +52,13 @@ export class LocalStrategy implements FileStrategy {
   }
 
   private async createStorage(): Promise<any> {
-    const { LocalStorage } = await import("./storage/s3-storage")
+    const { LocalStorage } = await import("../storage/s3-storage")
     const storagePath =
       this.config?.storage?.path || "./public/assets/notion-files"
     return new LocalStorage(storagePath)
   }
 }
 
-/**
- * Remote strategy - stores files in S3-compatible storage
- */
 export class RemoteStrategy implements FileStrategy {
   private config: NotionCMSConfig["files"]
 
@@ -91,7 +72,6 @@ export class RemoteStrategy implements FileStrategy {
     }
 
     try {
-      // Generate stable filename with bucket prefix
       const fileId = generateFileId(url)
       const extension = getFileExtension(fileName)
       const bucketPath = this.config.storage.path || ""
@@ -99,16 +79,13 @@ export class RemoteStrategy implements FileStrategy {
         ? `${bucketPath}${fileId}${extension}`
         : `${fileId}${extension}`
 
-      // Create S3 storage
       const storage = await this.createStorage()
 
-      // Check if file is already in S3
       if (await storage.exists(stableFileName)) {
         return storage.getPublicUrl(stableFileName)
       }
 
-      // Download and store in S3
-      const { downloadFile } = await import("./utils/file-utils")
+      const { downloadFile } = await import("../utils/file-utils")
       const fileData = await downloadFile(url)
       await storage.store(stableFileName, fileData)
 
@@ -130,7 +107,7 @@ export class RemoteStrategy implements FileStrategy {
       )
     }
 
-    const { S3Storage } = await import("./storage/s3-storage")
+    const { S3Storage } = await import("../storage/s3-storage")
     return new S3Storage({
       endpoint: this.config.storage.endpoint,
       bucket: this.config.storage.bucket || "default-bucket",
@@ -141,9 +118,6 @@ export class RemoteStrategy implements FileStrategy {
   }
 }
 
-/**
- * FileManager class that handles file processing based on strategy
- */
 export class FileManager {
   private strategy: FileStrategy
 
@@ -164,9 +138,6 @@ export class FileManager {
     }
   }
 
-  /**
-   * Check if file caching is enabled
-   */
   isCacheEnabled(): boolean {
     return (
       this.strategy instanceof LocalStrategy ||
@@ -174,16 +145,10 @@ export class FileManager {
     )
   }
 
-  /**
-   * Process a single file URL
-   */
   async processFileUrl(url: string, fileName: string): Promise<string> {
     return this.strategy.processFileUrl(url, fileName)
   }
 
-  /**
-   * Process an array of file information objects
-   */
   async processFileInfoArray(files: FileInfo[]): Promise<FileInfo[]> {
     return Promise.all(
       files.map(async (file) => {
@@ -196,9 +161,6 @@ export class FileManager {
     )
   }
 
-  /**
-   * Extract file URL from Notion file object
-   */
   extractFileUrl(file: any): string {
     if (file.type === "external") {
       return file.external.url
@@ -208,9 +170,6 @@ export class FileManager {
     return ""
   }
 
-  /**
-   * Create FileInfo from Notion file object
-   */
   createFileInfo(file: any): FileInfo {
     return {
       name: file.name,
@@ -221,50 +180,31 @@ export class FileManager {
   }
 }
 
-/**
- * Utility functions for file processing
- */
-
-/**
- * Generate stable file ID from Notion URL
- */
 export function generateFileId(notionUrl: string): string {
-  // Extract the file ID from the Notion URL
-  // Notion URLs have structure: https://.../workspace-id/file-id/filename
-  // We want the second UUID (file-id), not the first (workspace-id)
   const matches = notionUrl.match(/([a-f0-9-]{36})/g)
 
   if (matches && matches.length >= 2) {
-    // Use the second UUID as the file identifier
     const fileId = matches[1].replace(/-/g, "")
     return fileId
   } else if (matches && matches.length === 1) {
-    // Fallback to first UUID if only one exists
     const fileId = matches[0].replace(/-/g, "")
     return fileId
   }
 
-  // Fallback: use hash of URL
   let hash = 0
   for (let i = 0; i < notionUrl.length; i++) {
     const char = notionUrl.charCodeAt(i)
     hash = (hash << 5) - hash + char
-    hash = hash & hash // Convert to 32bit integer
+    hash = hash & hash
   }
   return Math.abs(hash).toString(16)
 }
 
-/**
- * Extract file extension from filename or URL
- */
 export function getFileExtension(fileNameOrUrl: string): string {
   const match = fileNameOrUrl.match(/\.([a-zA-Z0-9]+)(?:\?|$)/)
   return match ? `.${match[1]}` : ""
 }
 
-/**
- * Detect file type based on extension
- */
 export function detectFileType(fileName: string): string {
   const extension = getFileExtension(fileName).toLowerCase()
 

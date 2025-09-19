@@ -1,6 +1,6 @@
 import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import { FileManager } from "./file-manager"
-import { SimpleBlock } from "./converter"
+import { FileManager } from "./file-processor/file-manager"
+import { SimpleBlock } from "./content/content-converter"
 
 /**
  * Block processing service for converting Notion blocks to simplified formats
@@ -36,8 +36,7 @@ export class BlockProcessor {
     const { type } = block
 
     // Accessing the block's content based on its type
-    // @ts-ignore - Dynamic access to block properties
-    const typeData = block[type]
+    const typeData = (block as any)[type]
 
     switch (type) {
       case "paragraph":
@@ -74,7 +73,7 @@ export class BlockProcessor {
         try {
           url = await this.fileManager.processFileUrl(
             url,
-            `content-block-${block.id}`
+            `content-block-${(block as any).id}`
           )
         } catch (error) {
           console.warn(`Failed to process content block file: ${url}`, error)
@@ -169,8 +168,7 @@ export class BlockProcessor {
     const { type } = block
 
     // Accessing the block's content based on its type
-    // @ts-ignore - Dynamic access to block properties
-    const typeData = block[type]
+    const typeData = (block as any)[type]
 
     switch (type) {
       case "paragraph":
