@@ -4,6 +4,7 @@ import { richTextToMarkdown, richTextToPlain } from "../../utils/rich-text"
 
 export interface RawMarkdownOptions {
   listIndent?: string
+  debug?: boolean
 }
 
 function getBlockType(block: ContentBlockRaw): string {
@@ -19,21 +20,81 @@ function indent(depth: number, unit: string): string {
   return unit.repeat(Math.max(0, depth))
 }
 
+function toAlphabetic(index: number): string {
+  let n = Math.max(1, Math.floor(index))
+  let out = ""
+  while (n > 0) {
+    n--
+    out = String.fromCharCode(97 + (n % 26)) + out
+    n = Math.floor(n / 26)
+  }
+  return out
+}
+
+function toRoman(index: number): string {
+  let n = Math.max(1, Math.floor(index))
+  const numerals: Array<[number, string]> = [
+    [1000, "m"],
+    [900, "cm"],
+    [500, "d"],
+    [400, "cd"],
+    [100, "c"],
+    [90, "xc"],
+    [50, "l"],
+    [40, "xl"],
+    [10, "x"],
+    [9, "ix"],
+    [5, "v"],
+    [4, "iv"],
+    [1, "i"]
+  ]
+  let out = ""
+  for (const [value, symbol] of numerals) {
+    while (n >= value) {
+      out += symbol
+      n -= value
+    }
+  }
+  return out
+}
+
+function orderedMarker(index: number, orderedLevel: number): string {
+  const level = Math.max(1, orderedLevel)
+  const mode = (level - 1) % 3
+  if (mode === 0) return String(index)
+  if (mode === 1) return toAlphabetic(index)
+  return toRoman(index)
+}
+
+function buildStructuralPlaceholder(
+  kind: string,
+  block: ContentBlockRaw,
+  title: string | undefined,
+  _options: Required<RawMarkdownOptions>
+): string {
+  const id = (block as any).id
+  let out = `[${kind}]${title ? ` ${title}` : ""}`
+  out += ` [id: ${id}]`
+  return `${out}\n`
+}
+
 function renderChildren(
   block: ContentBlockRaw,
   depth: number,
-  options: Required<RawMarkdownOptions>
+  options: Required<RawMarkdownOptions>,
+  orderedChainDepth: number
 ): string {
   const children = (block as any).children as ContentBlockRaw[] | undefined
   if (!children || !children.length) return ""
-  return renderBlocks(children, depth, options)
+  return renderBlocks(children, depth, options, orderedChainDepth)
 }
 
 function renderListGroup(
   items: ContentBlockRaw[],
   listType: "bulleted_list_item" | "numbered_list_item",
   depth: number,
-  options: Required<RawMarkdownOptions>
+  options: Required<RawMarkdownOptions>,
+  orderedLevel: number
 ): string {
   const pad = indent(depth, options.listIndent)
   let out = ""
@@ -42,15 +103,15 @@ function renderListGroup(
       const field = getBlockField<any>(item)
       const text = richTextToMarkdown(field?.rich_text ?? [])
       out += `${pad}- ${text}\n`
-      out += renderChildren(item, depth + 1, options)
+      out += renderChildren(item, depth + 1, options, 0)
     }
   } else {
     let index = 1
     for (const item of items) {
       const field = getBlockField<any>(item)
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      out += `${pad}${index}. ${text}\n`
-      out += renderChildren(item, depth + 1, options)
+      out += `${pad}${orderedMarker(index, orderedLevel)}. ${text}\n`
+      out += renderChildren(item, depth + 1, options, orderedLevel)
       index++
     }
   }
@@ -122,7 +183,7 @@ function renderBlock(
     }
     case "toggle": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `${text}\n${renderChildren(block, depth + 1, options)}`
+      return `${text}\n${renderChildren(block, depth + 1, options, 0)}`
     }
     case "to_do": {
       const checked = Boolean(field?.checked)
@@ -130,7 +191,8 @@ function renderBlock(
       return `${pad}- [${checked ? "x" : " "}] ${text}\n${renderChildren(
         block,
         depth + 1,
-        options
+        options,
+        0
       )}`
     }
     case "heading_1": {
@@ -189,32 +251,41 @@ function renderBlock(
       let out = ""
       const children = (block as any).children as ContentBlockRaw[] | undefined
       if (children && children.length) {
-        out += renderBlocks(children, depth, options)
+        out += renderBlocks(children, depth, options, 0)
       }
       return out
     }
     case "column": {
-      return renderChildren(block, depth, options)
+      return renderChildren(block, depth, options, 0)
     }
     case "synced_block": {
-      return renderChildren(block, depth, options)
+      return renderChildren(block, depth, options, 0)
     }
     case "child_page": {
+      if (!options.debug) return ""
       const title = (field?.title as string | undefined) || ""
-      return `[child_page] ${title}\n`
+      return buildStructuralPlaceholder("child_page", block, title, options)
     }
     case "child_database": {
+      if (!options.debug) return ""
       const title = (field?.title as string | undefined) || ""
-      return `[child_database] ${title}\n`
+      return buildStructuralPlaceholder("child_database", block, title, options)
     }
     case "breadcrumb": {
-      return "[breadcrumb]\n"
+      if (!options.debug) return ""
+      return buildStructuralPlaceholder("breadcrumb", block, undefined, options)
     }
     case "table_of_contents": {
-      return "[table_of_contents]\n"
+      if (!options.debug) return ""
+      return buildStructuralPlaceholder(
+        "table_of_contents",
+        block,
+        undefined,
+        options
+      )
     }
     case "template": {
-      return renderChildren(block, depth, options)
+      return renderChildren(block, depth, options, 0)
     }
     default: {
       return ""
@@ -225,14 +296,23 @@ function renderBlock(
 function renderBlocks(
   blocks: ContentBlockRaw[],
   depth: number,
-  options: Required<RawMarkdownOptions>
+  options: Required<RawMarkdownOptions>,
+  orderedChainDepth: number
 ): string {
   let out = ""
   const grouped = groupConsecutiveListItems(blocks)
   for (const node of grouped) {
     if ((node as any).kind === "list_group") {
       const group = node as any
-      out += renderListGroup(group.items, group.listType, depth, options)
+      const currentOrderedLevel =
+        group.listType === "numbered_list_item" ? orderedChainDepth + 1 : 0
+      out += renderListGroup(
+        group.items,
+        group.listType,
+        depth,
+        options,
+        currentOrderedLevel
+      )
       continue
     }
     out += renderBlock(node as ContentBlockRaw, depth, options)
@@ -245,8 +325,9 @@ export function blocksToMarkdown(
   opts: RawMarkdownOptions = {}
 ): string {
   const options: Required<RawMarkdownOptions> = {
-    listIndent: opts.listIndent ?? "  "
+    listIndent: opts.listIndent ?? "  ",
+    debug: opts.debug ?? false
   }
   if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return ""
-  return renderBlocks(rawBlocks, 0, options).trim() + "\n"
+  return renderBlocks(rawBlocks, 0, options, 0).trim() + "\n"
 }

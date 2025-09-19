@@ -126,9 +126,12 @@ export class NotionCMS {
    */
   public blocksToMarkdown(
     blocks: ContentBlockRaw[],
-    _debugWarnings?: boolean
+    options?: {
+      listIndent?: string
+      debug?: boolean
+    }
   ): string {
-    return this.contentConverter.blocksToMarkdown(blocks)
+    return this.contentConverter.blocksToMarkdown(blocks, options)
   }
 
   /**

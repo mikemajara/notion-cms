@@ -1,5 +1,8 @@
 import type { ContentBlockRaw } from "../content-types"
-import { blocksToMarkdown } from "./block-content-converter/converter-raw-markdown"
+import {
+  blocksToMarkdown,
+  type RawMarkdownOptions
+} from "./block-content-converter/converter-raw-markdown"
 import {
   blocksToHtml,
   type RawHtmlOptions
@@ -46,9 +49,9 @@ export interface SimpleTableRowBlock extends SimpleBlock {
 export class ContentConverter {
   public blocksToMarkdown(
     blocks: ContentBlockRaw[],
-    _debugWarnings: boolean = false
+    options?: RawMarkdownOptions
   ): string {
-    return blocksToMarkdown(blocks)
+    return blocksToMarkdown(blocks, options)
   }
 
   public blocksToHtml(
