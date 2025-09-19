@@ -1,5 +1,5 @@
-import type { ContentBlockAdvanced, ContentBlockRaw } from "./content-types"
-import { richTextToMarkdown, richTextToPlain } from "./utils/rich-text"
+import type { ContentBlockAdvanced, ContentBlockRaw } from "../../content-types"
+import { richTextToMarkdown, richTextToPlain } from "../../utils/rich-text"
 
 export interface RawAdvancedOptions {
   mediaUrlResolver?: (

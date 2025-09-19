@@ -1,6 +1,6 @@
-import type { ContentBlockRaw } from "./content-types"
-import { groupConsecutiveListItems } from "./utils/block-traversal"
-import { richTextToMarkdown, richTextToPlain } from "./utils/rich-text"
+import type { ContentBlockRaw } from "../../content-types"
+import { groupConsecutiveListItems } from "../../utils/block-traversal"
+import { richTextToMarkdown, richTextToPlain } from "../../utils/rich-text"
 
 export interface RawMarkdownOptions {
   listIndent?: string
