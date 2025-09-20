@@ -3,7 +3,7 @@ import {
   QueryDatabaseParameters,
   PageObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import { DatabaseRecord } from "../generator"
+import { DatabaseRecordType } from "../generator"
 import { debug } from "../utils/debug"
 import { FileManager } from "../file-processor/file-manager"
 import { getPropertyValueSimple } from "./database-record-converter/converter-record-simple"
@@ -380,16 +380,14 @@ export interface FilterCondition {
   propertyType?: string
 }
 
-export interface QueryResult<T extends DatabaseRecord> {
+export interface QueryResult<T> {
   results: T[]
   hasMore: boolean
   nextCursor: string | null
 }
 
-export class QueryBuilder<
-  T extends DatabaseRecord,
-  M extends DatabaseFieldMetadata = {}
-> implements PromiseLike<T[] | T | null>
+export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
+  implements PromiseLike<T[] | T | null>
 {
   private client: Client
   private databaseId: string
@@ -402,21 +400,24 @@ export class QueryBuilder<
   private startCursor?: string
   private singleMode: "required" | "optional" | null = null
   private fileManager?: FileManager
+  private recordType: DatabaseRecordType = "simple"
 
   constructor(
     client: Client,
     databaseId: string,
     fieldTypes: M = {} as M,
-    fileManager?: FileManager
+    fileManager?: FileManager,
+    recordType: DatabaseRecordType = "simple"
   ) {
     this.client = client
     this.databaseId = databaseId
     this.fieldTypes = fieldTypes
     this.fileManager = fileManager
+    this.recordType = recordType
     // no DatabaseService import to avoid cycles
   }
 
-  filter<K extends keyof M & keyof T & string, O extends OperatorsFor<K, M>>(
+  filter<K extends keyof M & string, O extends OperatorsFor<K, M>>(
     property: K,
     operator: O,
     value: ValueTypeFor<K, M, O>
@@ -521,7 +522,7 @@ export class QueryBuilder<
   }
 
   sort(
-    property: keyof M & keyof T & string,
+    property: keyof M & string,
     direction: SortDirection = "ascending"
   ): QueryBuilder<T, M> {
     if (!this.isValidSortField(property)) {
@@ -620,34 +621,38 @@ export class QueryBuilder<
         `[QueryBuilder] Cache enabled:`,
         this.fileManager?.isCacheEnabled()
       )
-      debug.log(
-        `[QueryBuilder] Using unified processing with ${pages.length} pages`
-      )
-      const results: T[] = await Promise.all(
-        pages.map(async (page) => {
-          const simple: Record<string, any> = { id: page.id }
-          const advanced: Record<string, any> = { id: page.id }
-          for (const [key, value] of Object.entries(page.properties)) {
-            simple[key] = await getPropertyValueSimple(
-              value as any,
-              this.fileManager || new FileManager({} as any)
-            )
-            advanced[key] = await getPropertyValueAdvanced(
-              value as any,
-              this.fileManager || new FileManager({} as any)
-            )
-          }
-          return {
-            id: page.id,
-            ...simple,
-            advanced: { id: page.id, ...advanced },
-            raw: { id: page.id, properties: page.properties }
-          } as T
-        })
-      )
-      debug.log(
-        `[QueryBuilder] Processed ${results.length} records with unified processing`
-      )
+      debug.log(`[QueryBuilder] recordType=${this.recordType}`)
+
+      let results: T[]
+      if (this.recordType === "raw") {
+        results = pages as unknown as T[]
+      } else if (this.recordType === "advanced") {
+        results = (await Promise.all(
+          pages.map(async (page) => {
+            const advanced: Record<string, any> = { id: page.id }
+            for (const [key, value] of Object.entries(page.properties)) {
+              advanced[key] = await getPropertyValueAdvanced(
+                value as any,
+                this.fileManager || new FileManager({} as any)
+              )
+            }
+            return advanced as T
+          })
+        )) as T[]
+      } else {
+        results = (await Promise.all(
+          pages.map(async (page) => {
+            const simple: Record<string, any> = { id: page.id }
+            for (const [key, value] of Object.entries(page.properties)) {
+              simple[key] = await getPropertyValueSimple(
+                value as any,
+                this.fileManager || new FileManager({} as any)
+              )
+            }
+            return simple as T
+          })
+        )) as T[]
+      }
 
       return {
         results,
@@ -727,7 +732,7 @@ export class QueryBuilder<
   }
 
   getFieldTypeForFilter(
-    property: keyof T & string
+    property: keyof M & string
   ): NotionFieldType | undefined {
     const metadata = this.fieldTypes[property as keyof M]
     return metadata?.type
@@ -737,12 +742,12 @@ export class QueryBuilder<
     property: K,
     operator: string
   ): operator is OperatorsFor<K, M> {
-    const fieldType = this.getFieldTypeForFilter(property as keyof T & string)
+    const fieldType = this.getFieldTypeForFilter(property as keyof M & string)
     if (!fieldType || !(fieldType in OPERATOR_MAP)) {
       return false
     }
     const validOperators = OPERATOR_MAP[fieldType as keyof typeof OPERATOR_MAP]
-    return validOperators.includes(operator)
+    return (validOperators as readonly string[]).includes(operator)
   }
 
   private isValidSortField(property: keyof M & string): boolean {

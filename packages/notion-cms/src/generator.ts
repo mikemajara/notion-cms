@@ -1,5 +1,8 @@
 import { Client } from "@notionhq/client"
-import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import {
+  DatabaseObjectResponse,
+  PageObjectResponse
+} from "@notionhq/client/build/src/api-endpoints"
 import * as fs from "fs"
 import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
@@ -9,20 +12,17 @@ export type NotionPropertyType =
   DatabaseObjectResponse["properties"][string]["type"]
 type NotionPropertyConfig = DatabaseObjectResponse["properties"][string]
 
-// Export interfaces for use in other modules
+// Record type selector for database queries
+export type DatabaseRecordType = "simple" | "advanced" | "raw"
+
+// Export interfaces for use in other modules (Simple view by default)
 export interface DatabaseRecord {
-  // Make id optional to accommodate different naming conventions like 'ID'
   id?: string
   [key: string]: any
-  // Instead of [key: string]: any, we'll use a specific property for advanced and raw
-  advanced?: {
-    id: string
-  }
-  raw?: {
-    id: string
-    properties: Record<string, any>
-  }
 }
+
+// Exact raw view matches Notion's PageObjectResponse
+export type DatabaseRecordRaw = PageObjectResponse
 
 // Helper function to sanitize property names
 function sanitizePropertyName(name: string): string {
@@ -263,6 +263,11 @@ function generateDatabaseSpecificFile(
         "DatabaseFieldMetadata"
       ]
     })
+    // Import PageObjectResponse for raw typing in registry
+    sourceFile.addImportDeclaration({
+      moduleSpecifier: "@notionhq/client/build/src/api-endpoints",
+      namedImports: ["PageObjectResponse"]
+    })
 
     // Helper function to determine advanced property type mapping
     const advancedPropertyTypeToTS = (
@@ -371,23 +376,17 @@ function generateDatabaseSpecificFile(
       isExported: true
     })
 
-    // Generate the raw record interface
+    // Generate the raw record interface (kept for backwards reference if needed)
     sourceFile.addInterface({
       name: rawTypeName,
       properties: [
-        {
-          name: "id",
-          type: "string"
-        },
-        {
-          name: "properties",
-          type: "Record<string, any>"
-        }
+        { name: "id", type: "string" },
+        { name: "properties", type: "Record<string, any>" }
       ],
       isExported: true
     })
 
-    // Generate the database-specific type
+    // Generate the database-specific type (Simple view only)
     sourceFile.addInterface({
       name: baseTypeName,
       extends: ["DatabaseRecord"],
@@ -402,15 +401,7 @@ function generateDatabaseSpecificFile(
             (prop as NotionPropertyConfig).type,
             prop as NotionPropertyConfig
           )
-        })),
-        {
-          name: "advanced",
-          type: advancedTypeName
-        },
-        {
-          name: "raw",
-          type: rawTypeName
-        }
+        }))
       ],
       isExported: true
     })
@@ -429,6 +420,8 @@ declare module "@mikemajara/notion-cms" {
   interface DatabaseRegistry {
     ${databaseKey}: {
       record: ${typeName};
+      recordAdvanced: ${advancedTypeName};
+      recordRaw: PageObjectResponse;
       fields: typeof ${typeName}FieldTypes;
     };
   }
@@ -765,7 +758,7 @@ declare module "@mikemajara/notion-cms" {
       sourceFile.addStatements(`
 // Implement ${methodName} method
 NotionCMS.prototype.${methodName} = function(databaseId: string): QueryBuilder<${typeName}, typeof ${typeName}FieldTypes> {
-  return this.query<${typeName}, typeof ${typeName}FieldTypes>(databaseId, ${typeName}FieldTypes);
+  return this.queryDatabase<${typeName}, typeof ${typeName}FieldTypes>(databaseId, ${typeName}FieldTypes);
 };
 `)
     } catch (error) {

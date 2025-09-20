@@ -1,7 +1,8 @@
 import { Client } from "@notionhq/client"
 import type { ContentBlockRaw } from "./types/content-types"
 import type { RawHtmlOptions } from "./content/block-content-converter/converter-raw-html"
-import { NotionPropertyType, DatabaseRecord } from "./generator"
+import { NotionPropertyType } from "./generator"
+import type { DatabaseRecordType } from "./generator"
 import {
   QueryBuilder,
   SortDirection,
@@ -46,7 +47,6 @@ export type {
 // Note: Property utility functions have been consolidated into DatabaseService
 // Use the public API methods like query(), getRecord(), and getAllDatabaseRecords() for database operations
 export type {
-  DatabaseRecord,
   /** @experimental */ SimpleBlock,
   TableBlockContent,
   TableRowCell,
@@ -156,10 +156,22 @@ export class NotionCMS {
    */
   query<K extends keyof DatabaseRegistry>(
     databaseKey: K
+  ): QueryBuilder<DatabaseRegistry[K]["record"], DatabaseRegistry[K]["fields"]>
+  query<K extends keyof DatabaseRegistry, V extends DatabaseRecordType>(
+    databaseKey: K,
+    options: { recordType: V }
   ): QueryBuilder<
-    DatabaseRegistry[K]["record"],
+    V extends "simple"
+      ? DatabaseRegistry[K]["record"]
+      : V extends "advanced"
+      ? DatabaseRegistry[K]["recordAdvanced"]
+      : DatabaseRegistry[K]["recordRaw"],
     DatabaseRegistry[K]["fields"]
-  > {
+  >
+  query<K extends keyof DatabaseRegistry>(
+    databaseKey: K,
+    options?: { recordType?: DatabaseRecordType }
+  ): QueryBuilder<any, DatabaseRegistry[K]["fields"]> {
     const databaseConfig = (this as any).databases?.[databaseKey]
     if (!databaseConfig) {
       throw new Error(
@@ -168,7 +180,9 @@ export class NotionCMS {
         )}" not found in registry. Make sure you've imported the generated types file.`
       )
     }
-    return this._query(databaseConfig.id, databaseConfig.fields)
+    return this._query(databaseConfig.id, databaseConfig.fields, {
+      recordType: options?.recordType || "simple"
+    })
   }
 
   /**
@@ -178,11 +192,25 @@ export class NotionCMS {
    * @param fieldMetadata Optional metadata about field types for type-safe operations
    * @returns A query builder instance for the specified database
    */
-  queryDatabase<T extends DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
+  queryDatabase<T = any, M extends DatabaseFieldMetadata = {}>(
     databaseId: string,
     fieldMetadata?: M
+  ): QueryBuilder<T, M>
+  queryDatabase<
+    T = any,
+    M extends DatabaseFieldMetadata = {},
+    V extends DatabaseRecordType = "simple"
+  >(
+    databaseId: string,
+    fieldMetadata: M | undefined,
+    options: { recordType: V }
+  ): QueryBuilder<T, M>
+  queryDatabase<T = any, M extends DatabaseFieldMetadata = {}>(
+    databaseId: string,
+    fieldMetadata?: M,
+    options?: { recordType?: DatabaseRecordType }
   ): QueryBuilder<T, M> {
-    return this._query<T, M>(databaseId, fieldMetadata)
+    return this._query<T, M>(databaseId, fieldMetadata, options)
   }
 
   /**
@@ -192,21 +220,39 @@ export class NotionCMS {
    * @returns A query builder instance for the specified database
    * @private
    */
-  private _query<
-    T extends DatabaseRecord,
-    M extends DatabaseFieldMetadata = {}
-  >(databaseId: string, fieldMetadata?: M): QueryBuilder<T, M> {
-    return this.databaseService.query<T, M>(databaseId, fieldMetadata)
+  private _query<T = any, M extends DatabaseFieldMetadata = {}>(
+    databaseId: string,
+    fieldMetadata?: M,
+    options?: { recordType?: DatabaseRecordType }
+  ): QueryBuilder<T, M> {
+    return this.databaseService.query<T, M>(databaseId, fieldMetadata, options)
   }
 
   /**
    * Get a single record from a database by its ID
-   * Record includes all access levels: simple, advanced, and raw
    * @param pageId The ID of the Notion page/record
-   * @returns A promise that resolves to the record
+   * @returns A promise that resolves to the record in the selected view (default simple)
    */
-  async getRecord<T extends DatabaseRecord>(pageId: string): Promise<T> {
-    return this.databaseService.getRecord<T>(pageId)
+  async getRecord<T = any>(pageId: string): Promise<T>
+  async getRecord<T = any>(
+    pageId: string,
+    options: { recordType: "simple" }
+  ): Promise<T>
+  async getRecord<T = any>(
+    pageId: string,
+    options: { recordType: "advanced" }
+  ): Promise<T>
+  async getRecord<T = any>(
+    pageId: string,
+    options: { recordType: "raw" }
+  ): Promise<T>
+  async getRecord<T = any>(
+    pageId: string,
+    options?: { recordType?: DatabaseRecordType }
+  ): Promise<T> {
+    return this.databaseService.getRecord<T>(pageId, {
+      recordType: options?.recordType || "simple"
+    })
   }
 
   /**
@@ -261,7 +307,7 @@ export { BlockProcessor } from "./content/processor"
 export { PageContentService } from "./content/page-content-service"
 export { ContentProcessor } from "./content/content-processor"
 export { DatabaseService } from "./database/database-service"
-export type { QueryOptions } from "./database/database-service"
+export type { QueryOptions, RecordOptions } from "./database/database-service"
 export { richTextToPlain, richTextToMarkdown } from "./utils/rich-text"
 export { richTextToHtml } from "./utils/rich-text"
 export {

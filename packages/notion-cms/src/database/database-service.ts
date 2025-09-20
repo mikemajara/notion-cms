@@ -4,7 +4,7 @@ import {
   QueryDatabaseParameters,
   PropertyItemObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import { DatabaseRecord } from "../generator"
+import { DatabaseRecordType } from "../generator"
 import type { DatabaseFieldMetadata } from "./query-builder"
 import { QueryBuilder } from "./query-builder"
 import { debug } from "../utils/debug"
@@ -19,33 +19,40 @@ export interface QueryOptions {
   startCursor?: string
 }
 
+export interface RecordOptions {
+  recordType?: DatabaseRecordType
+}
+
 export class DatabaseService {
   constructor(private client: Client, private fileManager: FileManager) {}
 
-  query<T extends DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
+  query<T, M extends DatabaseFieldMetadata = {}>(
     databaseId: string,
-    fieldMetadata?: M
+    fieldMetadata?: M,
+    options?: RecordOptions
   ): QueryBuilder<T, M> {
     if (fieldMetadata) {
       return new QueryBuilder<T, M>(
         this.client,
         databaseId,
         fieldMetadata,
-        this.fileManager
+        this.fileManager,
+        options?.recordType || "simple"
       )
     } else {
       return new QueryBuilder<T, M>(
         this.client,
         databaseId,
         {} as M,
-        this.fileManager
+        this.fileManager,
+        options?.recordType || "simple"
       )
     }
   }
 
-  async getDatabase<T extends DatabaseRecord>(
+  async getDatabase<T>(
     databaseId: string,
-    options: QueryOptions = {}
+    options: QueryOptions & RecordOptions = {}
   ): Promise<{ results: T[]; nextCursor: string | null; hasMore: boolean }> {
     try {
       debug.query(databaseId, {
@@ -67,7 +74,10 @@ export class DatabaseService {
       debug.log(`Query returned ${response.results.length} results`)
 
       const pages = response.results as PageObjectResponse[]
-      const results = await this.processNotionRecords<T>(pages)
+      const results = await this.processNotionRecords<T>(
+        pages,
+        options.recordType || "simple"
+      )
 
       return {
         results,
@@ -83,16 +93,19 @@ export class DatabaseService {
     }
   }
 
-  async getRecord<T extends DatabaseRecord>(pageId: string): Promise<T> {
+  async getRecord<T>(pageId: string, options: RecordOptions = {}): Promise<T> {
     const page = (await this.client.pages.retrieve({
       page_id: pageId
     })) as PageObjectResponse
-    return await this.processNotionRecord<T>(page)
+    return await this.processNotionRecord<T>(
+      page,
+      options.recordType || "simple"
+    )
   }
 
-  async getAllDatabaseRecords<T extends DatabaseRecord>(
+  async getAllDatabaseRecords<T>(
     databaseId: string,
-    options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
+    options: Omit<QueryOptions, "startCursor" | "pageSize"> & RecordOptions = {}
   ): Promise<T[]> {
     const results: T[] = []
     let hasMore = true
@@ -119,42 +132,41 @@ export class DatabaseService {
   /**
    * Unified processing for a single page to DatabaseRecord
    */
-  async processNotionRecord<T extends DatabaseRecord = DatabaseRecord>(
-    page: PageObjectResponse
+  async processNotionRecord<T = any>(
+    page: PageObjectResponse,
+    recordType: DatabaseRecordType
   ): Promise<T> {
-    const simple: Record<string, any> = { id: page.id }
-    const advanced: Record<string, any> = { id: page.id }
+    if (recordType === "raw") {
+      return page as unknown as T
+    }
 
+    if (recordType === "advanced") {
+      const advanced: Record<string, any> = { id: page.id }
+      for (const [key, value] of Object.entries(page.properties)) {
+        advanced[key] = await getPropertyValueAdvanced(
+          value as PropertyItemObjectResponse,
+          this.fileManager
+        )
+      }
+      return advanced as T
+    }
+
+    const simple: Record<string, any> = { id: page.id }
     for (const [key, value] of Object.entries(page.properties)) {
       simple[key] = await getPropertyValueSimple(
         value as PropertyItemObjectResponse,
         this.fileManager
       )
-      advanced[key] = await getPropertyValueAdvanced(
-        value as PropertyItemObjectResponse,
-        this.fileManager
-      )
     }
-
-    const result: T = {
-      id: page.id,
-      ...simple,
-      advanced: {
-        id: page.id,
-        ...advanced
-      },
-      raw: {
-        id: page.id,
-        properties: page.properties
-      }
-    } as T
-
-    return result
+    return simple as T
   }
 
-  async processNotionRecords<T extends DatabaseRecord = DatabaseRecord>(
-    pages: PageObjectResponse[]
+  async processNotionRecords<T = any>(
+    pages: PageObjectResponse[],
+    recordType: DatabaseRecordType
   ): Promise<T[]> {
-    return Promise.all(pages.map((page) => this.processNotionRecord<T>(page)))
+    return Promise.all(
+      pages.map((page) => this.processNotionRecord<T>(page, recordType))
+    )
   }
 }
