@@ -428,9 +428,6 @@ declare module "@mikemajara/notion-cms" {
 }
 
 // Add database configuration to the registry
-if (!NotionCMS.prototype.databases) {
-  NotionCMS.prototype.databases = {};
-}
 NotionCMS.prototype.databases.${databaseKey} = {
   id: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATABASE_ID || "${databaseId}",
   fields: ${typeName}FieldTypes,
