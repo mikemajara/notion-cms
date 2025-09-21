@@ -1,4 +1,7 @@
-import type { ContentBlockAdvanced, ContentBlockRaw } from "../../content-types"
+import type {
+  ContentBlockAdvanced,
+  ContentBlockRaw
+} from "../../types/content-types"
 import { richTextToMarkdown, richTextToPlain } from "../../utils/rich-text"
 
 export interface RawAdvancedOptions {

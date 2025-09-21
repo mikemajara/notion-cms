@@ -1,4 +1,4 @@
-import type { ContentBlockRaw } from "../content-types"
+import type { ContentBlockRaw } from "../types/content-types"
 import {
   blocksToMarkdown,
   type RawMarkdownOptions

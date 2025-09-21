@@ -1,4 +1,4 @@
-import type { ContentBlockRaw } from "../../content-types"
+import type { ContentBlockRaw } from "../../types/content-types"
 import { groupConsecutiveListItems } from "../../utils/block-traversal"
 import { richTextToHtml, richTextToPlain } from "../../utils/rich-text"
 import { escapeHtml } from "../../utils/rich-text"

@@ -1,6 +1,6 @@
 import { Client } from "@notionhq/client"
 import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import type { ContentBlockRaw } from "../content-types"
+import type { ContentBlockRaw } from "../types/content-types"
 import { BlockProcessor } from "./processor"
 import { SimpleBlock } from "./content-converter"
 
