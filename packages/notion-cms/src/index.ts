@@ -96,7 +96,13 @@ export class NotionCMS {
   // which should be a definition of the type that
   // we ultimately generate in generator.ts when
   // we generate all the FieldTypes for each database
-  public databases: Record<string, any> = {}
+  // public databases: Record<string, any> = {}
+
+  static {
+    // runs once when the class is defined
+    // @ts-ignore
+    NotionCMS.prototype.databases = {}
+  }
 
   /**
    * Initialize the NotionCMS instance
