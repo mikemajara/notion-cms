@@ -675,99 +675,19 @@ export async function generateMultipleDatabaseTypes(
 // NotionCMS Extension Methods
 // ============================================================================
 
-// Extend NotionCMS class with database-specific methods
+// Extend DatabaseRegistry only; no instance helper methods are generated in combined mode
 /* eslint-disable */
 declare module "@mikemajara/notion-cms" {
-  interface NotionCMS {`)
-
-  // Add method signatures for each database
-  for (let i = 0; i < databaseIds.length; i++) {
-    const databaseId = databaseIds[i]
-    const methodName = methodNames[i]
-
-    try {
-      const database = await notion.databases.retrieve({
-        database_id: databaseId
-      })
-      let databaseName = `Database${databaseId.substring(0, 8)}`
-      const databaseResponse = database as unknown as {
-        title?: Array<{ plain_text?: string }>
-      }
-
-      if (
-        databaseResponse.title &&
-        Array.isArray(databaseResponse.title) &&
-        databaseResponse.title.length > 0
-      ) {
-        const plainText = databaseResponse.title[0].plain_text
-        if (plainText) {
-          databaseName = plainText
-        }
-      }
-
-      const typeName = generateTypeName(databaseName)
-
-      sourceFile.addStatements(`    /**
-     * Type-safe query method for the ${databaseName} database
-     * @param databaseId The ID of the database to query
-     * @returns A type-safe QueryBuilder for the ${typeName} record type
-     */
-    ${methodName}(databaseId: string): QueryBuilder<${typeName}, typeof ${typeName}FieldTypes>;`)
-    } catch (error) {
-      console.error(`Error adding method signature for ${databaseId}:`, error)
-    }
-  }
-
-  sourceFile.addStatements(`  }
-}
-`)
+  interface NotionCMS {}`)
 
   // Generate method implementations
   sourceFile.addStatements(`
 // ============================================================================
 // Method Implementations
 // ============================================================================
+
+// No instance helper implementations are emitted in combined mode.
 `)
-
-  for (let i = 0; i < databaseIds.length; i++) {
-    const databaseId = databaseIds[i]
-    const methodName = methodNames[i]
-
-    try {
-      const database = await notion.databases.retrieve({
-        database_id: databaseId
-      })
-      let databaseName = `Database${databaseId.substring(0, 8)}`
-      const databaseResponse = database as unknown as {
-        title?: Array<{ plain_text?: string }>
-      }
-
-      if (
-        databaseResponse.title &&
-        Array.isArray(databaseResponse.title) &&
-        databaseResponse.title.length > 0
-      ) {
-        const plainText = databaseResponse.title[0].plain_text
-        if (plainText) {
-          databaseName = plainText
-        }
-      }
-
-      const typeName = generateTypeName(databaseName)
-
-      sourceFile.addStatements(`
-// Implement ${methodName} method
-NotionCMS.prototype.${methodName} = function(databaseId: string): QueryBuilder<${typeName}, typeof ${typeName}FieldTypes> {
-  return this.queryDatabase<${typeName}, typeof ${typeName}FieldTypes>(databaseId, ${typeName}FieldTypes);
-};
-`)
-    } catch (error) {
-      console.error(
-        `Error adding method implementation for ${databaseId}:`,
-        error
-      )
-    }
-  }
 
   // Save the file
   await sourceFile.save()

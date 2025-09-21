@@ -92,6 +92,11 @@ export class NotionCMS {
   private pageContentService: PageContentService
   private databaseService: DatabaseService
   private contentProcessor: ContentProcessor
+  // TODO: Replace any with the correct type
+  // which should be a definition of the type that
+  // we ultimately generate in generator.ts when
+  // we generate all the FieldTypes for each database
+  public databases: Record<string, any> = {}
 
   /**
    * Initialize the NotionCMS instance
@@ -183,34 +188,6 @@ export class NotionCMS {
     return this._query(databaseConfig.id, databaseConfig.fields, {
       recordType: options?.recordType || "simple"
     })
-  }
-
-  /**
-   * Creates a query builder for a Notion database using direct database ID
-   * Use this for testing or when you don't have generated types
-   * @param databaseId The ID of the Notion database
-   * @param fieldMetadata Optional metadata about field types for type-safe operations
-   * @returns A query builder instance for the specified database
-   */
-  queryDatabase<T = any, M extends DatabaseFieldMetadata = {}>(
-    databaseId: string,
-    fieldMetadata?: M
-  ): QueryBuilder<T, M>
-  queryDatabase<
-    T = any,
-    M extends DatabaseFieldMetadata = {},
-    V extends DatabaseRecordType = "simple"
-  >(
-    databaseId: string,
-    fieldMetadata: M | undefined,
-    options: { recordType: V }
-  ): QueryBuilder<T, M>
-  queryDatabase<T = any, M extends DatabaseFieldMetadata = {}>(
-    databaseId: string,
-    fieldMetadata?: M,
-    options?: { recordType?: DatabaseRecordType }
-  ): QueryBuilder<T, M> {
-    return this._query<T, M>(databaseId, fieldMetadata, options)
   }
 
   /**
@@ -307,7 +284,6 @@ export { BlockProcessor } from "./content/processor"
 export { PageContentService } from "./content/page-content-service"
 export { ContentProcessor } from "./content/content-processor"
 export { DatabaseService } from "./database/database-service"
-export type { QueryOptions, RecordOptions } from "./database/database-service"
 export { richTextToPlain, richTextToMarkdown } from "./utils/rich-text"
 export { richTextToHtml } from "./utils/rich-text"
 export {
