@@ -5,6 +5,7 @@ import { richTextToMarkdown, richTextToPlain } from "../../utils/rich-text"
 export interface RawMarkdownOptions {
   listIndent?: string
   debug?: boolean
+  alternateOrderedListStyles?: boolean
 }
 
 function getBlockType(block: ContentBlockRaw): string {
@@ -17,7 +18,7 @@ function getBlockField<T = any>(block: ContentBlockRaw): T | undefined {
 }
 
 function indent(depth: number, unit: string): string {
-  return unit.repeat(Math.max(0, depth))
+  return unit.repeat(Math.max(0, depth * 2))
 }
 
 function toAlphabetic(index: number): string {
@@ -110,7 +111,10 @@ function renderListGroup(
     for (const item of items) {
       const field = getBlockField<any>(item)
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      out += `${pad}${orderedMarker(index, orderedLevel)}. ${text}\n`
+      const marker = options.alternateOrderedListStyles
+        ? orderedMarker(index, orderedLevel)
+        : String(index)
+      out += `${pad}${marker}. ${text}\n`
       out += renderChildren(item, depth + 1, options, orderedLevel)
       index++
     }
@@ -322,11 +326,13 @@ function renderBlocks(
 
 export function blocksToMarkdown(
   rawBlocks: ContentBlockRaw[] = [],
-  opts: RawMarkdownOptions = {}
+  opts?: RawMarkdownOptions
 ): string {
+  opts = opts ?? {}
   const options: Required<RawMarkdownOptions> = {
     listIndent: opts.listIndent ?? "  ",
-    debug: opts.debug ?? false
+    debug: opts.debug ?? false,
+    alternateOrderedListStyles: opts.alternateOrderedListStyles ?? false
   }
   if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return ""
   return renderBlocks(rawBlocks, 0, options, 0).trim() + "\n"
