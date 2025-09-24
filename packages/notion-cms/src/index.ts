@@ -92,11 +92,6 @@ export class NotionCMS {
   private pageContentService: PageContentService
   private databaseService: DatabaseService
   private contentProcessor: ContentProcessor
-  // TODO: Replace any with the correct type
-  // which should be a definition of the type that
-  // we ultimately generate in generator.ts when
-  // we generate all the FieldTypes for each database
-  // public databases: Record<string, any> = {}
 
   static {
     // runs once when the class is defined
