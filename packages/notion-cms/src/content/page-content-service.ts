@@ -22,6 +22,12 @@ export class PageContentService {
     return blocks
   }
 
+  /**
+   * Retrieve raw content blocks for a Notion page
+   * @param pageId The ID of the Notion page
+   * @param recursive Whether to recursively fetch nested blocks (default: true)
+   * @returns A promise that resolves to an array of raw blocks
+   */
   async getPageContentRaw(
     pageId: string,
     recursive: boolean = true

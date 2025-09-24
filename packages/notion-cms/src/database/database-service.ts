@@ -4,7 +4,7 @@ import {
   QueryDatabaseParameters,
   PropertyItemObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import { DatabaseRecordType } from "../generator"
+import type { DatabaseRecordType } from "../types/runtime"
 import type { DatabaseFieldMetadata } from "./query-builder"
 import { QueryBuilder } from "./query-builder"
 import { debug } from "../utils/debug"
@@ -20,8 +20,11 @@ export interface QueryOptions {
 }
 
 export interface RecordOptions {
-  layer?: DatabaseRecordType
+  recordType?: DatabaseRecordType
 }
+
+// Common options for explicit record getters across all layers
+export interface RecordGetOptions {}
 
 export class DatabaseService {
   constructor(private client: Client, private fileManager: FileManager) {}
@@ -37,7 +40,7 @@ export class DatabaseService {
         databaseId,
         fieldMetadata,
         this.fileManager,
-        options?.layer || "simple"
+        options?.recordType || "simple"
       )
     } else {
       return new QueryBuilder<T, M>(
@@ -45,7 +48,7 @@ export class DatabaseService {
         databaseId,
         {} as M,
         this.fileManager,
-        options?.layer || "simple"
+        options?.recordType || "simple"
       )
     }
   }
@@ -76,7 +79,7 @@ export class DatabaseService {
       const pages = response.results as PageObjectResponse[]
       const results = await this.processNotionRecords<T>(
         pages,
-        options.layer || "simple"
+        options.recordType || "simple"
       )
 
       return {
@@ -93,11 +96,34 @@ export class DatabaseService {
     }
   }
 
-  async getRecord<T>(pageId: string, options: RecordOptions = {}): Promise<T> {
+  async getRecordSimple<T>(
+    pageId: string,
+    _options: RecordGetOptions = {}
+  ): Promise<T> {
     const page = (await this.client.pages.retrieve({
       page_id: pageId
     })) as PageObjectResponse
-    return await this.processNotionRecord<T>(page, options.layer || "simple")
+    return await this.processNotionRecord<T>(page, "simple")
+  }
+
+  async getRecordAdvanced<T>(
+    pageId: string,
+    _options: RecordGetOptions = {}
+  ): Promise<T> {
+    const page = (await this.client.pages.retrieve({
+      page_id: pageId
+    })) as PageObjectResponse
+    return await this.processNotionRecord<T>(page, "advanced")
+  }
+
+  async getRecordRaw(
+    pageId: string,
+    _options: RecordGetOptions = {}
+  ): Promise<PageObjectResponse> {
+    const page = (await this.client.pages.retrieve({
+      page_id: pageId
+    })) as PageObjectResponse
+    return await this.processNotionRecord<PageObjectResponse>(page, "raw")
   }
 
   async getAllDatabaseRecords<T>(

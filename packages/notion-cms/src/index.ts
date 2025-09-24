@@ -1,8 +1,7 @@
 import { Client } from "@notionhq/client"
 import type { ContentBlockRaw } from "./types/content-types"
 import type { RawHtmlOptions } from "./content/block-content-converter/converter-raw-html"
-import { NotionPropertyType } from "./generator"
-import type { DatabaseRecordType } from "./generator"
+import type { NotionPropertyType, DatabaseRecordType } from "./types/runtime"
 import {
   QueryBuilder,
   SortDirection,
@@ -37,6 +36,7 @@ import { BlockProcessor } from "./content/processor"
 import { PageContentService } from "./content/page-content-service"
 import { ContentProcessor } from "./content/content-processor"
 import { DatabaseService } from "./database/database-service"
+import type { RecordGetOptions } from "./database/database-service"
 import { debug } from "./utils/debug"
 export type {
   ContentBlockAdvanced,
@@ -83,6 +83,12 @@ export interface DatabaseRegistry {
 
 export type { NotionPropertyType, NotionProperty }
 
+// Shared Content options for all layers
+export interface ContentOptions {
+  recursive?: boolean
+  mediaUrlResolver?: (block: ContentBlockRaw, file: any) => Promise<string>
+}
+
 export class NotionCMS {
   private client: Client
   private config: Required<NotionCMSConfig>
@@ -92,6 +98,11 @@ export class NotionCMS {
   private pageContentService: PageContentService
   private databaseService: DatabaseService
   private contentProcessor: ContentProcessor
+  // TODO: Replace any with the correct type
+  // which should be a definition of the type that
+  // we ultimately generate in generator.ts when
+  // we generate all the FieldTypes for each database
+  // public databases: Record<string, any> = {}
 
   static {
     // runs once when the class is defined
@@ -165,7 +176,7 @@ export class NotionCMS {
   ): QueryBuilder<DatabaseRegistry[K]["record"], DatabaseRegistry[K]["fields"]>
   query<K extends keyof DatabaseRegistry, V extends DatabaseRecordType>(
     databaseKey: K,
-    options: { layer: V }
+    options: { recordType: V }
   ): QueryBuilder<
     V extends "simple"
       ? DatabaseRegistry[K]["record"]
@@ -176,7 +187,7 @@ export class NotionCMS {
   >
   query<K extends keyof DatabaseRegistry>(
     databaseKey: K,
-    options?: { layer?: DatabaseRecordType }
+    options?: { recordType?: DatabaseRecordType }
   ): QueryBuilder<any, DatabaseRegistry[K]["fields"]> {
     const databaseConfig = (this as any).databases?.[databaseKey]
     if (!databaseConfig) {
@@ -187,7 +198,7 @@ export class NotionCMS {
       )
     }
     return this._query(databaseConfig.id, databaseConfig.fields, {
-      layer: options?.layer || "simple"
+      recordType: options?.recordType || "simple"
     })
   }
 
@@ -201,36 +212,30 @@ export class NotionCMS {
   private _query<T = any, M extends DatabaseFieldMetadata = {}>(
     databaseId: string,
     fieldMetadata?: M,
-    options?: { layer?: DatabaseRecordType }
+    options?: { recordType?: DatabaseRecordType }
   ): QueryBuilder<T, M> {
     return this.databaseService.query<T, M>(databaseId, fieldMetadata, options)
   }
 
-  /**
-   * Get a single record from a database by its ID
-   * @param pageId The ID of the Notion page/record
-   * @returns A promise that resolves to the record in the selected view (default simple)
-   */
-  async getRecord<T = any>(pageId: string): Promise<T>
-  async getRecord<T = any>(
+  /** Returns the Simple layer record. */
+  async getRecordSimple<T = any>(
     pageId: string,
-    options: { layer: "simple" }
-  ): Promise<T>
-  async getRecord<T = any>(
-    pageId: string,
-    options: { layer: "advanced" }
-  ): Promise<T>
-  async getRecord<T = any>(
-    pageId: string,
-    options: { layer: "raw" }
-  ): Promise<T>
-  async getRecord<T = any>(
-    pageId: string,
-    options?: { layer?: DatabaseRecordType }
+    options: RecordGetOptions = {}
   ): Promise<T> {
-    return this.databaseService.getRecord<T>(pageId, {
-      layer: options?.layer || "simple"
-    })
+    return this.databaseService.getRecordSimple<T>(pageId, options)
+  }
+
+  /** Returns the Advanced layer record. */
+  async getRecordAdvanced<T = any>(
+    pageId: string,
+    options: RecordGetOptions = {}
+  ): Promise<T> {
+    return this.databaseService.getRecordAdvanced<T>(pageId, options)
+  }
+
+  /** Returns the Raw Notion page response. */
+  async getRecordRaw(pageId: string, options: RecordGetOptions = {}) {
+    return this.databaseService.getRecordRaw(pageId, options)
   }
 
   /**
@@ -239,38 +244,13 @@ export class NotionCMS {
    * @param recursive Whether to recursively fetch nested blocks (default: true)
    * @returns A promise that resolves to an array of simplified blocks
    */
-  async getContent(
+
+  /** Returns the Simple layer content (processed blocks). */
+  async getPageContentSimple(
     pageId: string,
-    options?: { layer?: DatabaseRecordType; recursive?: boolean }
-  ): Promise<
-    | SimpleBlock[]
-    | ContentBlockRaw[]
-    | import("./types/content-types").ContentBlockAdvanced[]
-  > {
-    const recursive = options?.recursive ?? true
-    const layer = options?.layer || "simple"
-    if (layer === "raw") {
-      return this.pageContentService.getPageContentRaw(pageId, recursive)
-    }
-    if (layer === "advanced") {
-      return this.contentProcessor.getAdvancedBlocks(
-        pageId,
-        recursive,
-        async (_block, field) => {
-          if (!field) return ""
-          const src =
-            field?.type === "external" ? field?.external?.url : field?.file?.url
-          try {
-            return await this.fileManager.processFileUrl(
-              src || "",
-              `content-block-${_block.id}`
-            )
-          } catch {
-            return src || ""
-          }
-        }
-      )
-    }
+    options: ContentOptions = {}
+  ): Promise<SimpleBlock[]> {
+    const recursive = options.recursive ?? true
     return this.pageContentService.getPageContent(pageId, recursive)
   }
 
@@ -279,24 +259,43 @@ export class NotionCMS {
    * @param pageId The ID of the Notion page
    * @param recursive Whether to recursively fetch nested blocks (default: true)
    */
-  async getPageContent(
-    pageId: string,
-    recursive: boolean = true
-  ): Promise<SimpleBlock[]> {
-    return this.getContent(pageId, { layer: "simple", recursive }) as Promise<
-      SimpleBlock[]
-    >
-  }
-
-  async getPageContentRaw(pageId: string, recursive: boolean = true) {
-    return this.getContent(pageId, { layer: "raw", recursive })
+  async getPageContentRaw(pageId: string, options: ContentOptions = {}) {
+    const recursive = options.recursive ?? true
+    return this.pageContentService.getPageContentRaw(pageId, recursive)
   }
 
   /**
    * Retrieve advanced content blocks for a Notion page
    */
-  async getPageContentAdvanced(pageId: string, recursive: boolean = true) {
-    return this.getContent(pageId, { layer: "advanced", recursive })
+  async getPageContentAdvanced(pageId: string, options: ContentOptions = {}) {
+    const recursive = options.recursive ?? true
+    const resolver =
+      options.mediaUrlResolver ||
+      (async (_block: ContentBlockRaw, field: any) => {
+        if (!field) return ""
+        const src =
+          field?.type === "external" ? field?.external?.url : field?.file?.url
+        try {
+          return await this.fileManager.processFileUrl(
+            src || "",
+            `content-block-${_block.id}`
+          )
+        } catch {
+          return src || ""
+        }
+      })
+    return this.contentProcessor.getAdvancedBlocks(pageId, recursive, resolver)
+  }
+
+  /**
+   * @deprecated Use getPageContentSimple instead. This alias will be removed in the next major release.
+   */
+  async getPageContent(
+    pageId: string,
+    options: ContentOptions = {}
+  ): Promise<SimpleBlock[]> {
+    // TODO: remove deprecated alias after migration
+    return this.getPageContentSimple(pageId, options)
   }
 }
 
@@ -316,5 +315,4 @@ export {
 export { blocksToMarkdown } from "./content/block-content-converter/converter-raw-markdown"
 export { blocksToHtml } from "./content/block-content-converter/converter-raw-html"
 
-// Re-export types and utilities
-export * from "./generator"
+// Intentionally do not re-export generator to keep runtime free of ts-morph

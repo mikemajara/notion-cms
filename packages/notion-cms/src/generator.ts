@@ -1,28 +1,14 @@
 import { Client } from "@notionhq/client"
-import {
-  DatabaseObjectResponse,
-  PageObjectResponse
-} from "@notionhq/client/build/src/api-endpoints"
+import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import * as fs from "fs"
 import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
 
-// Define and export the NotionPropertyType
-export type NotionPropertyType =
-  DatabaseObjectResponse["properties"][string]["type"]
+// Use runtime type to avoid redefining in generator
+import type { NotionPropertyType } from "./types/runtime"
 type NotionPropertyConfig = DatabaseObjectResponse["properties"][string]
 
-// Record type selector for database queries
-export type DatabaseRecordType = "simple" | "advanced" | "raw"
-
-// Export interfaces for use in other modules (Simple view by default)
-export interface DatabaseRecord {
-  id?: string
-  [key: string]: any
-}
-
-// Exact raw view matches Notion's PageObjectResponse
-export type DatabaseRecordRaw = PageObjectResponse
+// DatabaseRecord types are only needed at runtime; not required in generator
 
 // Helper function to sanitize property names
 function sanitizePropertyName(name: string): string {

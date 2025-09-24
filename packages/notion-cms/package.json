@@ -8,6 +8,20 @@
   "bin": {
     "notion-cms": "dist/cli.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./generate": {
+      "types": "./dist/generator.d.ts",
+      "import": "./dist/generator.mjs",
+      "require": "./dist/generator.js"
+    },
+    "./cli": "./dist/cli.js"
+  },
+  "sideEffects": false,
   "files": [
     "dist"
   ],
@@ -75,7 +89,8 @@
   "tsup": {
     "entry": [
       "src/index.ts",
-      "src/cli.ts"
+      "src/cli.ts",
+      "src/generator.ts"
     ],
     "format": [
       "cjs",
@@ -87,7 +102,9 @@
     "treeshake": true,
     "external": [
       "@notionhq/client",
-      "@aws-sdk/client-s3"
+      "@aws-sdk/client-s3",
+      "ts-morph",
+      "typescript"
     ],
     "minify": false,
     "sourcemap": false,

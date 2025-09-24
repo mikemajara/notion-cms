@@ -1,0 +1,20 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+Do not inline imports unless they're strictly necessary or they add clear value to the file.
+
+
+NO:
+```ts
+export type RecordRaw = import('@notionhq/client').PageObjectResponse;
+```
+
+YES:
+```ts
+import { PageObjectResponse } from '@notionhq/client';
+
+export type RecordRaw = PageObjectResponse
+```
