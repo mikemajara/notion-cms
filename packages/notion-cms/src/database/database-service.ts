@@ -20,7 +20,7 @@ export interface QueryOptions {
 }
 
 export interface RecordOptions {
-  recordType?: DatabaseRecordType
+  layer?: DatabaseRecordType
 }
 
 export class DatabaseService {
@@ -37,7 +37,7 @@ export class DatabaseService {
         databaseId,
         fieldMetadata,
         this.fileManager,
-        options?.recordType || "simple"
+        options?.layer || "simple"
       )
     } else {
       return new QueryBuilder<T, M>(
@@ -45,7 +45,7 @@ export class DatabaseService {
         databaseId,
         {} as M,
         this.fileManager,
-        options?.recordType || "simple"
+        options?.layer || "simple"
       )
     }
   }
@@ -76,7 +76,7 @@ export class DatabaseService {
       const pages = response.results as PageObjectResponse[]
       const results = await this.processNotionRecords<T>(
         pages,
-        options.recordType || "simple"
+        options.layer || "simple"
       )
 
       return {
@@ -97,10 +97,7 @@ export class DatabaseService {
     const page = (await this.client.pages.retrieve({
       page_id: pageId
     })) as PageObjectResponse
-    return await this.processNotionRecord<T>(
-      page,
-      options.recordType || "simple"
-    )
+    return await this.processNotionRecord<T>(page, options.layer || "simple")
   }
 
   async getAllDatabaseRecords<T>(

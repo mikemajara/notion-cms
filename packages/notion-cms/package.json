@@ -16,7 +16,7 @@
     "build:prod": "tsup --minify",
     "build:fast": "tsup --no-dts --no-splitting",
     "build:dev": "tsup --no-dts --no-splitting --no-minify --watch",
-    "dev": "tsup --watch --no-dts",
+    "dev": "tsup --watch",
     "lint": "eslint src --ext .ts",
     "check-types": "tsc --noEmit",
     "test": "jest",

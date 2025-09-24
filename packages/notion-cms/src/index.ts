@@ -170,7 +170,7 @@ export class NotionCMS {
   ): QueryBuilder<DatabaseRegistry[K]["record"], DatabaseRegistry[K]["fields"]>
   query<K extends keyof DatabaseRegistry, V extends DatabaseRecordType>(
     databaseKey: K,
-    options: { recordType: V }
+    options: { layer: V }
   ): QueryBuilder<
     V extends "simple"
       ? DatabaseRegistry[K]["record"]
@@ -181,7 +181,7 @@ export class NotionCMS {
   >
   query<K extends keyof DatabaseRegistry>(
     databaseKey: K,
-    options?: { recordType?: DatabaseRecordType }
+    options?: { layer?: DatabaseRecordType }
   ): QueryBuilder<any, DatabaseRegistry[K]["fields"]> {
     const databaseConfig = (this as any).databases?.[databaseKey]
     if (!databaseConfig) {
@@ -192,7 +192,7 @@ export class NotionCMS {
       )
     }
     return this._query(databaseConfig.id, databaseConfig.fields, {
-      recordType: options?.recordType || "simple"
+      layer: options?.layer || "simple"
     })
   }
 
@@ -206,7 +206,7 @@ export class NotionCMS {
   private _query<T = any, M extends DatabaseFieldMetadata = {}>(
     databaseId: string,
     fieldMetadata?: M,
-    options?: { recordType?: DatabaseRecordType }
+    options?: { layer?: DatabaseRecordType }
   ): QueryBuilder<T, M> {
     return this.databaseService.query<T, M>(databaseId, fieldMetadata, options)
   }
@@ -219,22 +219,22 @@ export class NotionCMS {
   async getRecord<T = any>(pageId: string): Promise<T>
   async getRecord<T = any>(
     pageId: string,
-    options: { recordType: "simple" }
+    options: { layer: "simple" }
   ): Promise<T>
   async getRecord<T = any>(
     pageId: string,
-    options: { recordType: "advanced" }
+    options: { layer: "advanced" }
   ): Promise<T>
   async getRecord<T = any>(
     pageId: string,
-    options: { recordType: "raw" }
+    options: { layer: "raw" }
   ): Promise<T>
   async getRecord<T = any>(
     pageId: string,
-    options?: { recordType?: DatabaseRecordType }
+    options?: { layer?: DatabaseRecordType }
   ): Promise<T> {
     return this.databaseService.getRecord<T>(pageId, {
-      recordType: options?.recordType || "simple"
+      layer: options?.layer || "simple"
     })
   }
 
@@ -244,10 +244,38 @@ export class NotionCMS {
    * @param recursive Whether to recursively fetch nested blocks (default: true)
    * @returns A promise that resolves to an array of simplified blocks
    */
-  async getPageContent(
+  async getContent(
     pageId: string,
-    recursive: boolean = true
-  ): Promise<SimpleBlock[]> {
+    options?: { layer?: DatabaseRecordType; recursive?: boolean }
+  ): Promise<
+    | SimpleBlock[]
+    | ContentBlockRaw[]
+    | import("./types/content-types").ContentBlockAdvanced[]
+  > {
+    const recursive = options?.recursive ?? true
+    const layer = options?.layer || "simple"
+    if (layer === "raw") {
+      return this.pageContentService.getPageContentRaw(pageId, recursive)
+    }
+    if (layer === "advanced") {
+      return this.contentProcessor.getAdvancedBlocks(
+        pageId,
+        recursive,
+        async (_block, field) => {
+          if (!field) return ""
+          const src =
+            field?.type === "external" ? field?.external?.url : field?.file?.url
+          try {
+            return await this.fileManager.processFileUrl(
+              src || "",
+              `content-block-${_block.id}`
+            )
+          } catch {
+            return src || ""
+          }
+        }
+      )
+    }
     return this.pageContentService.getPageContent(pageId, recursive)
   }
 
@@ -256,31 +284,24 @@ export class NotionCMS {
    * @param pageId The ID of the Notion page
    * @param recursive Whether to recursively fetch nested blocks (default: true)
    */
+  async getPageContent(
+    pageId: string,
+    recursive: boolean = true
+  ): Promise<SimpleBlock[]> {
+    return this.getContent(pageId, { layer: "simple", recursive }) as Promise<
+      SimpleBlock[]
+    >
+  }
+
   async getPageContentRaw(pageId: string, recursive: boolean = true) {
-    return this.pageContentService.getPageContentRaw(pageId, recursive)
+    return this.getContent(pageId, { layer: "raw", recursive })
   }
 
   /**
    * Retrieve advanced content blocks for a Notion page
    */
   async getPageContentAdvanced(pageId: string, recursive: boolean = true) {
-    return this.contentProcessor.getAdvancedBlocks(
-      pageId,
-      recursive,
-      async (_block, field) => {
-        if (!field) return ""
-        const src =
-          field?.type === "external" ? field?.external?.url : field?.file?.url
-        try {
-          return await this.fileManager.processFileUrl(
-            src || "",
-            `content-block-${_block.id}`
-          )
-        } catch {
-          return src || ""
-        }
-      }
-    )
+    return this.getContent(pageId, { layer: "advanced", recursive })
   }
 }
 

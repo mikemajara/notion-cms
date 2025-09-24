@@ -319,7 +319,7 @@ function renderBlocks(
       )
       continue
     }
-    out += renderBlock(node as ContentBlockRaw, depth, options)
+    out += renderBlock(node as ContentBlockRaw, depth, options) + "\n"
   }
   return out
 }
@@ -335,5 +335,5 @@ export function blocksToMarkdown(
     alternateOrderedListStyles: opts.alternateOrderedListStyles ?? false
   }
   if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return ""
-  return renderBlocks(rawBlocks, 0, options, 0).trim() + "\n"
+  return renderBlocks(rawBlocks, 0, options, 0) + "\n"
 }
