@@ -96,30 +96,29 @@ export class DatabaseService {
     }
   }
 
-  async getRecordSimple<T>(
-    pageId: string,
-    _options: RecordGetOptions = {}
-  ): Promise<T> {
-    const page = (await this.client.pages.retrieve({
-      page_id: pageId
-    })) as PageObjectResponse
-    return await this.processNotionRecord<T>(page, "simple")
-  }
+  // TODO: getRecordSimple and getRecordAdvanced should be removed, this service
+  // should only implement getRecord which will always return a raw record.
 
-  async getRecordAdvanced<T>(
-    pageId: string,
-    _options: RecordGetOptions = {}
-  ): Promise<T> {
-    const page = (await this.client.pages.retrieve({
-      page_id: pageId
-    })) as PageObjectResponse
-    return await this.processNotionRecord<T>(page, "advanced")
-  }
+  // async getRecordSimple<T>(
+  //   pageId: string,
+  // ): Promise<T> {
+  //   const page = (await this.client.pages.retrieve({
+  //     page_id: pageId
+  //   })) as PageObjectResponse
+  //   return await this.processNotionRecord<T>(page, "simple")
+  // }
 
-  async getRecordRaw(
-    pageId: string,
-    _options: RecordGetOptions = {}
-  ): Promise<PageObjectResponse> {
+  // async getRecordAdvanced<T>(
+  //   pageId: string,
+  //   _options: RecordGetOptions = {}
+  // ): Promise<T> {
+  //   const page = (await this.client.pages.retrieve({
+  //     page_id: pageId
+  //   })) as PageObjectResponse
+  //   return await this.processNotionRecord<T>(page, "advanced")
+  // }
+
+  async getRecord(pageId: string): Promise<PageObjectResponse> {
     const page = (await this.client.pages.retrieve({
       page_id: pageId
     })) as PageObjectResponse
@@ -151,6 +150,13 @@ export class DatabaseService {
 
     return results
   }
+
+  // TODO: review the purpose of this function definition `processNotionRecord`
+  // and check whether this should be moved to the recordProcessor service.
+  // ideally the recordProcessor would convert a block from raw to simple or advanced
+  // the caching strategy should be defined at the root of the NotionCMS class
+  // so once the we are converting the record from raw to advanced or simple,
+  // the properties should have already been modified.
 
   /**
    * Unified processing for a single page to DatabaseRecord
