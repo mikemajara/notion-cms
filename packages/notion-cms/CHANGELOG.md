@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog, and this project adheres to Semantic Versioning.
 
+## [Unreleased]
+### Changed
+- Restructured public entry point by moving `NotionCMS` implementation into `src/client.ts` and re-exporting from `src/index.ts`.
+- Clarified barrel exports to prepare for new layered API processors and consistent FileManager usage.
+
 ## [0.1.3] - 2025-09-24
 ### Changed
 - Bump version to 0.1.3.
