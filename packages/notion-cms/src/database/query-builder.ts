@@ -3,7 +3,7 @@ import {
   QueryDatabaseParameters,
   PageObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import type { DatabaseRecordType } from "../types/runtime"
+import type { DatabaseRecordType } from "../types/public"
 import { debug } from "../utils/debug"
 import { FileManager } from "../file-processor/file-manager"
 import { getPropertyValueSimple } from "./database-record-converter/converter-record-simple"

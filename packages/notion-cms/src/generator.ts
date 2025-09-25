@@ -5,7 +5,7 @@ import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
 
 // Use runtime type to avoid redefining in generator
-import type { NotionPropertyType } from "./types/runtime"
+import type { NotionPropertyType } from "./types/public"
 type NotionPropertyConfig = DatabaseObjectResponse["properties"][string]
 
 // DatabaseRecord types are only needed at runtime; not required in generator

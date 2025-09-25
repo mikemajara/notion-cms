@@ -1,3 +1,4 @@
+// import imageSize from "image-size"
 import { NotionCMSConfig } from "../config"
 
 export interface FileInfo {
@@ -38,6 +39,9 @@ export class LocalStrategy implements FileStrategy {
 
       const { downloadFile } = await import("../utils/file-utils")
       const fileData = await downloadFile(url)
+      // TODO: Add dimensions to the file info
+      // const dimensions = imageSize(fileData)
+
       await storage.store(stableFileName, fileData)
 
       return storage.getPublicUrl(stableFileName)

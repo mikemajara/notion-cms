@@ -4,7 +4,7 @@ import {
   QueryDatabaseParameters,
   PropertyItemObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import type { DatabaseRecordType } from "../types/runtime"
+import type { DatabaseRecordType } from "../types/public"
 import type { DatabaseFieldMetadata } from "./query-builder"
 import { QueryBuilder } from "./query-builder"
 import { debug } from "../utils/debug"
