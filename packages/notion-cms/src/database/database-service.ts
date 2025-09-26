@@ -2,15 +2,15 @@ import { Client } from "@notionhq/client"
 import {
   PageObjectResponse,
   QueryDatabaseParameters,
-  PropertyItemObjectResponse
+  PropertyItemObjectResponse,
+  FilesPropertyValue,
+  FileObject
 } from "@notionhq/client/build/src/api-endpoints"
 import type { DatabaseRecordType } from "../types/public"
 import type { DatabaseFieldMetadata } from "./query-builder"
 import { QueryBuilder } from "./query-builder"
 import { debug } from "../utils/debug"
 import { FileManager } from "../file-processor/file-manager"
-import { getPropertyValueSimple } from "./database-record-converter/converter-record-simple"
-import { getPropertyValueAdvanced } from "./database-record-converter/converter-record-advanced"
 
 export interface QueryOptions {
   filter?: QueryDatabaseParameters["filter"]
@@ -53,10 +53,14 @@ export class DatabaseService {
     }
   }
 
-  async getDatabase<T>(
+  async getDatabase(
     databaseId: string,
-    options: QueryOptions & RecordOptions = {}
-  ): Promise<{ results: T[]; nextCursor: string | null; hasMore: boolean }> {
+    options: QueryOptions = {}
+  ): Promise<{
+    results: PageObjectResponse[]
+    nextCursor: string | null
+    hasMore: boolean
+  }> {
     try {
       debug.query(databaseId, {
         database_id: databaseId,
@@ -77,13 +81,10 @@ export class DatabaseService {
       debug.log(`Query returned ${response.results.length} results`)
 
       const pages = response.results as PageObjectResponse[]
-      const results = await this.processNotionRecords<T>(
-        pages,
-        options.recordType || "simple"
-      )
+      await Promise.all(pages.map((page) => this.enrichRecordFiles(page)))
 
       return {
-        results,
+        results: pages,
         nextCursor: response.next_cursor,
         hasMore: response.has_more
       }
@@ -95,50 +96,31 @@ export class DatabaseService {
       throw error
     }
   }
-
-  // TODO: getRecordSimple and getRecordAdvanced should be removed, this service
-  // should only implement getRecord which will always return a raw record.
-
-  // async getRecordSimple<T>(
-  //   pageId: string,
-  // ): Promise<T> {
-  //   const page = (await this.client.pages.retrieve({
-  //     page_id: pageId
-  //   })) as PageObjectResponse
-  //   return await this.processNotionRecord<T>(page, "simple")
-  // }
-
-  // async getRecordAdvanced<T>(
-  //   pageId: string,
-  //   _options: RecordGetOptions = {}
-  // ): Promise<T> {
-  //   const page = (await this.client.pages.retrieve({
-  //     page_id: pageId
-  //   })) as PageObjectResponse
-  //   return await this.processNotionRecord<T>(page, "advanced")
-  // }
-
   async getRecord(pageId: string): Promise<PageObjectResponse> {
+    return this.getRecordRaw(pageId)
+  }
+
+  async getRecordRaw(
+    pageId: string,
+    _options: RecordGetOptions = {}
+  ): Promise<PageObjectResponse> {
     const page = (await this.client.pages.retrieve({
       page_id: pageId
     })) as PageObjectResponse
-    return await this.processNotionRecord<PageObjectResponse>(page, "raw")
+    await this.enrichRecordFiles(page)
+    return page
   }
 
-  async getAllDatabaseRecords<T>(
+  async getAllDatabaseRecords(
     databaseId: string,
-    options: Omit<QueryOptions, "startCursor" | "pageSize"> & RecordOptions = {}
-  ): Promise<T[]> {
-    const results: T[] = []
+    options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
+  ): Promise<PageObjectResponse[]> {
+    const results: PageObjectResponse[] = []
     let hasMore = true
     let startCursor: string | null = null
 
     while (hasMore) {
-      const response: {
-        results: T[]
-        nextCursor: string | null
-        hasMore: boolean
-      } = await this.getDatabase<T>(databaseId, {
+      const response = await this.getDatabase(databaseId, {
         ...options,
         startCursor: startCursor || undefined
       })
@@ -151,51 +133,61 @@ export class DatabaseService {
     return results
   }
 
-  // TODO: review the purpose of this function definition `processNotionRecord`
-  // and check whether this should be moved to the recordProcessor service.
-  // ideally the recordProcessor would convert a block from raw to simple or advanced
-  // the caching strategy should be defined at the root of the NotionCMS class
-  // so once the we are converting the record from raw to advanced or simple,
-  // the properties should have already been modified.
-
-  /**
-   * Unified processing for a single page to DatabaseRecord
-   */
-  async processNotionRecord<T = any>(
-    page: PageObjectResponse,
-    recordType: DatabaseRecordType
-  ): Promise<T> {
-    if (recordType === "raw") {
-      return page as unknown as T
+  private async enrichRecordFiles(page: PageObjectResponse): Promise<void> {
+    if (page.cover) {
+      page.cover = await this.processFileObject(page.cover, `${page.id}-cover`)
     }
 
-    if (recordType === "advanced") {
-      const advanced: Record<string, any> = { id: page.id }
-      for (const [key, value] of Object.entries(page.properties)) {
-        advanced[key] = await getPropertyValueAdvanced(
-          value as PropertyItemObjectResponse,
-          this.fileManager
-        )
-      }
-      return advanced as T
+    if (page.icon && page.icon.type === "file") {
+      page.icon = await this.processFileObject(page.icon, `${page.id}-icon`)
     }
 
-    const simple: Record<string, any> = { id: page.id }
-    for (const [key, value] of Object.entries(page.properties)) {
-      simple[key] = await getPropertyValueSimple(
-        value as PropertyItemObjectResponse,
-        this.fileManager
-      )
-    }
-    return simple as T
+    const propertyEntries = Object.entries(page.properties)
+    await Promise.all(
+      propertyEntries.map(async ([key, property]) => {
+        if (property.type === "files") {
+          const filesProperty = property as FilesPropertyValue
+          const processedFiles = await Promise.all(
+            filesProperty.files.map((file, index) =>
+              this.processFileObject(file, `${page.id}-${key}-${index}`)
+            )
+          )
+          filesProperty.files = processedFiles
+          page.properties[key] = filesProperty
+        }
+      })
+    )
   }
 
-  async processNotionRecords<T = any>(
-    pages: PageObjectResponse[],
-    recordType: DatabaseRecordType
-  ): Promise<T[]> {
-    return Promise.all(
-      pages.map((page) => this.processNotionRecord<T>(page, recordType))
-    )
+  private async processFileObject<T extends { name?: string } & FileObject>(
+    file: T,
+    fallbackName: string
+  ): Promise<T> {
+    const fileName = file.name || fallbackName
+    const originalUrl = this.fileManager.extractFileUrl(file)
+    if (!originalUrl) {
+      return file
+    }
+
+    try {
+      const processedUrl = await this.fileManager.processFileUrl(
+        originalUrl,
+        fileName
+      )
+
+      if (file.type === "external" && file.external) {
+        file.external.url = processedUrl
+      } else if (file.type === "file" && file.file) {
+        file.file.url = processedUrl
+      }
+    } catch (error) {
+      debug.error(error, {
+        scope: "file-cache",
+        fileName,
+        originalUrl
+      })
+    }
+
+    return file
   }
 }

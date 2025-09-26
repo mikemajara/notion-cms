@@ -53,3 +53,9 @@ export {
 } from "./utils/block-traversal"
 export { blocksToMarkdown } from "./content/block-content-converter/converter-raw-markdown"
 export { blocksToHtml } from "./content/block-content-converter/converter-raw-html"
+export {
+  convertRecordToSimple,
+  convertRecordToAdvanced,
+  convertRecord,
+  convertRecords
+} from "./database/record-processor"

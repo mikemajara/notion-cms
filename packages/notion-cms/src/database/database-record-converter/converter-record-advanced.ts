@@ -21,11 +21,11 @@ import {
   RichTextPropertyItemObjectResponse,
   UserObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import { FileManager } from "../../file-processor/file-manager"
+import type { FileManager } from "../../file-processor/file-manager"
 
 export async function getPropertyValueAdvanced(
   property: PropertyItemObjectResponse,
-  fileManager: FileManager
+  fileManager?: FileManager
 ): Promise<any> {
   switch (property.type) {
     case "title": {
@@ -117,7 +117,11 @@ export async function getPropertyValueAdvanced(
         }
       })
 
-      const processedFiles = await Promise.all(
+      if (!fileManager) {
+        return files
+      }
+
+      return Promise.all(
         files.map(async (file) => {
           const originalUrl =
             file.type === "external" ? file.external?.url : file.file?.url
@@ -135,8 +139,6 @@ export async function getPropertyValueAdvanced(
           return file
         })
       )
-
-      return processedFiles
     }
     case "checkbox":
       return (property as CheckboxPropertyItemObjectResponse).checkbox

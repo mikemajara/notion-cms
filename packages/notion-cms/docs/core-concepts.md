@@ -69,17 +69,16 @@ The Advanced API preserves rich metadata from Notion properties while still prov
 ### How It Works
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId)
-const record = results[0]
+const { results: rawRecords } = await notionCms.getDatabase(databaseId)
+const record = rawRecords[0]
 
-// Simple access still works
-console.log(record.Title) // "My Blog Post"
+// Simple access: convert when needed
+const simple = await convertRecordToSimple(record)
+console.log(simple.Title) // "My Blog Post"
 
-// Advanced access provides more details
-console.log(record.advanced.Title)
-// [{ content: "My Blog Post", annotations: {...}, href: null }]
-
-console.log(record.advanced.Tags)
+// Advanced access retains metadata
+const advanced = await convertRecordToAdvanced(record)
+console.log(advanced.Tags)
 // [
 //   { id: "abc123", name: "react", color: "blue" },
 //   { id: "def456", name: "typescript", color: "orange" }
@@ -92,10 +91,10 @@ console.log(record.advanced.Tags)
 
 ```typescript
 // Simple: Markdown string
-record.Description // "This is **bold** and *italic* text"
+simple.Description // "This is **bold** and *italic* text"
 
 // Advanced: Array with formatting details
-record.advanced.Description
+advanced.Description
 // [
 //   { content: "This is ", annotations: { bold: false, italic: false } },
 //   { content: "bold", annotations: { bold: true, italic: false } },
@@ -109,10 +108,10 @@ record.advanced.Description
 
 ```typescript
 // Simple: Array of strings
-record.Tags // ["urgent", "bug-fix"]
+simple.Tags // ["urgent", "bug-fix"]
 
 // Advanced: Array with metadata
-record.advanced.Tags
+advanced.Tags
 // [
 //   { id: "tag1", name: "urgent", color: "red" },
 //   { id: "tag2", name: "bug-fix", color: "yellow" }
@@ -153,14 +152,14 @@ The Raw API gives you complete access to Notion's unmodified API response.
 ### How It Works
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId)
-const record = results[0]
+const { results: rawRecords } = await notionCms.getDatabase(databaseId)
+const record = rawRecords[0]
 
-// Access the raw Notion API response
-console.log(record.raw.properties.Title)
+// Access the raw Notion API response directly
+console.log(record.properties.Title)
 // Complete Notion API response for the Title property
 
-console.log(record.raw.properties.Tags.multi_select)
+console.log(record.properties.Tags?.multi_select)
 // Raw multi_select property with all Notion metadata
 ```
 

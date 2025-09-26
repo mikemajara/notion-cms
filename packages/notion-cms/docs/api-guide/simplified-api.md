@@ -18,19 +18,17 @@ The Simplified API transforms Notion's complex property types into clean JavaScr
 ## Basic Usage
 
 ```typescript
-import { NotionCMS } from "@mikemajara/notion-cms"
-
-const cms = new NotionCMS("your-notion-api-key")
-
-// Get database records
 const { results } = await cms.getDatabase("your-database-id")
 
-// Access properties directly
+// Receive enriched raw records
 const post = results[0]
-console.log(post.Title) // "My Blog Post"
-console.log(post.Tags) // ["react", "typescript"]
-console.log(post.PublishDate) // Date object
-console.log(post.Published) // true
+
+// Convert to the Simple layer when needed
+const simplePost = await convertRecordToSimple(post)
+console.log(simplePost.Title) // "My Blog Post"
+console.log(simplePost.Tags) // ["react", "typescript"]
+console.log(simplePost.PublishDate) // Date object
+console.log(simplePost.Published) // true
 ```
 
 ## Property Type Conversions
@@ -57,7 +55,8 @@ console.log(post.Published) // true
 
 ```typescript
 // Fetch published blog posts
-const { results: posts } = await cms.getDatabase("blog-database-id")
+const { results: rawPosts } = await cms.getDatabase("blog-database-id")
+const posts = await convertRecords(rawPosts, "simple")
 
 posts.forEach((post) => {
   console.log(`${post.Title} - ${post.PublishDate}`)
@@ -70,7 +69,8 @@ posts.forEach((post) => {
 
 ```typescript
 // Get product information
-const { results: products } = await cms.getDatabase("products-database-id")
+const { results: rawProducts } = await cms.getDatabase("products-database-id")
+const products = await convertRecords(rawProducts, "simple")
 
 products.forEach((product) => {
   console.log(`${product.Name} - $${product.Price}`)
@@ -83,7 +83,8 @@ products.forEach((product) => {
 
 ```typescript
 // Get upcoming events
-const { results: events } = await cms.getDatabase("events-database-id")
+const { results: rawEvents } = await cms.getDatabase("events-database-id")
+const events = await convertRecords(rawEvents, "simple")
 
 events.forEach((event) => {
   console.log(`${event.Title} - ${event.Date.toLocaleDateString()}`)

@@ -21,14 +21,17 @@ pnpm add @mikemajara/notion-cms
 ```
 
 ```typescript
-import { NotionCMS } from "@mikemajara/notion-cms";
+import { NotionCMS, convertRecordToSimple } from "@mikemajara/notion-cms";
 
 const notionCms = new NotionCMS("your-notion-api-key");
 
-// Simple API - clean, JavaScript-friendly data
-const { results } = await notionCms.getDatabase("your-database-id");
-console.log(results[0].Title); // "My Blog Post"
-console.log(results[0].Tags); // ["react", "typescript"]
+// Fetch raw records once and convert on demand
+const { results: rawRecords } = await notionCms.getDatabase("your-database-id");
+
+// Convert to the Simple layer using the helper when you need it
+const simpleRecord = await convertRecordToSimple(rawRecords[0]);
+console.log(simpleRecord.Title); // "My Blog Post"
+console.log(simpleRecord.Tags); // ["react", "typescript"]
 
 // Query Builder - type-safe filtering and sorting
 const posts = await notionCms

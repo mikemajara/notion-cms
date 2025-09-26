@@ -21,11 +21,11 @@ import {
   UserObjectResponse,
   UniqueIdPropertyItemObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import { FileManager } from "../../file-processor/file-manager"
+import type { FileManager } from "../../file-processor/file-manager"
 
 export async function getPropertyValueSimple(
   property: PropertyItemObjectResponse,
-  fileManager: FileManager
+  fileManager?: FileManager
 ): Promise<any> {
   switch (property.type) {
     case "unique_id": {
@@ -78,7 +78,11 @@ export async function getPropertyValueSimple(
         }
       })
 
-      const processedFiles = await Promise.all(
+      if (!fileManager) {
+        return files
+      }
+
+      return Promise.all(
         files.map(async (file) => {
           const processedUrl = await fileManager.processFileUrl(
             file.url,
@@ -90,8 +94,6 @@ export async function getPropertyValueSimple(
           }
         })
       )
-
-      return processedFiles
     }
     case "checkbox":
       return (property as CheckboxPropertyItemObjectResponse).checkbox

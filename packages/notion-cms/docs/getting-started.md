@@ -63,18 +63,19 @@ https://www.notion.so/your-workspace/DATABASE_ID?v=...
 ### 5. Initialize and Use
 
 ```typescript
-import { NotionCMS } from "@mikemajara/notion-cms"
+import { NotionCMS, convertRecordToSimple } from "@mikemajara/notion-cms"
 
 // Initialize with your Notion API key
 const notionCms = new NotionCMS("your-notion-api-key")
 
-// Fetch all records from a database
-const { results } = await notionCms.getDatabase("your-database-id")
+// Fetch raw records with a single network call
+const { results: rawRecords } = await notionCms.getDatabase("your-database-id")
 
-// Work with the simplified records
-console.log(results[0].Title) // Directly access a title property
-console.log(results[0].Tags) // Access a multi-select property (as string[])
-console.log(results[0].CreatedAt) // JavaScript Date object
+// Convert on demand using the provided helpers
+const firstRecord = await convertRecordToSimple(rawRecords[0])
+console.log(firstRecord.Title) // Directly access a title property
+console.log(firstRecord.Tags) // Access a multi-select property (as string[])
+console.log(firstRecord.CreatedAt) // JavaScript Date object
 ```
 
 ## Your First Query

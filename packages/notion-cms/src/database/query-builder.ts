@@ -6,8 +6,10 @@ import {
 import type { DatabaseRecordType } from "../types/public"
 import { debug } from "../utils/debug"
 import { FileManager } from "../file-processor/file-manager"
-import { getPropertyValueSimple } from "./database-record-converter/converter-record-simple"
-import { getPropertyValueAdvanced } from "./database-record-converter/converter-record-advanced"
+import {
+  convertRecordToAdvanced,
+  convertRecordToSimple
+} from "./record-processor"
 
 export type SortDirection = "ascending" | "descending"
 export type LogicalOperator = "and" | "or"
@@ -628,29 +630,15 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
         results = pages as unknown as T[]
       } else if (this.recordType === "advanced") {
         results = (await Promise.all(
-          pages.map(async (page) => {
-            const advanced: Record<string, any> = { id: page.id }
-            for (const [key, value] of Object.entries(page.properties)) {
-              advanced[key] = await getPropertyValueAdvanced(
-                value as any,
-                this.fileManager || new FileManager({} as any)
-              )
-            }
-            return advanced as T
-          })
+          pages.map(async (page) =>
+            convertRecordToAdvanced(page, this.fileManager)
+          )
         )) as T[]
       } else {
         results = (await Promise.all(
-          pages.map(async (page) => {
-            const simple: Record<string, any> = { id: page.id }
-            for (const [key, value] of Object.entries(page.properties)) {
-              simple[key] = await getPropertyValueSimple(
-                value as any,
-                this.fileManager || new FileManager({} as any)
-              )
-            }
-            return simple as T
-          })
+          pages.map(async (page) =>
+            convertRecordToSimple(page, this.fileManager)
+          )
         )) as T[]
       }
 
