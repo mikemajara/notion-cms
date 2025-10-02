@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "a": "pnpm dlx shadcn add",
-    "generate-types": "source .env && npx @mikemajara/notion-cms generate -t $NOTION_API_KEY -d $NOTION_CMS_DATABASE_ID",
-    "generate-types:force": "source .env && npx @mikemajara/notion-cms generate -t $NOTION_API_KEY -d $NOTION_CMS_DATABASE_ID -f"
+    "notion:generate": "source .env && npx @mikemajara/notion-cms generate -t $NOTION_API_KEY -d $NOTION_CMS_DATABASE_ID"
   },
   "dependencies": {
     "@mikemajara/notion-cms": "workspace:*",

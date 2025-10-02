@@ -7,7 +7,7 @@ import "@/notion/notion-types-art-gallery-inventory"
 export default async function Home() {
   const cms = new NotionCMS(process.env.NOTION_API_KEY!, {
     files: {
-      strategy: "direct"
+      strategy: "local"
     }
   })
   const artworks = await cms

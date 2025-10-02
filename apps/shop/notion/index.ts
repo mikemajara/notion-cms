@@ -2,3 +2,4 @@
 
 // Export database-specific types
 export * from './notion-types-art-gallery-inventory';
+import './notion-types-art-gallery-inventory';

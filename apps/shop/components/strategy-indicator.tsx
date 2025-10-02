@@ -1,34 +1,33 @@
-"use client";
+"use client"
 
-import { usePathname, useRouter } from "next/navigation";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { usePathname, useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { ChevronDown, Info } from "lucide-react";
+  PopoverTrigger
+} from "@/components/ui/popover"
+import { Info } from "lucide-react"
 import {
   detectStrategyFromPath,
-  generatePLPLink,
+  changeStrategyUrl,
   getAllStrategies,
   STRATEGY_CONFIG,
-  type FileStrategy,
-} from "@/lib/strategy-utils";
+  type FileStrategy
+} from "@/lib/strategy-utils"
 
 export function StrategyIndicator() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname = usePathname()
+  const router = useRouter()
 
-  const currentStrategy = detectStrategyFromPath(pathname);
-  const currentConfig = STRATEGY_CONFIG[currentStrategy];
-  const allStrategies = getAllStrategies();
+  const currentStrategy = detectStrategyFromPath(pathname)
+  const currentConfig = STRATEGY_CONFIG[currentStrategy]
+  const allStrategies = getAllStrategies()
 
   const handleStrategyChange = (newStrategy: FileStrategy) => {
-    const newUrl = generatePLPLink(newStrategy);
-    router.push(newUrl);
-  };
+    const newUrl = changeStrategyUrl(newStrategy, pathname)
+    router.push(newUrl)
+  }
 
   return (
     <div className="fixed top-4 right-4 z-50">
@@ -37,18 +36,15 @@ export function StrategyIndicator() {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 bg-background/95 backdrop-blur-sm border shadow-lg cursor-pointer"
+            className="gap-2 border shadow-lg backdrop-blur-sm cursor-pointer bg-background/95"
           >
-            <Info className="h-3 w-3" />
+            <Info className="w-3 h-3" />
             <span className="px-2 py-0">{currentConfig.badge}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-3" align="end">
+        <PopoverContent className="p-3 w-64" align="end">
           <div className="space-y-2">
             <div className="text-sm font-medium">File Handling Strategy</div>
-            <div className="text-xs text-muted-foreground mb-3">
-              {currentConfig.description}
-            </div>
 
             <div className="space-y-1">
               {allStrategies.map(({ strategy, config }) => (
@@ -56,13 +52,12 @@ export function StrategyIndicator() {
                   key={strategy}
                   variant={strategy === currentStrategy ? "default" : "ghost"}
                   size="sm"
-                  className="w-full justify-start gap-2 h-auto py-2"
+                  className="flex flex-col gap-2 justify-start items-start py-2 w-full h-auto"
                   onClick={() => handleStrategyChange(strategy)}
                 >
-                  <span className="px-2 py-0">{config.badge}</span>
+                  <span className="">{config.badge}</span>
                   <div className="flex flex-col items-start">
-                    <span className="text-sm font-medium">{config.label}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground/80">
                       {config.description}
                     </span>
                   </div>
@@ -73,5 +68,5 @@ export function StrategyIndicator() {
         </PopoverContent>
       </Popover>
     </div>
-  );
+  )
 }
