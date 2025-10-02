@@ -1,9 +1,6 @@
 # Notion CMS Monorepo
 
-This is a Turborepo-powered monorepo containing:
-
-- `apps/example`: Example application showcasing the Notion CMS package
-- `packages/notion-cms`: The main Notion CMS package
+![Diagram](assets/diagram.png)
 
 ## Development
 
