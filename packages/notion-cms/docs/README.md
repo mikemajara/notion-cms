@@ -33,9 +33,10 @@ const posts = await cms.query("blog-db")
 ### 🔄 **Content Conversion**
 ```typescript
 // Convert Notion blocks to Markdown or HTML
-const blocks = await cms.getPageContent("page-id");
-const markdown = cms.blocksToMarkdown(blocks);
-const html = cms.blocksToHtml(blocks);
+const { results: rawBlocks } = await cms.getPageContentRaw("page-id");
+const simpleBlocks = await cms.convertBlocksToSimple(rawBlocks);
+const markdown = cms.blocksToMarkdown(simpleBlocks);
+const html = cms.blocksToHtml(simpleBlocks);
 ```
 
 ### 📁 **Smart File Management**

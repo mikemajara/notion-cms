@@ -14,44 +14,18 @@ The content blocks system allows you to:
 
 ## Core Methods
 
-### getPageContent()
-
-Fetch all content blocks from a Notion page.
-
-#### Syntax
+### Fetching Raw Blocks
 
 ```typescript
-getPageContent(pageId: string, recursive?: boolean): Promise<SimpleBlock[]>
-```
+import { NotionCMS } from "@mikemajara/notion-cms"
 
-#### Parameters
-
-| Parameter   | Type      | Default | Description                          |
-| ----------- | --------- | ------- | ------------------------------------ |
-| `pageId`    | `string`  | -       | The ID of the Notion page            |
-| `recursive` | `boolean` | `true`  | Whether to fetch nested child blocks |
-
-#### Return Value
-
-```typescript
-interface SimpleBlock {
-  id: string
-  type: string
-  content: any
-  children?: SimpleBlock[]
-  hasChildren: boolean
-}
-```
-
-#### Examples
-
-##### Basic Usage
-
-```typescript
 const notionCms = new NotionCMS("your-api-key")
 
-// Fetch all blocks from a page
-const blocks = await notionCms.getPageContent("page-id")
+// Fetch raw blocks from a page
+const { results: rawBlocks } = await notionCms.getPageContentRaw("page-id")
+
+// Convert to the Simple layer when needed
+const blocks = await notionCms.convertBlocksToSimple(rawBlocks)
 
 console.log(`Found ${blocks.length} blocks`)
 
@@ -59,13 +33,6 @@ blocks.forEach((block) => {
   console.log(`Block type: ${block.type}`)
   console.log(`Has children: ${block.hasChildren}`)
 })
-```
-
-##### Without Nested Blocks
-
-```typescript
-// Fetch only top-level blocks (no children)
-const topLevelBlocks = await notionCms.getPageContent("page-id", false)
 ```
 
 ### blocksToMarkdown()
@@ -96,7 +63,12 @@ string // Markdown representation of the blocks
 ##### Basic Conversion
 
 ```typescript
-const blocks = await notionCms.getPageContent("page-id")
+import { NotionCMS } from "@mikemajara/notion-cms"
+
+const notionCms = new NotionCMS("your-api-key")
+
+const { results: rawBlocks } = await notionCms.getPageContentRaw("page-id")
+const blocks = await convertBlocksToSimple(rawBlocks)
 const markdown = notionCms.blocksToMarkdown(blocks)
 
 console.log(markdown)
@@ -111,6 +83,12 @@ console.log(markdown)
 ##### With Image URLs
 
 ```typescript
+import { NotionCMS } from "@mikemajara/notion-cms"
+
+const notionCms = new NotionCMS("your-api-key")
+
+const { results: rawBlocks } = await notionCms.getPageContentRaw("page-id")
+const blocks = await convertBlocksToSimple(rawBlocks)
 const markdown = notionCms.blocksToMarkdown(blocks)
 
 console.log(markdown)
@@ -148,7 +126,12 @@ string // HTML representation of the blocks
 ##### Basic Conversion
 
 ```typescript
-const blocks = await notionCms.getPageContent("page-id")
+import { NotionCMS } from "@mikemajara/notion-cms"
+
+const notionCms = new NotionCMS("your-api-key")
+
+const { results: rawBlocks } = await notionCms.getPageContentRaw("page-id")
+const blocks = await convertBlocksToSimple(rawBlocks)
 const html = notionCms.blocksToHtml(blocks)
 
 console.log(html)
@@ -382,9 +365,8 @@ const notionCms = new NotionCMS(process.env.NOTION_API_KEY!)
 async function convertPageToMarkdown(pageId: string): Promise<string> {
   try {
     // Fetch all blocks from the page
-    const blocks = await notionCms.getPageContent(pageId)
-
-    // Convert to markdown
+    const { results: rawBlocks } = await notionCms.getPageContentRaw(pageId)
+    const blocks = await convertBlocksToSimple(rawBlocks)
     const markdown = notionCms.blocksToMarkdown(blocks)
 
     return markdown
@@ -397,9 +379,8 @@ async function convertPageToMarkdown(pageId: string): Promise<string> {
 async function convertPageToHtml(pageId: string): Promise<string> {
   try {
     // Fetch all blocks from the page
-    const blocks = await notionCms.getPageContent(pageId)
-
-    // Convert to HTML
+    const { results: rawBlocks } = await notionCms.getPageContentRaw(pageId)
+    const blocks = await convertBlocksToSimple(rawBlocks)
     const html = notionCms.blocksToHtml(blocks)
 
     return html
@@ -434,10 +415,10 @@ async function convertBlogPostsToMarkdown() {
   const postsWithContent = await Promise.all(
     posts.map(async (post) => {
       // Get the page content
-      const blocks = await notionCms.getPageContent(post.id);
+      const { results: rawBlocks } = await notionCms.getPageContentRaw(post.id);
 
       // Convert to markdown
-      const content = notionCms.blocksToMarkdown(blocks);
+      const content = notionCms.blocksToMarkdown(await convertBlocksToSimple(rawBlocks));
 
       return {
         ...post,

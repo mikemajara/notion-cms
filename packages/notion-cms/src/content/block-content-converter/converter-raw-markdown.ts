@@ -230,12 +230,12 @@ function renderBlock(
     case "audio":
     case "file":
     case "pdf": {
+      // TODO: include caption if available and output in format
+      // [image-src]([caption])
       const src =
         field?.type === "external" ? field?.external?.url : field?.file?.url
       const caption = richTextToMarkdown(field?.caption ?? [])
-      let out = `${src || ""}\n`
-      if (caption) out += `${caption}\n`
-      return out
+      return `![${caption ?? ""}](${src ?? ""})\n`
     }
     case "equation": {
       const expr = field?.expression || ""

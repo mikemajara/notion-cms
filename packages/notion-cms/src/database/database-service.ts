@@ -1,10 +1,7 @@
 import { Client } from "@notionhq/client"
 import {
   PageObjectResponse,
-  QueryDatabaseParameters,
-  PropertyItemObjectResponse,
-  FilesPropertyValue,
-  FileObject
+  QueryDatabaseParameters
 } from "@notionhq/client/build/src/api-endpoints"
 import type { DatabaseRecordType } from "../types/public"
 import type { DatabaseFieldMetadata } from "./query-builder"
@@ -25,6 +22,13 @@ export interface RecordOptions {
 
 // Common options for explicit record getters across all layers
 export interface RecordGetOptions {}
+
+type FilesProperty = Extract<
+  PageObjectResponse["properties"][string],
+  { type: "files" }
+>
+
+type FilesPropertyFile = FilesProperty["files"][number]
 
 export class DatabaseService {
   constructor(private client: Client, private fileManager: FileManager) {}
@@ -96,6 +100,7 @@ export class DatabaseService {
       throw error
     }
   }
+
   async getRecord(pageId: string): Promise<PageObjectResponse> {
     return this.getRecordRaw(pageId)
   }
@@ -135,34 +140,61 @@ export class DatabaseService {
 
   private async enrichRecordFiles(page: PageObjectResponse): Promise<void> {
     if (page.cover) {
-      page.cover = await this.processFileObject(page.cover, `${page.id}-cover`)
+      page.cover = await this.processPageCover(page.cover, `${page.id}-cover`)
     }
 
     if (page.icon && page.icon.type === "file") {
-      page.icon = await this.processFileObject(page.icon, `${page.id}-icon`)
+      page.icon = await this.processPageIcon(page.icon, `${page.id}-icon`)
     }
 
     const propertyEntries = Object.entries(page.properties)
     await Promise.all(
       propertyEntries.map(async ([key, property]) => {
         if (property.type === "files") {
-          const filesProperty = property as FilesPropertyValue
-          const processedFiles = await Promise.all(
+          const filesProperty = property as FilesProperty
+          filesProperty.files = await Promise.all(
             filesProperty.files.map((file, index) =>
-              this.processFileObject(file, `${page.id}-${key}-${index}`)
+              this.processPropertyFile(file, `${page.id}-${key}-${index}`)
             )
           )
-          filesProperty.files = processedFiles
-          page.properties[key] = filesProperty
         }
       })
     )
   }
 
-  private async processFileObject<T extends { name?: string } & FileObject>(
-    file: T,
+  private async processPageCover(
+    cover: Exclude<PageObjectResponse["cover"], null>,
     fallbackName: string
-  ): Promise<T> {
+  ) {
+    if (cover.type === "external") {
+      const processedUrl = await this.safeProcessUrl(
+        cover.external.url,
+        fallbackName
+      )
+      cover.external.url = processedUrl
+    } else if (cover.type === "file") {
+      const processedUrl = await this.safeProcessUrl(
+        cover.file.url,
+        fallbackName
+      )
+      cover.file.url = processedUrl
+    }
+    return cover
+  }
+
+  private async processPageIcon(
+    icon: Extract<PageObjectResponse["icon"], { type: "file" }>,
+    fallbackName: string
+  ) {
+    const processedUrl = await this.safeProcessUrl(icon.file.url, fallbackName)
+    icon.file.url = processedUrl
+    return icon
+  }
+
+  private async processPropertyFile(
+    file: FilesPropertyFile,
+    fallbackName: string
+  ): Promise<FilesPropertyFile> {
     const fileName = file.name || fallbackName
     const originalUrl = this.fileManager.extractFileUrl(file)
     if (!originalUrl) {
@@ -189,5 +221,18 @@ export class DatabaseService {
     }
 
     return file
+  }
+
+  private async safeProcessUrl(url: string, fallbackName: string) {
+    try {
+      return await this.fileManager.processFileUrl(url, fallbackName)
+    } catch (error) {
+      debug.error(error, {
+        scope: "file-cache",
+        fallbackName,
+        originalUrl: url
+      })
+      return url
+    }
   }
 }

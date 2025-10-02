@@ -13,9 +13,9 @@ export type {
   TableRowCell,
   TableRowBlockContent,
   SimpleTableBlock,
-  SimpleTableRowBlock,
-  NotionCMSConfig
+  SimpleTableRowBlock
 } from "./content/content-converter"
+export type { NotionCMSConfig } from "./config"
 
 export { QueryBuilder, OPERATOR_MAP } from "./database/query-builder"
 export type {
@@ -41,7 +41,6 @@ export type {
 export type { DatabaseRecord, DatabaseRecordType } from "./types/public"
 export type { RecordGetOptions } from "./database/database-service"
 
-export { BlockProcessor } from "./content/processor"
 export { PageContentService } from "./content/page-content-service"
 export { DatabaseService } from "./database/database-service"
 export { richTextToPlain, richTextToMarkdown } from "./utils/rich-text"
@@ -59,3 +58,8 @@ export {
   convertRecord,
   convertRecords
 } from "./database/record-processor"
+export {
+  convertBlockToSimple,
+  convertBlocksToSimple,
+  convertBlocksToAdvanced
+} from "./content/block-converter"

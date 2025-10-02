@@ -18,7 +18,6 @@ import type { ContentBlockRaw } from "./types/content-types"
 import type { DatabaseRecord, DatabaseRecordType } from "./types/public"
 import { NotionCMSConfig, mergeConfig } from "./config"
 import { FileManager } from "./file-processor/file-manager"
-import { BlockProcessor } from "./content/processor"
 import { PageContentService } from "./content/page-content-service"
 import { DatabaseService } from "./database/database-service"
 import type { RecordGetOptions } from "./database/database-service"
@@ -41,7 +40,6 @@ export class NotionCMS {
   private fileManager: FileManager
   private pageContentService: PageContentService
   private databaseService: DatabaseService
-  private blockProcessor: BlockProcessor
   public databases!: Record<
     string,
     { id: string; fields: DatabaseFieldMetadata }
@@ -56,10 +54,9 @@ export class NotionCMS {
     this.config = mergeConfig(config)
     debug.configure(this.config.debug)
     this.fileManager = new FileManager(this.config)
-    this.blockProcessor = new BlockProcessor(this.fileManager)
     this.pageContentService = new PageContentService(
       this.client,
-      this.blockProcessor
+      this.fileManager
     )
     this.databaseService = new DatabaseService(this.client, this.fileManager)
   }
@@ -110,14 +107,6 @@ export class NotionCMS {
   async getPageContentRaw(pageId: string, options: ContentOptions = {}) {
     const recursive = options.recursive ?? true
     return this.pageContentService.getPageContentRaw(pageId, recursive)
-  }
-
-  /** @deprecated Use getPageContentSimple instead. This alias will be removed in the next major release. */
-  async getPageContent(
-    pageId: string,
-    options: ContentOptions = {}
-  ): Promise<ContentBlockRaw[]> {
-    return this.pageContentService.getPageContentRaw(pageId, options)
   }
 }
 

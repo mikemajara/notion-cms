@@ -18,6 +18,16 @@ The Simplified API transforms Notion's complex property types into clean JavaScr
 ## Basic Usage
 
 ```typescript
+import {
+  NotionCMS,
+  convertRecordToSimple,
+  convertRecords,
+  convertBlocksToSimple,
+  convertBlocksToAdvanced
+} from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 const { results } = await cms.getDatabase("your-database-id")
 
 // Receive enriched raw records
@@ -54,6 +64,10 @@ console.log(simplePost.Published) // true
 ### Blog/CMS Content
 
 ```typescript
+import { NotionCMS, convertRecords } from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 // Fetch published blog posts
 const { results: rawPosts } = await cms.getDatabase("blog-database-id")
 const posts = await convertRecords(rawPosts, "simple")
@@ -68,6 +82,10 @@ posts.forEach((post) => {
 ### Product Catalog
 
 ```typescript
+import { NotionCMS, convertRecords } from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 // Get product information
 const { results: rawProducts } = await cms.getDatabase("products-database-id")
 const products = await convertRecords(rawProducts, "simple")
@@ -82,7 +100,10 @@ products.forEach((product) => {
 ### Event Listings
 
 ```typescript
-// Get upcoming events
+import { NotionCMS, convertRecords } from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 const { results: rawEvents } = await cms.getDatabase("events-database-id")
 const events = await convertRecords(rawEvents, "simple")
 
@@ -96,6 +117,15 @@ events.forEach((event) => {
 ## Working with Dates
 
 ```typescript
+import {
+  NotionCMS,
+  convertRecordToSimple,
+  convertBlocksToSimple,
+  convertBlocksToAdvanced
+} from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 const post = results[0]
 
 // Dates are converted to JavaScript Date objects
@@ -113,6 +143,15 @@ if (post.PublishDate) {
 ## Working with Arrays
 
 ```typescript
+import {
+  NotionCMS,
+  convertRecordToSimple,
+  convertBlocksToSimple,
+  convertBlocksToAdvanced
+} from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 const post = results[0]
 
 // Multi-select properties become string arrays
@@ -133,6 +172,15 @@ console.log("Authors:", post.Authors.join(" & "))
 Rich text properties are converted to Markdown strings:
 
 ```typescript
+import {
+  NotionCMS,
+  convertRecordToSimple,
+  convertBlocksToSimple,
+  convertBlocksToAdvanced
+} from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 const post = results[0]
 
 // Rich text becomes Markdown
@@ -140,13 +188,23 @@ console.log(post.Description)
 // Output: "This is **bold** and *italic* text with a [link](https://example.com)"
 
 // You can convert to HTML later if needed
-const blocks = await cms.getPageContent(post.id)
+const { results: rawBlocks } = await cms.getPageContentRaw(post.id)
+const blocks = await cms.convertBlocksToSimple(rawBlocks)
 const html = cms.blocksToHtml(blocks)
 ```
 
 ## Error Handling
 
 ```typescript
+import {
+  NotionCMS,
+  convertRecordToSimple,
+  convertBlocksToSimple,
+  convertBlocksToAdvanced
+} from "@mikemajara/notion-cms"
+
+const cms = new NotionCMS("your-notion-api-key")
+
 try {
   const { results } = await cms.getDatabase("database-id")
 
