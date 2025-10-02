@@ -20,7 +20,6 @@ import { NotionCMSConfig, mergeConfig } from "./config"
 import { FileManager } from "./file-processor/file-manager"
 import { PageContentService } from "./content/page-content-service"
 import { DatabaseService } from "./database/database-service"
-import type { RecordGetOptions } from "./database/database-service"
 import { debug } from "./utils/debug"
 
 export interface DatabaseRegistry {
@@ -100,8 +99,8 @@ export class NotionCMS {
     return this.databaseService.query<T, M>(databaseId, fieldMetadata, options)
   }
 
-  async getRecordRaw(pageId: string, options: RecordGetOptions = {}) {
-    return this.databaseService.getRecordRaw(pageId, options)
+  async getRecordRaw(pageId: string) {
+    return this.databaseService.getRecordRaw(pageId)
   }
 
   async getPageContentRaw(pageId: string, options: ContentOptions = {}) {

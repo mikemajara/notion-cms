@@ -20,9 +20,6 @@ export interface RecordOptions {
   recordType?: DatabaseRecordType
 }
 
-// Common options for explicit record getters across all layers
-export interface RecordGetOptions {}
-
 type FilesProperty = Extract<
   PageObjectResponse["properties"][string],
   { type: "files" }
@@ -105,10 +102,7 @@ export class DatabaseService {
     return this.getRecordRaw(pageId)
   }
 
-  async getRecordRaw(
-    pageId: string,
-    _options: RecordGetOptions = {}
-  ): Promise<PageObjectResponse> {
+  async getRecordRaw(pageId: string): Promise<PageObjectResponse> {
     const page = (await this.client.pages.retrieve({
       page_id: pageId
     })) as PageObjectResponse
