@@ -23,34 +23,6 @@ export class PageContentService {
     return blocks
   }
 
-  private async getBlocks(blockId: string): Promise<SimpleBlock[]> {
-    let allBlocks: SimpleBlock[] = []
-    let hasMore = true
-    let startCursor: string | undefined = undefined
-
-    while (hasMore) {
-      const response = await this.client.blocks.children.list({
-        block_id: blockId,
-        start_cursor: startCursor
-      })
-
-      const blocks = response.results as BlockObjectResponse[]
-      const rawBlocks = blocks as unknown as ContentBlockRaw[]
-
-      await Promise.all(rawBlocks.map((block) => this.enrichBlockFiles(block)))
-
-      const simpleBlocks = await convertBlocksToSimple(rawBlocks, {
-        fileManager: this.fileManager
-      })
-
-      allBlocks = [...allBlocks, ...simpleBlocks]
-      hasMore = response.has_more
-      startCursor = response.next_cursor || undefined
-    }
-
-    return allBlocks
-  }
-
   private async getBlocksRaw(blockId: string): Promise<ContentBlockRaw[]> {
     let allBlocks: ContentBlockRaw[] = []
     let hasMore = true
