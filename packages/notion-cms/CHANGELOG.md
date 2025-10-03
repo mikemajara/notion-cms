@@ -6,6 +6,12 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+## [0.2.3] - 2025-10-03
+
+### Fixed
+
+- Fix error on undefined properties generating types
+
 ## [0.2.2] - 2025-10-03
 
 ### Fixed
