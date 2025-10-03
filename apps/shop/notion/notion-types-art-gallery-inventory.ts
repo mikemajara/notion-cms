@@ -4,8 +4,10 @@
  * v0.1.3
  * Generated for database: Art Gallery Inventory
  */
-import { DatabaseRecord, NotionCMS, QueryBuilder, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
+import { DatabaseRecord, NotionCMS, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+
+export { NotionCMS } from "@mikemajara/notion-cms";
 export const RecordArtGalleryInventoryFieldTypes = {
   "id": { type: "unique_id" },
   "Artist": { type: "rich_text" },

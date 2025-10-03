@@ -1,14 +1,14 @@
-import Link from "next/link";
-import { Store, Home, LayoutDashboard, Globe } from "lucide-react";
+import Link from "next/link"
+import { Store, Home, LayoutDashboard, Globe } from "lucide-react"
 
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils";
+  navigationMenuTriggerStyle
+} from "@/components/ui/navigation-menu"
+import { cn } from "@/lib/utils"
 // import { ThemeSelector } from "./theme-selector";
 // import { ModeToggle } from "./mode-toggle";
 
@@ -17,23 +17,23 @@ const items = [
   {
     title: "Home",
     url: "/",
-    icon: Home,
-  },
-  {
-    title: "Direct",
-    url: "/direct",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Local",
-    url: "/cache/local",
-    icon: Store,
-  },
-  {
-    title: "Remote",
-    url: "/cache/remote",
-    icon: Globe,
-  },
+    icon: Home
+  }
+  // {
+  //   title: "Direct",
+  //   url: "/direct",
+  //   icon: LayoutDashboard,
+  // },
+  // {
+  //   title: "Local",
+  //   url: "/cache/local",
+  //   icon: Store,
+  // },
+  // {
+  //   title: "Remote",
+  //   url: "/cache/remote",
+  //   icon: Globe,
+  // },
   // {
   //   title: "Blog",
   //   url: "/blog",
@@ -49,7 +49,7 @@ const items = [
   //   url: "#",
   //   icon: Settings,
   // },
-];
+]
 
 export function SiteNavbar() {
   return (
@@ -82,5 +82,5 @@ export function SiteNavbar() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -39,7 +39,7 @@ export function StrategyIndicator() {
             className="gap-2 border shadow-lg backdrop-blur-sm cursor-pointer bg-background/95"
           >
             <Info className="w-3 h-3" />
-            <span className="px-2 py-0">{currentConfig.badge}</span>
+            <span className="px-2 py-0">{currentConfig?.badge}</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="p-3 w-64" align="end">

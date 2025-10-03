@@ -1,8 +1,6 @@
 import { ProductGrid } from "@/components/product-grid"
 import { StrategyIndicator } from "@/components/strategy-indicator"
-import { NotionCMS } from "@mikemajara/notion-cms"
-// Import to ensure prototype extensions are executed
-import "@/notion/notion-types-art-gallery-inventory"
+import { NotionCMS } from "@/notion"
 
 export default async function Home() {
   const cms = new NotionCMS(process.env.NOTION_API_KEY!, {
@@ -11,7 +9,7 @@ export default async function Home() {
     }
   })
   const artworks = await cms
-    .query("artGalleryInventory")
+    .query("artGalleryInventory", { recordType: "simple" })
     .filter("Published", "equals", true)
     .sort("Date Acquired", "descending")
     .all()
@@ -26,7 +24,7 @@ export default async function Home() {
         </p>
       </div>
 
-      <ProductGrid artworks={artworks} strategy="direct" className="mb-12" />
+      <ProductGrid artworks={artworks} strategy="local" className="mb-12" />
     </div>
   )
 }

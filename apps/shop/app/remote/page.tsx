@@ -1,8 +1,6 @@
-import { ProductGrid } from "@/components/product-grid";
-import { StrategyIndicator } from "@/components/strategy-indicator";
-import { NotionCMS } from "@mikemajara/notion-cms";
-// Import to ensure prototype extensions are executed
-import "@/notion/notion-types-art-gallery-inventory";
+import { ProductGrid } from "@/components/product-grid"
+import { StrategyIndicator } from "@/components/strategy-indicator"
+import { NotionCMS } from "@mikemajara/notion-cms"
 
 export default async function Home() {
   const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!, {
@@ -12,15 +10,15 @@ export default async function Home() {
         endpoint: process.env.AWS_ENDPOINT_URL_S3!,
         bucket: process.env.AWS_BUCKET!,
         accessKey: process.env.AWS_ACCESS_KEY_ID!,
-        secretKey: process.env.AWS_SECRET_ACCESS_KEY!,
-      },
-    },
-  });
+        secretKey: process.env.AWS_SECRET_ACCESS_KEY!
+      }
+    }
+  })
   const artworks = await notionCMS
     .query("artGalleryInventory")
     .filter("Published", "equals", true)
     .sort("Date Acquired", "descending")
-    .all();
+    .all()
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -32,11 +30,7 @@ export default async function Home() {
         </p>
       </div>
 
-      <ProductGrid
-        artworks={artworks}
-        strategy="cache-remote"
-        className="mb-12"
-      />
+      <ProductGrid artworks={artworks} strategy="remote" className="mb-12" />
     </div>
-  );
+  )
 }

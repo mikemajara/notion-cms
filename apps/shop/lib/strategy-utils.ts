@@ -30,8 +30,6 @@ export const STRATEGY_CONFIG: Record<FileStrategy, StrategyConfig> = {
 export function detectStrategyFromPath(pathname: string): FileStrategy {
   // Remove leading slash and split by '/'
   const segments = pathname.replace(/^\//, "").split("/")
-  console.log(`segments: ${segments}`)
-  // Check for cache strategies
 
   return segments[0] as FileStrategy
 }
