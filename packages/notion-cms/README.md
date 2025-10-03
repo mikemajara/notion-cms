@@ -21,17 +21,17 @@ pnpm add @mikemajara/notion-cms
 ```
 
 ```typescript
-import { NotionCMS, convertRecordToSimple } from "@mikemajara/notion-cms";
+import { NotionCMS, convertRecordToSimple } from "@mikemajara/notion-cms"
 
-const notionCms = new NotionCMS("your-notion-api-key");
+const notionCms = new NotionCMS("your-notion-api-key")
 
 // Fetch raw records once and convert on demand
-const { results: rawRecords } = await notionCms.getDatabase("your-database-id");
+const { results: rawRecords } = await notionCms.getDatabase("your-database-id")
 
 // Convert to the Simple layer using the helper when you need it
-const simpleRecord = await convertRecordToSimple(rawRecords[0]);
-console.log(simpleRecord.Title); // "My Blog Post"
-console.log(simpleRecord.Tags); // ["react", "typescript"]
+const simpleRecord = await convertRecordToSimple(rawRecords[0])
+console.log(simpleRecord.Title) // "My Blog Post"
+console.log(simpleRecord.Tags) // ["react", "typescript"]
 
 // Query Builder - type-safe filtering and sorting
 const posts = await notionCms
@@ -39,7 +39,7 @@ const posts = await notionCms
   .where("Status")
   .equals("Published")
   .sort("Created", "descending")
-  .execute();
+  .execute()
 ```
 
 ## Documentation
@@ -57,20 +57,20 @@ Get started quickly with our comprehensive guides:
 Access your data at the level of detail you need:
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId);
-const record = results[0];
+const { results } = await notionCms.getDatabase(databaseId)
+const record = results[0]
 
 // 🎯 Simple API - Clean JavaScript types
-record.Title; // "My Blog Post"
-record.Tags; // ["react", "typescript"]
-record.PublishDate; // Date object
+record.Title // "My Blog Post"
+record.Tags // ["react", "typescript"]
+record.PublishDate // Date object
 
 // 🔍 Advanced API - Rich metadata preserved
-record.advanced.Tags;
+record.advanced.Tags
 // [{ id: "tag1", name: "react", color: "blue" }, ...]
 
 // ⚡ Raw API - Complete Notion response
-record.raw.properties.Title;
+record.raw.properties.Title
 // Full Notion API response for debugging/advanced use
 ```
 
@@ -83,7 +83,7 @@ npx notion-cms generate --database-id your-database-id
 ```
 
 ```typescript
-import { BlogPostRecord } from "./generated-types";
+import { BlogPostRecord } from "./generated-types"
 
 // Fully typed database operations
 const posts = await notionCms
@@ -91,7 +91,7 @@ const posts = await notionCms
   .where("Status")
   .equals("Published")
   .sort("PublishDate", "descending")
-  .execute();
+  .execute()
 ```
 
 ## License

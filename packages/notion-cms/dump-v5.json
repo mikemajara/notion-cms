@@ -1,0 +1,12 @@
+Using Notion version: 2025-09-03
+Output directory: /Users/miguel/projects/notion-cms/packages/notion-cms/tmp/notion-cms-test
+Generated files: [ 'index.ts', 'notion-types-registry.ts' ]
+
+=== Preview of generated file ===
+// Auto-generated index file for Notion CMS types
+
+// Export database-specific types
+import './notion-types-registry';
+export * from './notion-types-registry';
+
+Type generation finished successfully.

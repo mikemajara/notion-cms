@@ -1,0 +1,64 @@
+
+=== Full database response ===
+{
+  "object": "database",
+  "id": "27e2a789-c1fc-80d3-8286-e081b2b4aefc",
+  "title": [
+    {
+      "type": "text",
+      "text": {
+        "content": "Registry",
+        "link": null
+      },
+      "annotations": {
+        "bold": false,
+        "italic": false,
+        "strikethrough": false,
+        "underline": false,
+        "code": false,
+        "color": "default"
+      },
+      "plain_text": "Registry",
+      "href": null
+    }
+  ],
+  "description": [],
+  "parent": {
+    "type": "workspace",
+    "workspace": true
+  },
+  "is_inline": false,
+  "in_trash": false,
+  "is_locked": false,
+  "created_time": "2025-09-30T11:02:36.318+00:00",
+  "last_edited_time": "2025-09-30T11:14:04.262+00:00",
+  "data_sources": [
+    {
+      "id": "27e2a789-c1fc-80f3-af9a-000beb62ff91",
+      "name": "Registry"
+    }
+  ],
+  "icon": null,
+  "cover": null,
+  "url": "https://www.notion.so/27e2a789c1fc80d38286e081b2b4aefc",
+  "public_url": null,
+  "request_id": "38d22d6b-5ee9-4cd3-aa3f-c7be5d02ee64"
+}
+
+=== Extracted keys ===
+{
+  "hasProperties": false,
+  "propertyKeys": null,
+  "dataSources": [
+    {
+      "id": "27e2a789-c1fc-80f3-af9a-000beb62ff91",
+      "name": "Registry"
+    }
+  ],
+  "parent": {
+    "type": "workspace",
+    "workspace": true
+  },
+  "object": "database",
+  "id": "27e2a789-c1fc-80d3-8286-e081b2b4aefc"
+}

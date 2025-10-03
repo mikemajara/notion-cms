@@ -66,19 +66,28 @@ export default async function Page({
         <div className="px-6 py-6 space-y-2 max-w-lg border-r lg:max-w-2xl">
           <Markdown>{content}</Markdown>
           <div className="flex flex-row justify-between items-center mt-10">
-            <Link
-              href={`https://mikemajara.notion.site/${page.id.replaceAll(
-                "-",
-                ""
-              )}`}
-              className="flex gap-2 items-center hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Icons.notion className="w-4 h-4" />
-              See in Notion
-              <ArrowUpRightIcon className="w-4 h-4" />
-            </Link>
+            <div className="flex gap-2 items-center">
+              <Link
+                href={`https://mikemajara.notion.site/${page.id.replaceAll(
+                  "-",
+                  ""
+                )}`}
+                className="flex gap-2 items-center hover:underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Icons.notion className="w-4 h-4" />
+                {/* See in Notion */}
+                <ArrowUpRightIcon className="w-4 h-4" />
+              </Link>
+              <Link
+                href={`/docs/${page.slug}/llms.txt`}
+                className="flex gap-2 items-center hover:underline"
+              >
+                LLMs.txt
+                <ArrowUpRightIcon className="w-4 h-4" />
+              </Link>
+            </div>
             <div>
               <p>
                 Last updated:{" "}
@@ -87,7 +96,7 @@ export default async function Page({
             </div>
           </div>
         </div>
-        <div className="hidden flex-col gap-2 py-6 text-sm lg:flex">
+        <div className="hidden flex-col gap-2 py-14 text-sm lg:flex">
           {getPageIndex(content)?.map((heading, idx) => (
             <Link
               key={idx}

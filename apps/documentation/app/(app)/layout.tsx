@@ -109,9 +109,9 @@ export default async function RootLayout({
           geistMono.variable
         )}
       >
-        <div className="flex flex-col sm:flex-row">
+        <div className="container flex justify-center mx-auto">
           <Navbar pages={pages} />
-          <main className="relative flex-1 min-h-screen">
+          <main className="relative min-h-screen">
             <ViewTransition name="crossfade">
               <article className="">{children}</article>
             </ViewTransition>
