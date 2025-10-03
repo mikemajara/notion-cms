@@ -37,6 +37,7 @@ export type NotionFieldType =
   | "status"
   | "unique_id"
   | "verification"
+  | "button"
   | "unknown"
 
 export type OperatorMap = {
@@ -488,6 +489,8 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
         return "status"
       case "unique_id":
         return "unique_id"
+      case "button":
+        return "button"
       default:
         return "rich_text"
     }

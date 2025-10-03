@@ -17,7 +17,7 @@ export class ContentProcessor {
     recursive: boolean = true,
     mediaUrlResolver?: (block: ContentBlockRaw, file: any) => Promise<string>
   ) {
-    const raw = await this.pageContent.getPageContentRaw(pageId, recursive)
+    const raw = await this.pageContent.getPageContent(pageId, recursive)
     return blocksToAdvanced(raw, { mediaUrlResolver })
   }
 }

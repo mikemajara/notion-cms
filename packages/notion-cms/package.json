@@ -1,6 +1,6 @@
 {
   "name": "@mikemajara/notion-cms",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "A TypeScript library for using Notion as a headless CMS",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -34,7 +34,7 @@
     "lint": "eslint src --ext .ts",
     "check-types": "tsc --noEmit",
     "test": "jest",
-    "prepare": "pnpm run build:prod",
+    "prepare": "tsup --minify",
     "postbuild": "chmod +x dist/cli.js",
     "clean": "rm -rf dist .tsbuildinfo",
     "analyze": "tsup --analyze",
