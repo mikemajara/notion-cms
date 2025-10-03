@@ -1,6 +1,6 @@
 {
   "name": "@mikemajara/notion-cms",
-  "version": "0.2.5",
+  "version": "0.2.6-beta.0",
   "description": "A TypeScript library for using Notion as a headless CMS",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

@@ -11,6 +11,7 @@ const program = new Command()
 program
   .name("notion-cms " + packageJson.version)
   .description("CLI for generating TypeScript types from Notion databases")
+  .option("-v, --version", "Show version")
 
 program
   .command("generate")
