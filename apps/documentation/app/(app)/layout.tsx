@@ -97,7 +97,7 @@ export default async function RootLayout({
     .query("notionCMS", { recordType: "simple" })
     .sort("Order", "ascending")
     .all()
-  console.log(`pages`, pages)
+
   return (
     <html lang="en" className="overflow-x-hidden touch-manipulation">
       <body

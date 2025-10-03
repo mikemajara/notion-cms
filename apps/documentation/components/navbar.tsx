@@ -3,7 +3,7 @@
 import cn from "clsx"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { RecordNotionCMS } from "@/notion"
+import { RecordNotionCMS } from "@/lib/notion"
 import Image from "next/image"
 import {
   Sheet,
@@ -46,9 +46,9 @@ function Item(props: React.ComponentProps<typeof Link>) {
 const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
   return (
     <>
-      <div className="flex gap-2 justify-end items-end py-4">
+      <Link className="flex gap-2 justify-end items-end py-4" href={"/"}>
         <Image src="/logo.svg" alt="logo" width={100} height={100} />
-      </div>
+      </Link>
       <ul className="flex flex-col gap-1 mb-6 text-right lowercase hover:font-regular">
         {pages.map((page) => (
           <Item

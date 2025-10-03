@@ -36,37 +36,21 @@ const getPageIndex = (content: string) => {
   }))
 }
 
-// Cache the page data with tag-based revalidation
-const getPageData = (slug: string) =>
-  unstable_cache(
+export default async function Page({
+  params
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const slug = (await params).slug
+  const fetchContent = unstable_cache(
     async () => {
-      const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!, {
-        files: {
-          strategy: "local"
-        },
-        debug: {
-          enabled: process.env.DEBUG === "true"
-        }
-      })
-      const page = await notionCMS
+      const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
+      const page = (await notionCMS
         .query("notionCMS", { recordType: "simple" })
         .filter("slug", "equals", slug)
-        .single()
-
-      // Fetch page content
-      let content = ""
-      let hasContent = false
-
-      try {
-        const blocks = await notionCMS.getPageContent(page!.id)
-        content = blocksToMarkdown(blocks)
-        hasContent = blocks.length > 0 && content.trim().length > 0
-      } catch (contentError) {
-        console.warn("Could not fetch page content:", contentError)
-        // Don't fail the whole request if content fetching fails
-      }
-
-      return { page, content, hasContent }
+        .single()!) as RecordNotionCMS
+      const content = blocksToMarkdown(await notionCMS.getPageContent(page.id))
+      return { content, page }
     },
     [`docs-page-${slug}`],
     {
@@ -74,14 +58,7 @@ const getPageData = (slug: string) =>
       revalidate: 3600
     }
   )
-
-export default async function Page({
-  params
-}: {
-  params: Promise<{ slug: string }>
-}) {
-  const slug = (await params).slug
-  const { content, page } = await getPageData(slug)()
+  const { content, page } = await fetchContent()
 
   return (
     <div className="py-8 w-full">

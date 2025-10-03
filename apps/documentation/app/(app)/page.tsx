@@ -9,7 +9,7 @@ export const metadata = {
 // Create page component for individual documentation items
 function DocumentationItem({ page }: { page: RecordNotionCMS }) {
   const slug = page.slug
-  console.log(`page`, page)
+
   return (
     <div className="block group">
       <Link
@@ -49,9 +49,7 @@ function DocumentationItem({ page }: { page: RecordNotionCMS }) {
 }
 
 // Helper function to build hierarchical structure
-export function buildDocumentationTree(
-  pages: RecordNotionCMS[]
-): RecordNotionCMS[] {
+function buildDocumentationTree(pages: RecordNotionCMS[]): RecordNotionCMS[] {
   // For now, just return sorted by order
   // Later we can implement hierarchical grouping using Parent item and Sub-item relations
   return pages.sort((a, b) => (a.Order || 0) - (b.Order || 0))
@@ -182,7 +180,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <section className="p-6 rounded-lg bg-primary-50">
+        {/* <section className="p-6 rounded-lg bg-primary-50">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-primary-900">
               Blog & Articles
@@ -204,7 +202,7 @@ export default async function HomePage() {
           >
             Explore Blog
           </Link>
-        </section>
+        </section> */}
       </div>
     </div>
   )
