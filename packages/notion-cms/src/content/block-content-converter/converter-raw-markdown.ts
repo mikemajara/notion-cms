@@ -310,13 +310,14 @@ function renderBlocks(
       const group = node as any
       const currentOrderedLevel =
         group.listType === "numbered_list_item" ? orderedChainDepth + 1 : 0
-      out += renderListGroup(
-        group.items,
-        group.listType,
-        depth,
-        options,
-        currentOrderedLevel
-      )
+      out +=
+        renderListGroup(
+          group.items,
+          group.listType,
+          depth,
+          options,
+          currentOrderedLevel
+        ) + "\n\n"
       continue
     }
     out += renderBlock(node as ContentBlockRaw, depth, options) + "\n\n"
