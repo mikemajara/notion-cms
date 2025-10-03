@@ -6,6 +6,10 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+### Fixed
+
+- Include `ts-morph` in production dependencies so the CLI works when invoked via `pnpm dlx`.
+
 ## [0.2.3] - 2025-10-03
 
 ### Fixed

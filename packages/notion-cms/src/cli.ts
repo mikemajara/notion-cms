@@ -4,11 +4,12 @@ import { Command } from "commander"
 import { generateTypes, generateMultipleDatabaseTypes } from "./generator"
 import * as path from "path"
 import * as fs from "fs"
+import packageJson from "../package.json"
 
 const program = new Command()
 
 program
-  .name("notion-cms")
+  .name("notion-cms " + packageJson.version)
   .description("CLI for generating TypeScript types from Notion databases")
 
 program
@@ -20,9 +21,15 @@ program
     "Multiple Notion database IDs separated by commas"
   )
   .option("-o, --output <path>", "Output path", "./notion")
+  .option("-v, --version", "Show version")
   .requiredOption("-t, --token <token>", "Notion API token")
   .action(async (options) => {
     try {
+      if (options.version) {
+        console.log(packageJson.version)
+        process.exit(0)
+      }
+
       if (!options.database && !options.databases) {
         console.error(
           "Error: Either --database or --databases must be provided"
