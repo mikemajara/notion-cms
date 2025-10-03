@@ -39,7 +39,7 @@ export const components: Record<string, FC<any>> = {
       />
     )
   },
-  h3: (node, props) => (
+  h3: ({ node, ...props }) => (
     <h3
       className="pt-8 mb-6 text-lg font-regular text-primary text-balance"
       id={props.children?.replaceAll(" ", "-")}
