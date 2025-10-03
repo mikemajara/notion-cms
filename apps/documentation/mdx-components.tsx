@@ -6,7 +6,7 @@ import Image from "next/image"
 import { LinkIcon } from "lucide-react"
 import {
   transformerNotationDiff,
-  transformerNotationHighlight,
+  transformerNotationHighlight
 } from "@shikijs/transformers"
 
 // @ts-ignore
@@ -17,7 +17,7 @@ import CopyButton from "@/components/copy-button"
 
 export const components: Record<string, FC<any>> = {
   h1: (props) => (
-    <div className="flex items-center gap-2 pt-2 mb-6">
+    <div className="flex gap-2 items-center pt-2 mb-6">
       <h1
         className="text-2xl font-bold text-primary text-balance"
         id={props.children.replaceAll(" ", "-")}
@@ -29,7 +29,7 @@ export const components: Record<string, FC<any>> = {
     </div>
   ),
   h2: (props) => (
-    <div className="flex items-center gap-2 mb-6 pt-7">
+    <div className="flex gap-2 items-center pt-7 mb-6">
       <h2
         className="text-xl font-semibold text-primary text-balance"
         id={props.children.replaceAll(" ", "-")}
@@ -41,7 +41,7 @@ export const components: Record<string, FC<any>> = {
     </div>
   ),
   h3: (props) => (
-    <div className="flex items-center gap-2 mb-6 pt-7">
+    <div className="flex gap-2 items-center pt-7 mb-6">
       <h3
         className="text-lg font-regular text-primary text-balance"
         id={props.children.replaceAll(" ", "-")}
@@ -54,13 +54,13 @@ export const components: Record<string, FC<any>> = {
   ),
   ul: (props) => (
     <ul
-      className="pl-5 list-disc list-outside mt-2 marker:text-primary"
+      className="pl-5 mt-2 list-disc list-outside marker:text-primary"
       {...props}
     />
   ),
   ol: (props) => (
     <ol
-      className="pl-5 list-decimal list-outside mt-2 marker:text-primary"
+      className="pl-5 mt-2 list-decimal list-outside marker:text-primary"
       {...props}
     />
   ),
@@ -74,7 +74,7 @@ export const components: Record<string, FC<any>> = {
         {...(href?.startsWith("https://")
           ? {
               target: "_blank",
-              rel: "noopener noreferrer",
+              rel: "noopener noreferrer"
             }
           : {})}
         {...props}
@@ -92,7 +92,7 @@ export const components: Record<string, FC<any>> = {
   pre: (props) => (
     <div className="relative w-full">
       <pre
-        className="w-0 min-w-full bg-transparent border rounded-md border-secondary p-4 px-8 mt-7 py-6 overflow-x-scroll"
+        className="overflow-x-scroll p-4 px-8 py-6 my-8 w-0 min-w-full bg-transparent rounded-md border border-secondary"
         {...props}
       />
     </div>
@@ -119,22 +119,22 @@ export const components: Record<string, FC<any>> = {
             },
             postprocess(html) {
               return html.replace(/^<code>|<\/code>$/g, "")
-            },
+            }
           },
           transformerNotationHighlight(),
-          transformerNotationDiff(),
-        ],
+          transformerNotationDiff()
+        ]
       })
 
       return (
         <>
           <code
-            className="text-xs sm:text-sm pl-2"
+            className="pl-2 text-xs sm:text-sm"
             dangerouslySetInnerHTML={{ __html: code }}
           />
           <CopyButton
             textToCopy={props.children}
-            className="absolute w-3 h-3 top-2 right-2"
+            className="absolute top-2 right-2 w-3 h-3"
           />
         </>
       )
@@ -143,9 +143,9 @@ export const components: Record<string, FC<any>> = {
     return <code className="inline" {...props} />
   },
   Image,
-  hr: (props) => <hr className="w-24 my-14 border-secondary" {...props} />,
+  hr: (props) => <hr className="my-14 w-24 border-secondary" {...props} />,
   table: (props) => (
-    <div className="overflow-x-auto my-6 w-0 min-w-full border rounded-md">
+    <div className="overflow-x-auto my-6 w-0 min-w-full rounded-md border">
       <table {...props} />
     </div>
   ),
@@ -153,13 +153,13 @@ export const components: Record<string, FC<any>> = {
   tbody: (props) => <tbody {...props} />,
   tr: (props) => (
     <tr
-      className="border-b border-secondary hover:bg-muted/30 transition-colors"
+      className="border-b transition-colors border-secondary hover:bg-muted/30"
       {...props}
     />
   ),
   th: (props) => (
     <th
-      className="p-3 text-left font-semibold text-primary border-r border-secondary last:border-r-0"
+      className="p-3 font-semibold text-left border-r text-primary border-secondary last:border-r-0"
       {...props}
     />
   ),
@@ -171,12 +171,12 @@ export const components: Record<string, FC<any>> = {
   ),
   BlockSideTitle,
   InlineMath,
-  BlockMath,
+  BlockMath
 }
 
 export function useMDXComponents(inherited: MDXComponents): MDXComponents {
   return {
     ...inherited,
-    ...components,
+    ...components
   }
 }

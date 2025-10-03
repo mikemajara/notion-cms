@@ -1,37 +1,36 @@
-import { getAllDocPages, buildDocumentationTree } from "@/lib/notion"
-import { RecordNotionCMS } from "@/notion"
+import { NotionCMS, RecordNotionCMS } from "@/lib/notion"
 import Link from "next/link"
 
 export const metadata = {
   title: "Notion CMS Documentation",
-  description: "Comprehensive documentation for Notion CMS library",
+  description: "Comprehensive documentation for Notion CMS library"
 }
 
 // Create page component for individual documentation items
 function DocumentationItem({ page }: { page: RecordNotionCMS }) {
   const slug = page.slug
-
+  console.log(`page`, page)
   return (
     <div className="block group">
       <Link
         href={`/docs/${slug}`}
-        className="flex items-center justify-between p-4 transition-all duration-200"
+        className="flex justify-between items-center p-4 transition-all duration-200"
       >
         <div className="flex items-center space-x-3">
-          <div className="flex items-center justify-center flex-shrink-0 w-8 h-8">
+          <div className="flex flex-shrink-0 justify-center items-center w-8 h-8">
             <span className="text-sm font-semibold text-primary">
               {page.Order || "•"}
             </span>
           </div>
           <div>
-            <h3 className="font-light text-primary transition-colors group-hover:text-primary group-hover:font-medium">
+            <h3 className="font-light transition-colors text-primary group-hover:text-primary group-hover:font-medium">
               {page.Name}
             </h3>
           </div>
         </div>
         <div className="flex-shrink-0">
           <svg
-            className="w-5 h-5 text-primary transition-colors group-hover:text-primary"
+            className="w-5 h-5 transition-colors text-primary group-hover:text-primary"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -49,8 +48,20 @@ function DocumentationItem({ page }: { page: RecordNotionCMS }) {
   )
 }
 
+// Helper function to build hierarchical structure
+export function buildDocumentationTree(
+  pages: RecordNotionCMS[]
+): RecordNotionCMS[] {
+  // For now, just return sorted by order
+  // Later we can implement hierarchical grouping using Parent item and Sub-item relations
+  return pages.sort((a, b) => (a.Order || 0) - (b.Order || 0))
+}
+
 export default async function HomePage() {
-  const pages = await getAllDocPages()
+  const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
+  const pages = await notionCMS
+    .query("notionCMS", { recordType: "simple" })
+    .all()
   const sortedPages = buildDocumentationTree(pages)
 
   return (
@@ -68,7 +79,7 @@ export default async function HomePage() {
 
       <div className="space-y-8">
         <section>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-semibold text-primary">
               Documentation Pages
             </h2>
@@ -85,7 +96,7 @@ export default async function HomePage() {
             </div>
           ) : (
             <div className="py-12 text-center rounded-lg bg-secondary">
-              <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-secondary rounded-lg">
+              <div className="flex justify-center items-center mx-auto mb-4 w-12 h-12 rounded-lg bg-secondary">
                 <svg
                   className="w-6 h-6 text-secondary"
                   fill="none"
@@ -122,7 +133,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap gap-4">
             <div className="flex items-center text-sm text-secondary-600">
               <svg
-                className="w-4 h-4 mr-2"
+                className="mr-2 w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -138,7 +149,7 @@ export default async function HomePage() {
             </div>
             <div className="flex items-center text-sm text-secondary-600">
               <svg
-                className="w-4 h-4 mr-2"
+                className="mr-2 w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -154,7 +165,7 @@ export default async function HomePage() {
             </div>
             <div className="flex items-center text-sm text-secondary-600">
               <svg
-                className="w-4 h-4 mr-2"
+                className="mr-2 w-4 h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -172,24 +183,24 @@ export default async function HomePage() {
         </section>
 
         <section className="p-6 rounded-lg bg-primary-50">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-primary-900">
               Blog & Articles
             </h3>
             <Link
               href="/blog"
-              className="text-sm text-primary-600 hover:text-primary-800 transition-colors"
+              className="text-sm transition-colors text-primary-600 hover:text-primary-800"
             >
               View all →
             </Link>
           </div>
-          <p className="text-primary-700 mb-4">
+          <p className="mb-4 text-primary-700">
             Read our latest articles, guides, and insights about Notion CMS
             development.
           </p>
           <Link
             href="/blog"
-            className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center px-4 py-2 rounded-md transition-colors bg-primary text-primary-foreground hover:bg-primary/90"
           >
             Explore Blog
           </Link>

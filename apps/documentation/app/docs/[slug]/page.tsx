@@ -1,97 +1,92 @@
-import { NotionCMS } from "@mikemajara/notion-cms";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import { unstable_cache } from "next/cache";
-// Import the generated file to register the queryNoCMS method
-import "@/notion/notion-types-notion-cms";
-import { components } from "@/mdx-components";
-import Link from "next/link";
-import { Icons } from "@/components/icons";
-import { ArrowUpRightIcon } from "lucide-react";
-import { RecordNotionCMS } from "@/notion";
-import cn from "clsx";
+import { NotionCMS } from "@/lib/notion"
+import { blocksToMarkdown } from "@mikemajara/notion-cms"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import { unstable_cache } from "next/cache"
+import { components } from "@/mdx-components"
+import Link from "next/link"
+import { Icons } from "@/components/icons"
+import { ArrowUpRightIcon } from "lucide-react"
+import { RecordNotionCMS } from "@/lib/notion"
+import cn from "clsx"
 
 // ISR: Revalidate every hour (3600 seconds)
-export const revalidate = 3600;
+export const revalidate = 3600
 
 export const generateStaticParams = async () => {
-  const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!);
-  const pages = (await notionCMS.queryNotionCMS(
-    process.env.NOTION_CMS_DATABASE_ID!
-  )) as RecordNotionCMS[];
-  return pages.map((page) => ({ slug: page.slug }));
-};
+  const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
+  const pages = await notionCMS
+    .query("notionCMS", { recordType: "simple" })
+    .all()
+  return pages.map((page) => ({ slug: page.slug }))
+}
 
 /**
  * Extracts h1, h2 and h3 headings and builds an index of the page
  * - Doesn't match code blocks
  */
 const getPageIndex = (content: string) => {
-  let contentToParse = content;
-  contentToParse = contentToParse.replace(/```.*?```/gs, "");
-  contentToParse = contentToParse.replace(/`.*?`/gs, "");
-  const headings = contentToParse.match(/^#+\s+(.*)$/gm);
+  let contentToParse = content
+  contentToParse = contentToParse.replace(/```.*?```/gs, "")
+  contentToParse = contentToParse.replace(/`.*?`/gs, "")
+  const headings = contentToParse.match(/^#+\s+(.*)$/gm)
   return headings?.map((heading) => ({
     level: heading.match(/^#+/)?.[0].length,
-    text: heading.replace(/^#+\s+/, ""),
-  }));
-};
+    text: heading.replace(/^#+\s+/, "")
+  }))
+}
 
 // Cache the page data with tag-based revalidation
 const getPageData = (slug: string) =>
   unstable_cache(
     async () => {
       const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!, {
-        debug: {
-          enabled: process.env.DEBUG === "true",
-        },
         files: {
-          strategy: "cache",
-          storage: {
-            type: "local",
-            path: "./public/images",
-          },
+          strategy: "local"
         },
-      });
-      const page = (await notionCMS
-        .queryNotionCMS(process.env.NOTION_CMS_DATABASE_ID!)
+        debug: {
+          enabled: process.env.DEBUG === "true"
+        }
+      })
+      const page = await notionCMS
+        .query("notionCMS", { recordType: "simple" })
         .filter("slug", "equals", slug)
-        .single()) as RecordNotionCMS;
+        .single()
 
       // Fetch page content
-      let content = "";
-      let hasContent = false;
+      let content = ""
+      let hasContent = false
 
       try {
-        const blocks = await notionCMS.getPageContent(page!.id, true);
-        content = notionCMS.blocksToMarkdown(blocks);
-        hasContent = blocks.length > 0 && content.trim().length > 0;
+        const blocks = await notionCMS.getPageContent(page!.id)
+        content = blocksToMarkdown(blocks)
+        hasContent = blocks.length > 0 && content.trim().length > 0
       } catch (contentError) {
-        console.warn("Could not fetch page content:", contentError);
+        console.warn("Could not fetch page content:", contentError)
         // Don't fail the whole request if content fetching fails
       }
 
-      return { page, content, hasContent };
+      return { page, content, hasContent }
     },
     [`docs-page-${slug}`],
     {
       tags: [`docs-${slug}`],
-      revalidate: 3600,
+      revalidate: 3600
     }
-  );
+  )
 
 export default async function Page({
-  params,
+  params
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string }>
 }) {
-  const slug = (await params).slug;
-  const { content, page } = await getPageData(slug)();
+  const slug = (await params).slug
+  const { content, page } = await getPageData(slug)()
 
   return (
-    <div className="w-full py-8">
+    <div className="py-8 w-full">
       <div className="flex flex-row gap-4">
-        <div className="max-w-lg space-y-2 lg:max-w-2xl ">
+        <div className="space-y-2 max-w-lg lg:max-w-2xl">
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
             {content}
           </ReactMarkdown>
@@ -100,7 +95,7 @@ export default async function Page({
               "-",
               ""
             )}`}
-            className="flex items-center gap-2 hover:underline mt-10"
+            className="flex gap-2 items-center mt-10 hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -109,7 +104,7 @@ export default async function Page({
             <ArrowUpRightIcon className="w-4 h-4" />
           </Link>
         </div>
-        <div className="flex-col hidden gap-2 text-sm lg:flex">
+        <div className="hidden flex-col gap-2 text-sm lg:flex">
           {getPageIndex(content)?.map((heading, idx) => (
             <Link
               key={idx}
@@ -123,5 +118,5 @@ export default async function Page({
         </div>
       </div>
     </div>
-  );
+  )
 }

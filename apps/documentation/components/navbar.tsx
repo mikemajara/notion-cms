@@ -1,10 +1,10 @@
-"use client";
+"use client"
 
-import cn from "clsx";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
-import { RecordNotionCMS } from "@/notion";
-import Image from "next/image";
+import cn from "clsx"
+import { usePathname } from "next/navigation"
+import Link from "next/link"
+import { RecordNotionCMS } from "@/notion"
+import Image from "next/image"
 import {
   Sheet,
   SheetClose,
@@ -12,25 +12,25 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
-} from "./ui/sheet";
+  SheetTrigger
+} from "./ui/sheet"
 import {
   Circle,
   CircleDot,
   CircleDotIcon,
   MenuIcon,
-  Square,
-} from "lucide-react";
+  Square
+} from "lucide-react"
 
 function Item(props: React.ComponentProps<typeof Link>) {
-  const pathname = usePathname();
-  const href = props.href;
+  const pathname = usePathname()
+  const href = props.href
 
   if (typeof href !== "string") {
-    throw new Error("`href` must be a string");
+    throw new Error("`href` must be a string")
   }
 
-  const isActive = pathname === href || pathname.startsWith(href + "/");
+  const isActive = pathname === href || pathname.startsWith(href + "/")
 
   return (
     <li>
@@ -40,13 +40,13 @@ function Item(props: React.ComponentProps<typeof Link>) {
         draggable={false}
       />
     </li>
-  );
+  )
 }
 
 const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
   return (
     <>
-      <div className="flex items-end justify-end gap-2 px-2 py-4">
+      <div className="flex gap-2 justify-end items-end py-4">
         <Image src="/logo.svg" alt="logo" width={100} height={100} />
       </div>
       <ul className="flex flex-col gap-1 mb-6 text-right lowercase hover:font-regular">
@@ -54,20 +54,20 @@ const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
           <Item
             key={page.id}
             href={`/docs/${page.slug}`}
-            className="block w-full px-3 py-1 text-right transition-colors"
+            className="block py-1 w-full text-right transition-colors"
           >
             {page.Name}
           </Item>
         ))}
       </ul>
     </>
-  );
-};
+  )
+}
 
 export default function Navbar({ pages }: { pages: RecordNotionCMS[] }) {
   return (
-    <nav className="relative w-auto mr-4 max-w-[150px]">
-      <div className="block sm:hidden absolute top-2 left-2 z-1">
+    <nav className="relative pr-6 w-auto border-r">
+      <div className="block absolute top-2 left-2 sm:hidden z-1">
         <Sheet>
           <SheetTrigger className="hover:cursor-pointer">
             <Square className="w-4 h-4 text-primary" />
@@ -80,9 +80,9 @@ export default function Navbar({ pages }: { pages: RecordNotionCMS[] }) {
           </SheetContent>
         </Sheet>
       </div>
-      <div className="hidden top-10 sticky sm:block">
+      <div className="hidden sticky top-10 sm:block w-[10rem]">
         <Content pages={pages} />
       </div>
     </nav>
-  );
+  )
 }
