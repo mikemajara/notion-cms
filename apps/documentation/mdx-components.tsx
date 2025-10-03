@@ -16,41 +16,35 @@ import { BlockSideTitle } from "@/components/block-sidetitle"
 import CopyButton from "@/components/copy-button"
 
 export const components: Record<string, FC<any>> = {
-  h1: (props) => (
-    <div className="flex gap-2 items-center pt-2 mb-6">
+  h1: ({ node, ...props }) => {
+    console.log(props)
+
+    return (
       <h1
-        className="text-2xl font-bold text-primary text-balance"
+        className="pt-8 mb-6 text-2xl font-bold text-primary text-balance"
         id={props.children.replaceAll(" ", "-")}
         {...props}
       />
-      <Link href={`#${props.children.replaceAll(" ", "-")}`}>
-        <LinkIcon className="w-4 h-4" />
-      </Link>
-    </div>
-  ),
-  h2: (props) => (
-    <div className="flex gap-2 items-center pt-7 mb-6">
+    )
+  },
+  h2: ({ node, ...props }) => {
+    console.log(props)
+    if (props.children === "Footnotes")
+      return <hr className="-mx-6 py-4 w-[calc(100%+3rem)]" />
+    return (
       <h2
-        className="text-xl font-semibold text-primary text-balance"
-        id={props.children.replaceAll(" ", "-")}
+        className="pt-8 mb-6 text-xl font-semibold text-primary text-balance"
+        id={props.children?.replaceAll(" ", "-")}
         {...props}
       />
-      <Link href={`#${props.children.replaceAll(" ", "-")}`}>
-        <LinkIcon className="w-4 h-4" />
-      </Link>
-    </div>
-  ),
-  h3: (props) => (
-    <div className="flex gap-2 items-center pt-7 mb-6">
-      <h3
-        className="text-lg font-regular text-primary text-balance"
-        id={props.children.replaceAll(" ", "-")}
-        {...props}
-      />
-      <Link href={`#${props.children.replaceAll(" ", "-")}`}>
-        <LinkIcon className="w-4 h-4" />
-      </Link>
-    </div>
+    )
+  },
+  h3: (node, props) => (
+    <h3
+      className="pt-8 mb-6 text-lg font-regular text-primary text-balance"
+      id={props.children?.replaceAll(" ", "-")}
+      {...props}
+    />
   ),
   ul: (props) => (
     <ul

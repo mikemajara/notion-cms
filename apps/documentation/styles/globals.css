@@ -207,3 +207,7 @@
 .line.highlighted {
   background-color: var(--color-accent);
 }
+
+.footnotes {
+  @apply text-sm mt-10;
+}

@@ -113,9 +113,7 @@ export default async function RootLayout({
           <Navbar pages={pages} />
           <main className="relative flex-1 min-h-screen">
             <ViewTransition name="crossfade">
-              <article className="px-6 py-6 sm:py-3 md:py-2 sm:px-10 md:px-6">
-                {children}
-              </article>
+              <article className="">{children}</article>
             </ViewTransition>
           </main>
         </div>

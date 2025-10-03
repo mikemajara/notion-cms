@@ -17,7 +17,9 @@ export const RecordNotionCMSFieldTypes = {
   },
   "Sub-page": { type: "relation" },
   "Last edited time": { type: "last_edited_time" },
+  "Last updated": { type: "date" },
   "Parent page": { type: "relation" },
+  "Revalidate": { type: "button" },
   "Name": { type: "title" },
   "Verification": { type: "verification" },
   "Owner": { type: "people" },
@@ -31,7 +33,9 @@ export interface RecordNotionCMSAdvanced {
     Tags: { id: string; name: string; color: string }[];
     "Sub-page": { id: string }[];
     "Last edited time": { timestamp: string; date: Date };
+    "Last updated": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
     "Parent page": { id: string }[];
+    Revalidate: any;
     Name: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
     Verification: any;
     Owner: { id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }[];
@@ -50,7 +54,9 @@ export interface RecordNotionCMS extends DatabaseRecord {
     Tags: Array<"Onboarding" | "Design">;
     "Sub-page": string[];
     "Last edited time": string;
+    "Last updated": Date;
     "Parent page": string[];
+    Revalidate: any;
     Name: string;
     Verification: any;
     Owner: string[];
