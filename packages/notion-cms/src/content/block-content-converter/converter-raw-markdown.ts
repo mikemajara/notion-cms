@@ -179,20 +179,20 @@ function renderBlock(
   switch (type) {
     case "paragraph": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return text ? `${text}\n` : "\n"
+      return text ? `${text}` : ""
     }
     case "quote": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return text ? `> ${text}\n` : `>\n`
+      return text ? `> ${text}` : `>`
     }
     case "toggle": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `${text}\n${renderChildren(block, depth + 1, options, 0)}`
+      return `${text}${renderChildren(block, depth + 1, options, 0)}`
     }
     case "to_do": {
       const checked = Boolean(field?.checked)
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `${pad}- [${checked ? "x" : " "}] ${text}\n${renderChildren(
+      return `${pad}- [${checked ? "x" : " "}] ${text}${renderChildren(
         block,
         depth + 1,
         options,
@@ -201,28 +201,28 @@ function renderBlock(
     }
     case "heading_1": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `# ${text}\n`
+      return `# ${text}`
     }
     case "heading_2": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `## ${text}\n`
+      return `## ${text}`
     }
     case "heading_3": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `### ${text}\n`
+      return `### ${text}`
     }
     case "code": {
       const language = field?.language || ""
       const content = richTextToPlain(field?.rich_text ?? [])
-      return `\n\n\`\`\`${language}\n${content}\n\`\`\`\n\n`
+      return `\`\`\`\n${language}\n${content}\n\`\`\``
     }
     case "bookmark":
     case "embed":
     case "link_preview": {
       const url = field?.url || ""
       const caption = richTextToMarkdown(field?.caption ?? [])
-      let out = `${url}\n`
-      if (caption) out += `${caption}\n`
+      let out = `${url}`
+      if (caption) out += `${caption}`
       return out
     }
     case "image":
@@ -235,14 +235,14 @@ function renderBlock(
       const src =
         field?.type === "external" ? field?.external?.url : field?.file?.url
       const caption = richTextToMarkdown(field?.caption ?? [])
-      return `![${caption ?? ""}](${src ?? ""})\n`
+      return `![${caption ?? ""}](${src ?? ""})`
     }
     case "equation": {
       const expr = field?.expression || ""
-      return `$$${expr}$$\n`
+      return `$$${expr}$$`
     }
     case "divider": {
-      return `---\n`
+      return `---`
     }
     case "table": {
       return renderTable(block, options)
@@ -319,7 +319,7 @@ function renderBlocks(
       )
       continue
     }
-    out += renderBlock(node as ContentBlockRaw, depth, options) + "\n"
+    out += renderBlock(node as ContentBlockRaw, depth, options) + "\n\n"
   }
   return out
 }
@@ -335,5 +335,5 @@ export function blocksToMarkdown(
     alternateOrderedListStyles: opts.alternateOrderedListStyles ?? false
   }
   if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return ""
-  return renderBlocks(rawBlocks, 0, options, 0) + "\n"
+  return renderBlocks(rawBlocks, 0, options, 0)
 }
