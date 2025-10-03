@@ -402,14 +402,14 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
   private startCursor?: string
   private singleMode: "required" | "optional" | null = null
   private fileManager?: FileManager
-  private recordType: DatabaseRecordType = "simple"
+  private recordType: DatabaseRecordType = "raw"
 
   constructor(
     client: Client,
     databaseId: string,
     fieldTypes: M = {} as M,
     fileManager?: FileManager,
-    recordType: DatabaseRecordType = "simple"
+    recordType: DatabaseRecordType = "raw"
   ) {
     this.client = client
     this.databaseId = databaseId
@@ -626,20 +626,27 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
       debug.log(`[QueryBuilder] recordType=${this.recordType}`)
 
       let results: T[]
-      if (this.recordType === "raw") {
-        results = pages as unknown as T[]
-      } else if (this.recordType === "advanced") {
-        results = (await Promise.all(
-          pages.map(async (page) =>
-            convertRecordToAdvanced(page, this.fileManager)
-          )
-        )) as T[]
-      } else {
-        results = (await Promise.all(
-          pages.map(async (page) =>
-            convertRecordToSimple(page, this.fileManager)
-          )
-        )) as T[]
+      switch (this.recordType) {
+        case "advanced":
+          results = (await Promise.all(
+            pages.map(async (page) =>
+              convertRecordToAdvanced(page, this.fileManager)
+            )
+          )) as T[]
+          break
+        case "simple":
+          results = (await Promise.all(
+            pages.map(async (page) =>
+              convertRecordToSimple(page, this.fileManager)
+            )
+          )) as T[]
+          break
+        case "raw":
+          results = pages as unknown as T[]
+          break
+        default:
+          results = pages as unknown as T[]
+          break
       }
 
       return {

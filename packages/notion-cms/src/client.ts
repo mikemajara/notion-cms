@@ -87,7 +87,7 @@ export class NotionCMS {
       )
     }
     return this._query(databaseConfig.id, databaseConfig.fields, {
-      recordType: options?.recordType || "simple"
+      recordType: options?.recordType || "raw"
     })
   }
 
@@ -99,13 +99,13 @@ export class NotionCMS {
     return this.databaseService.query<T, M>(databaseId, fieldMetadata, options)
   }
 
-  async getRecordRaw(pageId: string) {
-    return this.databaseService.getRecordRaw(pageId)
+  async getRecord(pageId: string) {
+    return this.databaseService.getRecord(pageId)
   }
 
-  async getPageContentRaw(pageId: string, options: ContentOptions = {}) {
+  async getPageContent(pageId: string, options: ContentOptions = {}) {
     const recursive = options.recursive ?? true
-    return this.pageContentService.getPageContentRaw(pageId, recursive)
+    return this.pageContentService.getPageContent(pageId, recursive)
   }
 }
 
@@ -113,7 +113,6 @@ export function registerDatabase(
   key: string,
   config: { id: string; fields: DatabaseFieldMetadata }
 ) {
-  // @ts-ignore - internal registry bag
   NotionCMS.prototype.databases[key] = config
 }
 

@@ -210,11 +210,15 @@ function updateIndexFile(outputPath: string, fileName: string): void {
   }
 
   // Read current content
-  let content = fs.readFileSync(indexPath, "utf8")
+  // let content = fs.readFileSync(indexPath, "utf8")
+  let content = `// Auto-generated index file for Notion CMS types
+
+// Export database-specific types
+`
 
   // Check if this file is already exported
-  const exportLine = `import './${fileName.replace(".ts", "")}';`
-  // exportLine = `export * from './${fileName.replace(".ts", "")}';`
+  let exportLine = `import './${fileName.replace(".ts", "")}';\n`
+  exportLine += `export * from './${fileName.replace(".ts", "")}';`
   if (!content.includes(exportLine)) {
     // Add export if not already there
     content += `${exportLine}\n`
@@ -242,17 +246,17 @@ function generateDatabaseSpecificFile(
     // Add imports directly from notion-cms
     sourceFile.addImportDeclaration({
       moduleSpecifier: "@mikemajara/notion-cms",
-      namedImports: [
-        "DatabaseRecord",
-        "NotionCMS",
-        "QueryBuilder",
-        "DatabaseFieldMetadata"
-      ]
+      namedImports: ["DatabaseRecord", "NotionCMS", "DatabaseFieldMetadata"]
     })
     // Import PageObjectResponse for raw typing in registry
     sourceFile.addImportDeclaration({
       moduleSpecifier: "@notionhq/client/build/src/api-endpoints",
       namedImports: ["PageObjectResponse"]
+    })
+
+    sourceFile.addExportDeclaration({
+      moduleSpecifier: "@mikemajara/notion-cms",
+      namedExports: ["NotionCMS"]
     })
 
     // Helper function to determine advanced property type mapping

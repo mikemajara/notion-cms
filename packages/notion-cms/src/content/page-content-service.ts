@@ -8,22 +8,22 @@ import { convertBlocksToSimple } from "./block-converter"
 export class PageContentService {
   constructor(private client: Client, private fileManager: FileManager) {}
 
-  async getPageContentRaw(
+  async getPageContent(
     pageId: string,
     recursive: boolean = true
   ): Promise<ContentBlockRaw[]> {
-    const blocks = await this.getBlocksRaw(pageId)
+    const blocks = await this.getBlocks(pageId)
     if (recursive) {
       for (const block of blocks) {
         if ((block as any).has_children) {
-          block.children = await this.getPageContentRaw(block.id, true)
+          block.children = await this.getPageContent(block.id, true)
         }
       }
     }
     return blocks
   }
 
-  private async getBlocksRaw(blockId: string): Promise<ContentBlockRaw[]> {
+  private async getBlocks(blockId: string): Promise<ContentBlockRaw[]> {
     let allBlocks: ContentBlockRaw[] = []
     let hasMore = true
     let startCursor: string | undefined = undefined

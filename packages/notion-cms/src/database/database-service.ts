@@ -41,7 +41,7 @@ export class DatabaseService {
         databaseId,
         fieldMetadata,
         this.fileManager,
-        options?.recordType || "simple"
+        options?.recordType || "raw"
       )
     } else {
       return new QueryBuilder<T, M>(
@@ -49,7 +49,7 @@ export class DatabaseService {
         databaseId,
         {} as M,
         this.fileManager,
-        options?.recordType || "simple"
+        options?.recordType || "raw"
       )
     }
   }
@@ -99,10 +99,6 @@ export class DatabaseService {
   }
 
   async getRecord(pageId: string): Promise<PageObjectResponse> {
-    return this.getRecordRaw(pageId)
-  }
-
-  async getRecordRaw(pageId: string): Promise<PageObjectResponse> {
     const page = (await this.client.pages.retrieve({
       page_id: pageId
     })) as PageObjectResponse
