@@ -1,5 +1,6 @@
-import { blocksToMarkdown, convertRecordToSimple } from "@mikemajara/notion-cms"
+import { convertRecordToSimple } from "@mikemajara/notion-cms"
 import { revalidateTag } from "next/cache"
+import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest) {
 
     // Revalidate the specific page tag
     revalidateTag(`docs-${record.slug}`)
+    revalidatePath(`/docs/${record.slug}/llms.txt`)
 
     return NextResponse.json(
       { message: `Page with slug "${record.slug}" revalidated successfully` },
