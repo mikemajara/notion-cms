@@ -1,8 +1,8 @@
-import { Client } from "@notionhq/client"
 import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import * as fs from "fs"
 import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
+import { getClient } from "./shared"
 
 // Use runtime type to avoid redefining in generator
 import type { NotionPropertyType } from "./types/public"
@@ -162,9 +162,7 @@ export async function generateTypes(
   token: string
 ): Promise<void> {
   // Create a new notion client with the provided token
-  const notion = new Client({
-    auth: token
-  })
+  const notion = getClient(token)
 
   // Fetch database schema
   const database = await notion.databases.retrieve({ database_id: databaseId })
@@ -499,9 +497,7 @@ export async function generateMultipleDatabaseTypes(
   token: string
 ): Promise<void> {
   // Create a new notion client with the provided token
-  const notion = new Client({
-    auth: token
-  })
+  const notion = getClient(token)
 
   const combinedFileName = "notion-types-combined.ts"
   const combinedFilePath = path.join(outputPath, combinedFileName)

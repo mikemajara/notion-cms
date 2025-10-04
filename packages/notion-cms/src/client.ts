@@ -21,6 +21,7 @@ import { FileManager } from "./file-processor/file-manager"
 import { PageContentService } from "./content/page-content-service"
 import { DatabaseService } from "./database/database-service"
 import { debug } from "./utils/debug"
+import { getClient } from "./shared"
 
 export interface DatabaseRegistry {
   // This will be extended by generated database-specific types
@@ -49,7 +50,7 @@ export class NotionCMS {
   }
 
   constructor(token: string, config?: NotionCMSConfig) {
-    this.client = new Client({ auth: token })
+    this.client = getClient(token)
     this.config = mergeConfig(config)
     debug.configure(this.config.debug)
     this.fileManager = new FileManager(this.config)
