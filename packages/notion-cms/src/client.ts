@@ -92,6 +92,7 @@ export class NotionCMS {
     })
   }
 
+  // TODO(notion-2025-09-03): extend signature to accept data_source_id alongside databaseId.
   private _query<T = DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
     databaseId: string,
     fieldMetadata?: M,

@@ -63,6 +63,7 @@ export class DatabaseService {
     hasMore: boolean
   }> {
     try {
+      // TODO(notion-2025-09-03): use data_source_id when querying and remove legacy database_id usage.
       debug.query(databaseId, {
         database_id: databaseId,
         filter: options.filter,
@@ -72,6 +73,7 @@ export class DatabaseService {
       })
 
       const response = await this.client.databases.query({
+        // TODO(notion-2025-09-03): switch to data_source_id.
         database_id: databaseId,
         filter: options.filter,
         sorts: options.sorts,

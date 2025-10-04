@@ -598,6 +598,7 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
   async paginate(pageSize: number = 100): Promise<QueryResult<T>> {
     const filter = this.buildFilter()
     try {
+      // TODO(notion-2025-09-03): update to use data_source_id queries instead of database_id.
       debug.query(this.databaseId, {
         database_id: this.databaseId,
         filter: filter || undefined,
@@ -607,6 +608,7 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
       })
 
       const response = await this.client.databases.query({
+        // TODO(notion-2025-09-03): switch to querying via data_source_id.
         database_id: this.databaseId,
         filter: filter || undefined,
         sorts:

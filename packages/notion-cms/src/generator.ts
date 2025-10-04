@@ -164,6 +164,7 @@ export async function generateTypes(
   // Create a new notion client with the provided token
   const notion = getClient(token)
 
+  // TODO(notion-2025-09-03): Replace database-level retrieval with multi data_source discovery.
   // Fetch database schema
   const database = await notion.databases.retrieve({ database_id: databaseId })
   const properties = database.properties
@@ -532,6 +533,7 @@ export async function generateMultipleDatabaseTypes(
     try {
       console.log(`Processing database: ${databaseId}`)
 
+      // TODO(notion-2025-09-03): Replace database-level retrieval with multi data_source discovery.
       // Fetch database schema
       const database = await notion.databases.retrieve({
         database_id: databaseId
