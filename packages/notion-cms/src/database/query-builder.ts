@@ -1,6 +1,6 @@
 import { Client } from "@notionhq/client"
-import {
-  QueryDatabaseParameters,
+import type {
+  QueryDataSourceParameters,
   PageObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
 import type { DatabaseRecordType } from "../types/public"
@@ -393,12 +393,12 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
   implements PromiseLike<T[] | T | null>
 {
   private client: Client
-  private databaseId: string
+  private resource: { databaseId: string; dataSourceId: string }
   private fieldTypes: M
   private filterConditions: FilterCondition[] = []
   private logicalOperator: LogicalOperator = "and"
   private nestedFilters: any[] = []
-  private sortOptions: QueryDatabaseParameters["sorts"] = []
+  private sortOptions: QueryDataSourceParameters["sorts"] = []
   private pageLimit: number = 100
   private startCursor?: string
   private singleMode: "required" | "optional" | null = null
@@ -407,13 +407,13 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
 
   constructor(
     client: Client,
-    databaseId: string,
+    resource: { databaseId: string; dataSourceId: string },
     fieldTypes: M = {} as M,
     fileManager?: FileManager,
     recordType: DatabaseRecordType = "raw"
   ) {
     this.client = client
-    this.databaseId = databaseId
+    this.resource = resource
     this.fieldTypes = fieldTypes
     this.fileManager = fileManager
     this.recordType = recordType
@@ -598,18 +598,16 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
   async paginate(pageSize: number = 100): Promise<QueryResult<T>> {
     const filter = this.buildFilter()
     try {
-      // TODO(notion-2025-09-03): update to use data_source_id queries instead of database_id.
-      debug.query(this.databaseId, {
-        database_id: this.databaseId,
+      debug.query(this.resource.databaseId, {
+        data_source_id: this.resource.dataSourceId,
         filter: filter || undefined,
         sorts: this.sortOptions,
         page_size: pageSize,
         start_cursor: this.startCursor
       })
 
-      const response = await this.client.databases.query({
-        // TODO(notion-2025-09-03): switch to querying via data_source_id.
-        database_id: this.databaseId,
+      const response = await this.client.dataSources.query({
+        data_source_id: this.resource.dataSourceId,
         filter: filter || undefined,
         sorts:
           this.sortOptions && this.sortOptions.length > 0
@@ -621,7 +619,9 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
 
       debug.log(`Query returned ${response.results.length} results`)
 
-      const pages = response.results as PageObjectResponse[]
+      const pages = response.results.filter(
+        (item): item is PageObjectResponse => item.object === "page"
+      )
 
       debug.log(`[QueryBuilder] FileManager present:`, !!this.fileManager)
       debug.log(
@@ -661,7 +661,8 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
       }
     } catch (error) {
       debug.error(error, {
-        databaseId: this.databaseId,
+        databaseId: this.resource.databaseId,
+        dataSourceId: this.resource.dataSourceId,
         filter,
         sorts: this.sortOptions,
         pageSize,

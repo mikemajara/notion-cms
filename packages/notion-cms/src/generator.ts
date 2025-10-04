@@ -12,7 +12,6 @@ import type { NotionPropertyType } from "./types/public"
 type NotionPropertyConfig = DataSourceObjectResponse["properties"][string]
 
 type NotionPropertyEntries = Array<[string, NotionPropertyConfig]>
-type DataSourceReference = DatabaseObjectResponse["data_sources"][number]
 
 type DataSourceSelection = {
   dataSource: DataSourceObjectResponse

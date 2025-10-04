@@ -10,4 +10,3 @@ export interface DatabaseRecord {
 export type DatabaseRecordRaw = NotionPageObject
 
 export type NotionPropertyType = NotionPropertyTypeBase
-

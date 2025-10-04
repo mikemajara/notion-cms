@@ -41,10 +41,12 @@ class DebugLogger {
     if (this.shouldLog("debug")) {
       console.log("\n[NotionCMS Query]:", {
         databaseId,
+        dataSourceId: options.data_source_id,
         filter: options.filter,
         sorts: options.sorts,
         pageSize: options.page_size,
         startCursor: options.start_cursor,
+        includeArchived: options.include_archived,
         timestamp: new Date().toISOString()
       })
     }

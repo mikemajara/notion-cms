@@ -1,10 +1,9 @@
 import type {
-  DatabaseObjectResponse,
+  DataSourceObjectResponse,
   PageObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
 
-export type NotionDatabaseObject = DatabaseObjectResponse
+export type NotionDataSourceObject = DataSourceObjectResponse
 export type NotionPageObject = PageObjectResponse
 export type NotionPropertyTypeBase =
-  DatabaseObjectResponse["properties"][string]["type"]
-
+  DataSourceObjectResponse["properties"][string]["type"]

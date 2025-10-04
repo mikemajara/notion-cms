@@ -42,7 +42,7 @@ export class NotionCMS {
   private databaseService: DatabaseService
   public databases!: Record<
     string,
-    { id: string; fields: DatabaseFieldMetadata }
+    { id: string; dataSourceId: string; fields: DatabaseFieldMetadata }
   >
 
   static {
@@ -87,18 +87,34 @@ export class NotionCMS {
         )}" not found in registry. Make sure you've imported the generated types file.`
       )
     }
-    return this._query(databaseConfig.id, databaseConfig.fields, {
-      recordType: options?.recordType || "raw"
-    })
+    if (!databaseConfig.dataSourceId) {
+      throw new Error(
+        `Database "${String(
+          databaseKey
+        )}" is missing a dataSourceId configuration. Regenerate your Notion CMS types to include data source metadata.`
+      )
+    }
+    return this._query(
+      databaseConfig.id,
+      databaseConfig.dataSourceId,
+      databaseConfig.fields,
+      {
+        recordType: options?.recordType || "raw"
+      }
+    )
   }
 
-  // TODO(notion-2025-09-03): extend signature to accept data_source_id alongside databaseId.
   private _query<T = DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
     databaseId: string,
+    dataSourceId: string,
     fieldMetadata?: M,
     options?: { recordType?: DatabaseRecordType }
   ): QueryBuilder<T, M> {
-    return this.databaseService.query<T, M>(databaseId, fieldMetadata, options)
+    return this.databaseService.query<T, M>(
+      { databaseId, dataSourceId },
+      fieldMetadata,
+      options
+    )
   }
 
   async getRecord(pageId: string) {
@@ -113,7 +129,7 @@ export class NotionCMS {
 
 export function registerDatabase(
   key: string,
-  config: { id: string; fields: DatabaseFieldMetadata }
+  config: { id: string; dataSourceId: string; fields: DatabaseFieldMetadata }
 ) {
   NotionCMS.prototype.databases[key] = config
 }

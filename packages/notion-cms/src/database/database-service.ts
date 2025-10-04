@@ -1,7 +1,7 @@
 import { Client } from "@notionhq/client"
-import {
+import type {
   PageObjectResponse,
-  QueryDatabaseParameters
+  QueryDataSourceParameters
 } from "@notionhq/client/build/src/api-endpoints"
 import type { DatabaseRecordType } from "../types/public"
 import type { DatabaseFieldMetadata } from "./query-builder"
@@ -10,14 +10,20 @@ import { debug } from "../utils/debug"
 import { FileManager } from "../file-processor/file-manager"
 
 export interface QueryOptions {
-  filter?: QueryDatabaseParameters["filter"]
-  sorts?: QueryDatabaseParameters["sorts"]
+  filter?: QueryDataSourceParameters["filter"]
+  sorts?: QueryDataSourceParameters["sorts"]
   pageSize?: number
   startCursor?: string
+  includeArchived?: boolean
 }
 
 export interface RecordOptions {
   recordType?: DatabaseRecordType
+}
+
+export interface QueryResourceConfig {
+  databaseId: string
+  dataSourceId: string
 }
 
 type FilesProperty = Extract<
@@ -31,14 +37,14 @@ export class DatabaseService {
   constructor(private client: Client, private fileManager: FileManager) {}
 
   query<T, M extends DatabaseFieldMetadata = {}>(
-    databaseId: string,
+    resource: QueryResourceConfig,
     fieldMetadata?: M,
     options?: RecordOptions
   ): QueryBuilder<T, M> {
     if (fieldMetadata) {
       return new QueryBuilder<T, M>(
         this.client,
-        databaseId,
+        resource,
         fieldMetadata,
         this.fileManager,
         options?.recordType || "raw"
@@ -46,7 +52,7 @@ export class DatabaseService {
     } else {
       return new QueryBuilder<T, M>(
         this.client,
-        databaseId,
+        resource,
         {} as M,
         this.fileManager,
         options?.recordType || "raw"
@@ -54,8 +60,8 @@ export class DatabaseService {
     }
   }
 
-  async getDatabase(
-    databaseId: string,
+  async getDataSource(
+    resource: QueryResourceConfig,
     options: QueryOptions = {}
   ): Promise<{
     results: PageObjectResponse[]
@@ -63,27 +69,30 @@ export class DatabaseService {
     hasMore: boolean
   }> {
     try {
-      // TODO(notion-2025-09-03): use data_source_id when querying and remove legacy database_id usage.
-      debug.query(databaseId, {
-        database_id: databaseId,
+      debug.query(resource.databaseId, {
+        data_source_id: resource.dataSourceId,
         filter: options.filter,
         sorts: options.sorts,
         page_size: options.pageSize,
-        start_cursor: options.startCursor
+        start_cursor: options.startCursor,
+        include_archived: options.includeArchived
       })
 
-      const response = await this.client.databases.query({
-        // TODO(notion-2025-09-03): switch to data_source_id.
-        database_id: databaseId,
+      const response = await this.client.dataSources.query({
+        data_source_id: resource.dataSourceId,
         filter: options.filter,
         sorts: options.sorts,
         page_size: options.pageSize,
-        start_cursor: options.startCursor
+        start_cursor: options.startCursor,
+        archived: options.includeArchived,
+        in_trash: options.includeArchived
       })
 
       debug.log(`Query returned ${response.results.length} results`)
 
-      const pages = response.results as PageObjectResponse[]
+      const pages = response.results.filter(
+        (item): item is PageObjectResponse => item.object === "page"
+      )
       await Promise.all(pages.map((page) => this.enrichRecordFiles(page)))
 
       return {
@@ -93,7 +102,8 @@ export class DatabaseService {
       }
     } catch (error) {
       debug.error(error, {
-        databaseId,
+        databaseId: resource.databaseId,
+        dataSourceId: resource.dataSourceId,
         options
       })
       throw error
@@ -108,8 +118,8 @@ export class DatabaseService {
     return page
   }
 
-  async getAllDatabaseRecords(
-    databaseId: string,
+  async getAllDataSourceRecords(
+    resource: QueryResourceConfig,
     options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
   ): Promise<PageObjectResponse[]> {
     const results: PageObjectResponse[] = []
@@ -117,7 +127,7 @@ export class DatabaseService {
     let startCursor: string | null = null
 
     while (hasMore) {
-      const response = await this.getDatabase(databaseId, {
+      const response = await this.getDataSource(resource, {
         ...options,
         startCursor: startCursor || undefined
       })
