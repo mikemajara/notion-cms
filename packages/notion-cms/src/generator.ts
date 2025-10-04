@@ -1,4 +1,7 @@
-import { DatabaseObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import {
+  DatabaseObjectResponse,
+  DataSourceObjectResponse
+} from "@notionhq/client/build/src/api-endpoints"
 import * as fs from "fs"
 import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
@@ -6,9 +9,103 @@ import { getClient } from "./shared"
 
 // Use runtime type to avoid redefining in generator
 import type { NotionPropertyType } from "./types/public"
-type NotionPropertyConfig = DatabaseObjectResponse["properties"][string]
+type NotionPropertyConfig = DataSourceObjectResponse["properties"][string]
 
 type NotionPropertyEntries = Array<[string, NotionPropertyConfig]>
+type DataSourceReference = DatabaseObjectResponse["data_sources"][number]
+
+type DataSourceSelection = {
+  dataSource: DataSourceObjectResponse
+  compositeName: string
+  commentLabel: string
+  databaseName: string
+  dataSourceName: string | null
+}
+
+function deriveDatabaseDisplayName(
+  database: DatabaseObjectResponse,
+  databaseId: string
+): string {
+  let databaseName = "NotionDatabase"
+  const databaseResponse = database as unknown as {
+    title?: Array<{ plain_text?: string }>
+  }
+
+  if (
+    databaseResponse.title &&
+    Array.isArray(databaseResponse.title) &&
+    databaseResponse.title.length > 0
+  ) {
+    const plainText = databaseResponse.title[0].plain_text
+    if (plainText) {
+      databaseName = plainText
+    }
+  }
+
+  if (databaseName === "NotionDatabase") {
+    databaseName = databaseId.replace(/-/g, "").substring(0, 12)
+  }
+
+  return databaseName
+}
+
+function buildCompositeName(
+  baseName: string,
+  dataSourceName?: string | null
+): string {
+  if (!dataSourceName) {
+    return baseName
+  }
+  return `${baseName} ${dataSourceName}`.trim()
+}
+
+async function fetchDataSource(
+  notion: ReturnType<typeof getClient>,
+  dataSourceId: string
+): Promise<DataSourceObjectResponse> {
+  return (await notion.dataSources.retrieve({
+    data_source_id: dataSourceId
+  })) as DataSourceObjectResponse
+}
+
+async function resolveDataSources(
+  notion: ReturnType<typeof getClient>,
+  database: DatabaseObjectResponse,
+  databaseId: string
+): Promise<DataSourceSelection[]> {
+  const baseName = deriveDatabaseDisplayName(database, databaseId)
+  const references = database.data_sources ?? []
+
+  if (references.length === 0) {
+    throw new Error(
+      `[generator] Database ${databaseId} does not expose any data sources. Generation requires at least one data source.`
+    )
+  }
+
+  const selections: DataSourceSelection[] = []
+
+  for (const ref of references) {
+    const dataSource = await fetchDataSource(notion, ref.id)
+    const firstTitleFragment = dataSource.title?.find((fragment) =>
+      fragment.plain_text?.trim()
+    )
+    const dataSourceName = firstTitleFragment?.plain_text ?? ref.name ?? null
+    const compositeName = buildCompositeName(baseName, dataSourceName)
+    const commentLabel = dataSourceName
+      ? `${baseName} (Data source: ${dataSourceName})`
+      : baseName
+
+    selections.push({
+      dataSource,
+      compositeName,
+      commentLabel,
+      databaseName: baseName,
+      dataSourceName
+    })
+  }
+
+  return selections
+}
 
 // DatabaseRecord types are only needed at runtime; not required in generator
 
@@ -111,7 +208,7 @@ function generateFileName(databaseName: string): string {
 }
 
 function extractPropertyEntries(
-  properties: DatabaseObjectResponse["properties"] | undefined,
+  properties: DataSourceObjectResponse["properties"] | undefined,
   context: { databaseId: string; databaseName: string }
 ): NotionPropertyEntries {
   if (!properties || typeof properties !== "object") {
@@ -159,57 +256,43 @@ function extractPropertyEntries(
 export async function generateTypes(
   databaseId: string,
   outputPath: string,
-  token: string
+  token: string,
+  options?: { dataSourceId?: string }
 ): Promise<void> {
   // Create a new notion client with the provided token
   const notion = getClient(token)
 
-  // TODO(notion-2025-09-03): Replace database-level retrieval with multi data_source discovery.
-  // Fetch database schema
-  const database = await notion.databases.retrieve({ database_id: databaseId })
-  const properties = database.properties
+  const database = (await notion.databases.retrieve({
+    database_id: databaseId
+  })) as DatabaseObjectResponse
+
+  const selections = await resolveDataSources(notion, database, databaseId)
+
+  const selection = options?.dataSourceId
+    ? selections.find((item) => item.dataSource.id === options.dataSourceId)
+    : selections[0]
+
+  if (!selection) {
+    const available = selections
+      .map(
+        (item) => `${item.dataSourceName ?? "Unnamed"} (${item.dataSource.id})`
+      )
+      .join(", ")
+    throw new Error(
+      `[generator] Data source "${options?.dataSourceId}" not found. Available sources: ${available}`
+    )
+  }
+
+  const properties = selection.dataSource.properties
 
   // Extract database name and convert to a proper type name
-  let databaseName = "NotionDatabase"
+  const compositeName = selection.compositeName
+  const databaseName = selection.databaseName
 
-  // Try to get a meaningful name for the database
-  // Option 1: Use the actual database title from the API response
-  // The type definition for GetDatabaseResponse might be incomplete
-  // Use type assertion to access title property that exists in the actual API response
-  const databaseResponse = database as unknown as {
-    title?: Array<{ plain_text?: string }>
-  }
-
-  if (
-    databaseResponse.title &&
-    Array.isArray(databaseResponse.title) &&
-    databaseResponse.title.length > 0
-  ) {
-    const plainText = databaseResponse.title[0].plain_text
-    if (plainText) {
-      databaseName = plainText
-    }
-  }
-
-  // Option 2: Fall back to database id if title is not available
-  if (databaseName === "NotionDatabase") {
-    databaseName = databaseId.replace(/-/g, "").substring(0, 12)
-
-    // Option 3: Find the title property and use its name
-    const titlePropertyName = Object.keys(properties).find(
-      (key) => properties[key].type === "title"
-    )
-
-    if (titlePropertyName) {
-      // The name of the title property is often descriptive of the content
-      databaseName = titlePropertyName
-    }
-  }
-
-  const typeName = generateTypeName(databaseName)
+  const typeName = generateTypeName(compositeName)
 
   // Generate filename for this database
-  const fileName = generateFileName(databaseName)
+  const fileName = generateFileName(compositeName)
 
   // Create output directory if it doesn't exist
   fs.mkdirSync(outputPath, { recursive: true })
@@ -230,8 +313,10 @@ export async function generateTypes(
     sourceFile,
     properties,
     typeName,
-    databaseName,
-    databaseId
+    selection.commentLabel,
+    databaseId,
+    selection.dataSource.id,
+    databaseName
   )
 
   // Save the file
@@ -276,15 +361,17 @@ function updateIndexFile(outputPath: string, fileName: string): void {
 // Generate database-specific types with registry approach
 function generateDatabaseSpecificFile(
   sourceFile: SourceFile,
-  properties: DatabaseObjectResponse["properties"],
+  properties: DataSourceObjectResponse["properties"],
   typeName: string,
-  databaseName: string,
-  databaseId: string
+  compositeName: string,
+  databaseId: string,
+  dataSourceId: string,
+  databaseName: string
 ): void {
   try {
     const propertyEntries = extractPropertyEntries(properties, {
       databaseId,
-      databaseName
+      databaseName: compositeName
     })
 
     // Add a comment at the top of the file warning that it's auto-generated
@@ -293,6 +380,8 @@ function generateDatabaseSpecificFile(
  * DO NOT EDIT DIRECTLY - YOUR CHANGES WILL BE OVERWRITTEN
  * v0.1.3
  * Generated for database: ${databaseName}
+ * Composite name: ${compositeName}
+ * Data source: ${dataSourceId ?? "<default>"}
  */`)
 
     // Add imports directly from notion-cms
@@ -454,7 +543,7 @@ function generateDatabaseSpecificFile(
     })
 
     // Generate camelCase database key from database name
-    const databaseKey = databaseName
+    const databaseKey = compositeName
       .replace(/[^\w\s]/g, "")
       .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
       .replace(/\s/g, "")
@@ -477,6 +566,11 @@ declare module "@mikemajara/notion-cms" {
 // Add database configuration to the registry
 NotionCMS.prototype.databases["${databaseKey}"] = {
   id: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATABASE_ID || "${databaseId}",
+  ${
+    dataSourceId
+      ? `dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${dataSourceId}",`
+      : `// dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${databaseId}",`
+  }
   fields: ${typeName}FieldTypes,
 };
 `)
@@ -495,7 +589,8 @@ NotionCMS.prototype.databases["${databaseKey}"] = {
 export async function generateMultipleDatabaseTypes(
   databaseIds: string[],
   outputPath: string,
-  token: string
+  token: string,
+  options?: { dataSources?: Record<string, string> }
 ): Promise<void> {
   // Create a new notion client with the provided token
   const notion = getClient(token)
@@ -533,215 +628,218 @@ export async function generateMultipleDatabaseTypes(
     try {
       console.log(`Processing database: ${databaseId}`)
 
-      // TODO(notion-2025-09-03): Replace database-level retrieval with multi data_source discovery.
-      // Fetch database schema
-      const database = await notion.databases.retrieve({
+      const database = (await notion.databases.retrieve({
         database_id: databaseId
+      })) as DatabaseObjectResponse
+
+      const selections = await resolveDataSources(notion, database, databaseId)
+      const selectionMap = new Map<string, DataSourceSelection>()
+      selections.forEach((entry) => {
+        selectionMap.set(entry.dataSource.id, entry)
       })
-      const properties = database.properties
 
-      // Extract database name
-      let databaseName = `Database${databaseId.substring(0, 8)}`
-      const databaseResponse = database as unknown as {
-        title?: Array<{ plain_text?: string }>
-      }
+      const selection = options?.dataSources?.[databaseId]
+        ? selectionMap.get(options.dataSources[databaseId])
+        : undefined
 
-      if (
-        databaseResponse.title &&
-        Array.isArray(databaseResponse.title) &&
-        databaseResponse.title.length > 0
-      ) {
-        const plainText = databaseResponse.title[0].plain_text
-        if (plainText) {
-          databaseName = plainText
+      const targets = selection ? [selection] : selections
+
+      for (const target of targets) {
+        if (!target) {
+          continue
         }
-      }
 
-      const typeName = generateTypeName(databaseName)
-      const propertyEntries = extractPropertyEntries(properties, {
-        databaseId,
-        databaseName
-      })
+        const properties = target.dataSource.properties
+        const compositeName = target.compositeName
+        const databaseName = target.databaseName
 
-      // Generate method name and ensure uniqueness
-      let methodName = `query${databaseName
-        .replace(/[^\w\s]/g, "")
-        .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
-        .replace(/\s/g, "")
-        .replace(/^./, (c) => c.toUpperCase())}`
+        const typeName = generateTypeName(compositeName)
+        const propertyEntries = extractPropertyEntries(properties, {
+          databaseId,
+          databaseName: compositeName
+        })
 
-      // Handle name conflicts
-      let counter = 1
-      const originalMethodName = methodName
-      while (methodNames.includes(methodName)) {
-        methodName = `${originalMethodName}${counter}`
-        counter++
-      }
-      methodNames.push(methodName)
+        // Generate method name and ensure uniqueness
+        let methodName = `query${compositeName
+          .replace(/[^\w\s]/g, "")
+          .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
+          .replace(/\s/g, "")
+          .replace(/^./, (c) => c.toUpperCase())}`
 
-      // Add separator comment
-      sourceFile.addStatements(`
+        let counter = 1
+        const originalMethodName = methodName
+        while (methodNames.includes(methodName)) {
+          methodName = `${originalMethodName}${counter}`
+          counter++
+        }
+        methodNames.push(methodName)
+
+        sourceFile.addStatements(`
 // ============================================================================
-// ${databaseName} Database Types
+// ${compositeName} Database Types
 // ============================================================================
 `)
 
-      // Generate metadata for field types
-      sourceFile.addStatements(`export const ${typeName}FieldTypes = {`)
+        sourceFile.addStatements(`export const ${typeName}FieldTypes = {`)
+        sourceFile.addStatements(`  "id": { type: "string" },`)
 
-      // Add the native Notion page ID first
-      sourceFile.addStatements(`  "id": { type: "string" },`)
+        for (const [propertyName, propertyValue] of propertyEntries) {
+          if (
+            propertyValue.type === "select" ||
+            propertyValue.type === "multi_select"
+          ) {
+            const optionsSource =
+              propertyValue.type === "select"
+                ? propertyValue.select?.options
+                : propertyValue.multi_select?.options
 
-      for (const [propertyName, propertyValue] of propertyEntries) {
-        if (
-          propertyValue.type === "select" ||
-          propertyValue.type === "multi_select"
-        ) {
-          const optionsSource =
-            propertyValue.type === "select"
-              ? propertyValue.select?.options
-              : propertyValue.multi_select?.options
+            const options = (optionsSource ?? [])
+              .map((option: { name: string }) => `"${option.name}"`)
+              .join(", ")
 
-          const options = (optionsSource ?? [])
-            .map((option: { name: string }) => `"${option.name}"`)
-            .join(", ")
+            if (options.length === 0) {
+              console.warn(
+                `[generator] Property "${propertyName}" in database ${databaseName} (${databaseId}) declares type ${propertyValue.type} but contains no options. Falling back to empty options array.`,
+                { property: propertyValue }
+              )
+            }
 
-          if (options.length === 0) {
-            console.warn(
-              `[generator] Property "${propertyName}" in database ${databaseName} (${databaseId}) declares type ${propertyValue.type} but contains no options. Falling back to empty options array.`,
-              { property: propertyValue }
-            )
-          }
-
-          sourceFile.addStatements(`  "${propertyName}": { 
+            sourceFile.addStatements(`  "${propertyName}": { 
     type: "${propertyValue.type}",
     options: [${options}] as const
   },`)
-        } else {
-          sourceFile.addStatements(
-            `  "${propertyName}": { type: "${propertyValue.type}" },`
-          )
+          } else {
+            sourceFile.addStatements(
+              `  "${propertyName}": { type: "${propertyValue.type}" },`
+            )
+          }
         }
-      }
-      sourceFile.addStatements(`} as const satisfies DatabaseFieldMetadata;`)
+        sourceFile.addStatements(`} as const satisfies DatabaseFieldMetadata;`)
 
-      // Generate advanced property type mapping function
-      const advancedPropertyTypeToTS = (
-        propertyType: NotionPropertyType
-      ): string => {
-        switch (propertyType) {
-          case "title":
-            return "{ content: string; annotations: any; href: string | null; link?: { url: string } | null }[]"
-          case "rich_text":
-            return "{ content: string; annotations: any; href: string | null; link?: { url: string } | null }[]"
-          case "number":
-            return "number"
-          case "select":
-            return "{ id: string; name: string; color: string } | null"
-          case "multi_select":
-            return "{ id: string; name: string; color: string }[]"
-          case "date":
-            return "{ start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null"
-          case "people":
-            return "{ id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }[]"
-          case "files":
-            return "{ name: string; type: string; external?: { url: string }; file?: { url: string; expiry_time: string } }[]"
-          case "checkbox":
-            return "boolean"
-          case "url":
-            return "string"
-          case "email":
-            return "string"
-          case "phone_number":
-            return "string"
-          case "formula":
-            return "{ type: string; value: any }"
-          case "relation":
-            return "{ id: string }[]"
-          case "rollup":
-            return "{ type: string; function: string; array?: any[]; number?: number; date?: any }"
-          case "created_time":
-            return "{ timestamp: string; date: Date }"
-          case "created_by":
-          case "last_edited_by":
-            return "{ id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }"
-          case "last_edited_time":
-            return "{ timestamp: string; date: Date }"
-          case "status":
-            return "{ id: string; name: string; color: string } | null"
-          case "unique_id":
-            return "{ prefix: string | null; number: number }"
-          default:
-            return "any"
+        const advancedPropertyTypeToTS = (
+          propertyType: NotionPropertyType
+        ): string => {
+          switch (propertyType) {
+            case "title":
+              return "{ content: string; annotations: any; href: string | null; link?: { url: string } | null }[]"
+            case "rich_text":
+              return "{ content: string; annotations: any; href: string | null; link?: { url: string } | null }[]"
+            case "number":
+              return "number"
+            case "select":
+              return "{ id: string; name: string; color: string } | null"
+            case "multi_select":
+              return "{ id: string; name: string; color: string }[]"
+            case "date":
+              return "{ start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null"
+            case "people":
+              return "{ id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }[]"
+            case "files":
+              return "{ name: string; type: string; external?: { url: string }; file?: { url: string; expiry_time: string } }[]"
+            case "checkbox":
+              return "boolean"
+            case "url":
+              return "string"
+            case "email":
+              return "string"
+            case "phone_number":
+              return "string"
+            case "formula":
+              return "{ type: string; value: any }"
+            case "relation":
+              return "{ id: string }[]"
+            case "rollup":
+              return "{ type: string; function: string; array?: any[]; number?: number; date?: any }"
+            case "created_time":
+              return "{ timestamp: string; date: Date }"
+            case "created_by":
+            case "last_edited_by":
+              return "{ id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }"
+            case "last_edited_time":
+              return "{ timestamp: string; date: Date }"
+            case "status":
+              return "{ id: string; name: string; color: string } | null"
+            case "unique_id":
+              return "{ prefix: string | null; number: number }"
+            default:
+              return "any"
+          }
         }
+
+        const baseTypeName = typeName
+        const advancedTypeName = `${baseTypeName}Advanced`
+        const rawTypeName = `${baseTypeName}Raw`
+
+        sourceFile.addInterface({
+          name: advancedTypeName,
+          properties: [
+            { name: "id", type: "string" },
+            ...propertyEntries.map(([name, prop]) => ({
+              name: sanitizePropertyName(name),
+              type: advancedPropertyTypeToTS(prop.type)
+            }))
+          ],
+          isExported: true
+        })
+
+        sourceFile.addInterface({
+          name: rawTypeName,
+          properties: [
+            { name: "id", type: "string" },
+            { name: "properties", type: "Record<string, any>" }
+          ],
+          isExported: true
+        })
+
+        sourceFile.addInterface({
+          name: baseTypeName,
+          extends: ["DatabaseRecord"],
+          properties: [
+            { name: "id", type: "string" },
+            ...propertyEntries.map(([name, prop]) => ({
+              name: sanitizePropertyName(name),
+              type: propertyTypeToTS(prop.type, prop)
+            })),
+            { name: "advanced", type: advancedTypeName },
+            { name: "raw", type: rawTypeName }
+          ],
+          isExported: true
+        })
+
+        const databaseKey = compositeName
+          .replace(/[^\w\s]/g, "")
+          .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
+          .replace(/\s/g, "")
+          .replace(/^./, (c) => c.toLowerCase())
+
+        sourceFile.addStatements(`
+// Extend DatabaseRegistry interface with this data source
+declare module "@mikemajara/notion-cms" {
+  interface DatabaseRegistry {
+    ${databaseKey}: {
+      record: ${typeName};
+      recordAdvanced: ${advancedTypeName};
+      recordRaw: PageObjectResponse;
+      fields: typeof ${typeName}FieldTypes;
+    };
+  }
+}
+
+// Add data source configuration to the registry
+NotionCMS.prototype.databases["${databaseKey}"] = {
+  id: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATABASE_ID || "${databaseId}",
+  dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${
+          target.dataSource.id
+        }",
+  fields: ${typeName}FieldTypes,
+};
+`)
       }
-
-      // Generate interface types
-      const baseTypeName = typeName
-      const advancedTypeName = `${baseTypeName}Advanced`
-      const rawTypeName = `${baseTypeName}Raw`
-
-      sourceFile.addInterface({
-        name: advancedTypeName,
-        properties: [
-          { name: "id", type: "string" },
-          ...propertyEntries.map(([name, prop]) => ({
-            name: sanitizePropertyName(name),
-            type: advancedPropertyTypeToTS(prop.type)
-          }))
-        ],
-        isExported: true
-      })
-
-      sourceFile.addInterface({
-        name: rawTypeName,
-        properties: [
-          { name: "id", type: "string" },
-          { name: "properties", type: "Record<string, any>" }
-        ],
-        isExported: true
-      })
-
-      sourceFile.addInterface({
-        name: baseTypeName,
-        extends: ["DatabaseRecord"],
-        properties: [
-          { name: "id", type: "string" },
-          ...propertyEntries.map(([name, prop]) => ({
-            name: sanitizePropertyName(name),
-            type: propertyTypeToTS(prop.type, prop)
-          })),
-          { name: "advanced", type: advancedTypeName },
-          { name: "raw", type: rawTypeName }
-        ],
-        isExported: true
-      })
     } catch (error) {
       console.error(`Error processing database ${databaseId}:`, error)
     }
   }
 
-  // Generate module augmentation with all method signatures
-  sourceFile.addStatements(`
-// ============================================================================
-// NotionCMS Extension Methods
-// ============================================================================
-
-// Extend DatabaseRegistry only; no instance helper methods are generated in combined mode
-/* eslint-disable */
-declare module "@mikemajara/notion-cms" {
-  interface NotionCMS {}`)
-
-  // Generate method implementations
-  sourceFile.addStatements(`
-// ============================================================================
-// Method Implementations
-// ============================================================================
-
-// No instance helper implementations are emitted in combined mode.
-`)
-
-  // Save the file
   await sourceFile.save()
   console.log(`Generated combined types file: ${combinedFilePath}`)
 }

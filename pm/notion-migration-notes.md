@@ -24,7 +24,7 @@
 
 1. **Flag hotspots with TODO comments** – In progress. TODO markers inserted in generator, database service, query builder, client, and CLI to track database→data-source migrations.
 2. **Spec out plan** – This document establishes scope, references, and pending changes for the migration.
-3. **CLI & generator updates** – Pending. Implement data source discovery, selection, and generation, maintaining backwards compatibility during transition.
+3. **CLI & generator updates** – In progress. CLI now prompts for data source selection (with override flag) and generator resolves schemas per data source; combined-mode options mapping still pending.
 4. **Query layer refactor** – Pending. Replace `.databases.query` usage, store `data_source_id`, adjust logging, provide compatibility for existing consumers.
 5. **Registry & multi-source ergonomics** – Pending. Allow multiple data sources per logical database key, ensure generated code registers them.
 6. **Webhooks/search/relations audit** – Pending. Document follow-up requirements for data-source aware webhook payloads, relation writes, and search responses.

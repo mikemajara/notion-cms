@@ -16,10 +16,6 @@
     "eslint": "^8.56.0",
     "typescript": "^5.4.2"
   },
-  "peerDependencies": {
-    "@notionhq/client": "^2.2.14",
-    "@aws-sdk/client-s3": "^3.0.0"
-  },
   "packageManager": "pnpm@8.15.0",
   "engines": {
     "node": ">=18.0.0"

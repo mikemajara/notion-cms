@@ -68,7 +68,6 @@ program
           options.token
         )
       } else {
-        // TODO(notion-2025-09-03): fetch data_sources for the database and prompt user selection.
         const baseTypesFile = path.join(outputPath, "notion-types.ts")
         if (fs.existsSync(baseTypesFile)) {
           fs.unlinkSync(baseTypesFile)
