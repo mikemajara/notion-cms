@@ -11,6 +11,11 @@ import {
   convertRecordToSimple
 } from "./record-processor"
 
+export interface QueryResource {
+  dataSourceId: string
+  label?: string
+}
+
 export type SortDirection = "ascending" | "descending"
 export type LogicalOperator = "and" | "or"
 
@@ -393,7 +398,7 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
   implements PromiseLike<T[] | T | null>
 {
   private client: Client
-  private resource: { databaseId: string; dataSourceId: string }
+  private resource: QueryResource
   private fieldTypes: M
   private filterConditions: FilterCondition[] = []
   private logicalOperator: LogicalOperator = "and"
@@ -407,7 +412,7 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
 
   constructor(
     client: Client,
-    resource: { databaseId: string; dataSourceId: string },
+    resource: QueryResource,
     fieldTypes: M = {} as M,
     fileManager?: FileManager,
     recordType: DatabaseRecordType = "raw"
@@ -598,7 +603,7 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
   async paginate(pageSize: number = 100): Promise<QueryResult<T>> {
     const filter = this.buildFilter()
     try {
-      debug.query(this.resource.databaseId, {
+      debug.query(this.resource, {
         data_source_id: this.resource.dataSourceId,
         filter: filter || undefined,
         sorts: this.sortOptions,
@@ -661,8 +666,8 @@ export class QueryBuilder<T, M extends DatabaseFieldMetadata = {}>
       }
     } catch (error) {
       debug.error(error, {
-        databaseId: this.resource.databaseId,
         dataSourceId: this.resource.dataSourceId,
+        label: this.resource.label,
         filter,
         sorts: this.sortOptions,
         pageSize,

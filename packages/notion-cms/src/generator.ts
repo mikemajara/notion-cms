@@ -6,7 +6,6 @@ import * as fs from "fs"
 import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
 import { getClient } from "./shared"
-
 // Use runtime type to avoid redefining in generator
 import type { NotionPropertyType } from "./types/public"
 type NotionPropertyConfig = DataSourceObjectResponse["properties"][string]
@@ -19,6 +18,14 @@ type DataSourceSelection = {
   commentLabel: string
   databaseName: string
   dataSourceName: string | null
+}
+
+type GeneratedDataSourceMetadata = {
+  dataSourceId: string
+  dataSourceName: string | null
+  compositeName: string
+  databaseKey: string
+  fileName: string
 }
 
 function deriveDatabaseDisplayName(
@@ -56,6 +63,14 @@ function buildCompositeName(
     return baseName
   }
   return `${baseName} ${dataSourceName}`.trim()
+}
+
+function buildRegistryKey(name: string): string {
+  return name
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
+    .replace(/\s/g, "")
+    .replace(/^./, (c) => c.toLowerCase())
 }
 
 async function fetchDataSource(
@@ -257,8 +272,7 @@ export async function generateTypes(
   outputPath: string,
   token: string,
   options?: { dataSourceId?: string }
-): Promise<void> {
-  // Create a new notion client with the provided token
+): Promise<GeneratedDataSourceMetadata[]> {
   const notion = getClient(token)
 
   const database = (await notion.databases.retrieve({
@@ -267,92 +281,108 @@ export async function generateTypes(
 
   const selections = await resolveDataSources(notion, database, databaseId)
 
-  const selection = options?.dataSourceId
-    ? selections.find((item) => item.dataSource.id === options.dataSourceId)
-    : selections[0]
-
-  if (!selection) {
-    const available = selections
-      .map(
-        (item) => `${item.dataSourceName ?? "Unnamed"} (${item.dataSource.id})`
+  let targets: DataSourceSelection[]
+  if (options?.dataSourceId) {
+    const selection = selections.find(
+      (item) => item.dataSource.id === options.dataSourceId
+    )
+    if (!selection) {
+      const available = selections
+        .map(
+          (item) =>
+            `${item.dataSourceName ?? "Unnamed"} (${item.dataSource.id})`
+        )
+        .join(", ")
+      throw new Error(
+        `[generator] Data source "${options.dataSourceId}" not found. Available sources: ${available}`
       )
-      .join(", ")
-    throw new Error(
-      `[generator] Data source "${options?.dataSourceId}" not found. Available sources: ${available}`
+    }
+    targets = [selection]
+  } else {
+    targets = selections
+  }
+
+  const generated: GeneratedDataSourceMetadata[] = []
+
+  fs.mkdirSync(outputPath, { recursive: true })
+
+  for (const selection of targets) {
+    const properties = selection.dataSource.properties
+    const compositeName = selection.compositeName
+    const databaseName = selection.databaseName
+    const typeName = generateTypeName(compositeName)
+    const fileName = generateFileName(compositeName)
+    const specificFilePath = path.join(outputPath, fileName)
+
+    const project = new Project()
+    const sourceFile = project.createSourceFile(specificFilePath, "", {
+      overwrite: true
+    })
+
+    generateDatabaseSpecificFile(
+      sourceFile,
+      properties,
+      typeName,
+      selection.commentLabel,
+      databaseId,
+      selection.dataSource.id,
+      databaseName
+    )
+
+    await sourceFile.save()
+    updateIndexFile(outputPath, fileName)
+
+    const databaseKey = buildRegistryKey(compositeName)
+    generated.push({
+      dataSourceId: selection.dataSource.id,
+      dataSourceName: selection.dataSourceName,
+      compositeName,
+      databaseKey,
+      fileName
+    })
+
+    const label = selection.dataSourceName
+      ? `${selection.databaseName} → ${selection.dataSourceName}`
+      : selection.databaseName
+    console.log(
+      `[generator] Generated types for data source "${label}" (${selection.dataSource.id})`
     )
   }
 
-  const properties = selection.dataSource.properties
-
-  // Extract database name and convert to a proper type name
-  const compositeName = selection.compositeName
-  const databaseName = selection.databaseName
-
-  const typeName = generateTypeName(compositeName)
-
-  // Generate filename for this database
-  const fileName = generateFileName(compositeName)
-
-  // Create output directory if it doesn't exist
-  fs.mkdirSync(outputPath, { recursive: true })
-
-  // Generate the database-specific file
-  const specificFilePath = path.join(outputPath, fileName)
-
-  // Initialize ts-morph project
-  const project = new Project()
-  const sourceFile = project.createSourceFile(
-    specificFilePath,
-    "",
-    { overwrite: true } // Database-specific files are always overwritten
-  )
-
-  // Generate database-specific types file that imports directly from notion-cms
-  generateDatabaseSpecificFile(
-    sourceFile,
-    properties,
-    typeName,
-    selection.commentLabel,
-    databaseId,
-    selection.dataSource.id,
-    databaseName
-  )
-
-  // Save the file
-  await sourceFile.save()
-
-  // Also generate an index file that exports everything from generated files
-  updateIndexFile(outputPath, fileName)
+  return generated
 }
 
 // Create or update an index file that exports from all generated type files
 function updateIndexFile(outputPath: string, fileName: string): void {
   const indexPath = path.join(outputPath, "index.ts")
-
-  // Create new index file if it doesn't exist
-  if (!fs.existsSync(indexPath)) {
-    fs.writeFileSync(
-      indexPath,
-      `// Auto-generated index file for Notion CMS types
+  const header = `// Auto-generated index file for Notion CMS types
 
 // Export database-specific types
 `
-    )
+
+  let content = header
+  if (fs.existsSync(indexPath)) {
+    content = fs.readFileSync(indexPath, "utf8")
+    if (!content.startsWith(header)) {
+      content = header + (content.startsWith("\n") ? content : `\n${content}`)
+    }
   }
 
-  // Read current content
-  // let content = fs.readFileSync(indexPath, "utf8")
-  let content = `// Auto-generated index file for Notion CMS types
+  const normalized = fileName.replace(".ts", "")
+  const importLine = `import './${normalized}';`
+  const exportLine = `export * from './${normalized}';`
 
-// Export database-specific types
-`
+  let updated = content
+  if (!updated.includes(importLine)) {
+    updated += `${importLine}\n`
+  }
+  if (!updated.includes(exportLine)) {
+    updated += `${exportLine}\n`
+  }
 
-  // Check if this file is already exported
-  let exportLine = `import './${fileName.replace(".ts", "")}';\n`
-  exportLine += `export * from './${fileName.replace(".ts", "")}';`
-  if (!content.includes(exportLine)) {
-    // Add export if not already there
-    content += `${exportLine}\n`
+  if (updated !== content) {
+    fs.writeFileSync(indexPath, updated)
+  } else if (!fs.existsSync(indexPath)) {
     fs.writeFileSync(indexPath, content)
   }
 }
@@ -542,11 +572,7 @@ function generateDatabaseSpecificFile(
     })
 
     // Generate camelCase database key from database name
-    const databaseKey = compositeName
-      .replace(/[^\w\s]/g, "")
-      .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
-      .replace(/\s/g, "")
-      .replace(/^./, (c) => c.toLowerCase()) // Start with lowercase for registry key
+    const databaseKey = buildRegistryKey(compositeName)
 
     // Generate DatabaseRegistry interface extension and configuration
     sourceFile.addStatements(`
@@ -564,12 +590,8 @@ declare module "@mikemajara/notion-cms" {
 
 // Add database configuration to the registry
 NotionCMS.prototype.databases["${databaseKey}"] = {
-  id: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATABASE_ID || "${databaseId}",
-  ${
-    dataSourceId
-      ? `dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${dataSourceId}",`
-      : `// dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${databaseId}",`
-  }
+  dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${dataSourceId}",
+  label: "${compositeName}",
   fields: ${typeName}FieldTypes,
 };
 `)
@@ -805,11 +827,7 @@ export async function generateMultipleDatabaseTypes(
           isExported: true
         })
 
-        const databaseKey = compositeName
-          .replace(/[^\w\s]/g, "")
-          .replace(/\s+(.)/g, (_, c) => c.toUpperCase())
-          .replace(/\s/g, "")
-          .replace(/^./, (c) => c.toLowerCase())
+        const databaseKey = buildRegistryKey(compositeName)
 
         sourceFile.addStatements(`
 // Extend DatabaseRegistry interface with this data source
@@ -826,10 +844,10 @@ declare module "@mikemajara/notion-cms" {
 
 // Add data source configuration to the registry
 NotionCMS.prototype.databases["${databaseKey}"] = {
-  id: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATABASE_ID || "${databaseId}",
   dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${
           target.dataSource.id
         }",
+  label: "${compositeName}",
   fields: ${typeName}FieldTypes,
 };
 `)

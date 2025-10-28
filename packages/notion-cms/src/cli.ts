@@ -72,7 +72,19 @@ program
         if (fs.existsSync(baseTypesFile)) {
           fs.unlinkSync(baseTypesFile)
         }
-        await generateTypes(databaseIds[0], outputPath, options.token)
+        const results = await generateTypes(
+          databaseIds[0],
+          outputPath,
+          options.token
+        )
+
+        if (results.length > 0) {
+          console.log(
+            `Generated data sources for ${databaseIds[0]}: ${results
+              .map((entry) => entry.databaseKey)
+              .join(", ")}`
+          )
+        }
       }
 
       console.log("Types generated successfully!")

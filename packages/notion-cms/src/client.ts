@@ -42,7 +42,7 @@ export class NotionCMS {
   private databaseService: DatabaseService
   public databases!: Record<
     string,
-    { id: string; dataSourceId: string; fields: DatabaseFieldMetadata }
+    { dataSourceId: string; fields: DatabaseFieldMetadata; label?: string }
   >
 
   static {
@@ -95,7 +95,7 @@ export class NotionCMS {
       )
     }
     return this._query(
-      databaseConfig.id,
+      String(databaseKey),
       databaseConfig.dataSourceId,
       databaseConfig.fields,
       {
@@ -105,13 +105,13 @@ export class NotionCMS {
   }
 
   private _query<T = DatabaseRecord, M extends DatabaseFieldMetadata = {}>(
-    databaseId: string,
+    registryKey: string,
     dataSourceId: string,
     fieldMetadata?: M,
     options?: { recordType?: DatabaseRecordType }
   ): QueryBuilder<T, M> {
     return this.databaseService.query<T, M>(
-      { databaseId, dataSourceId },
+      { dataSourceId, label: registryKey },
       fieldMetadata,
       options
     )
@@ -129,7 +129,11 @@ export class NotionCMS {
 
 export function registerDatabase(
   key: string,
-  config: { id: string; dataSourceId: string; fields: DatabaseFieldMetadata }
+  config: {
+    dataSourceId: string
+    fields: DatabaseFieldMetadata
+    label?: string
+  }
 ) {
   NotionCMS.prototype.databases[key] = config
 }

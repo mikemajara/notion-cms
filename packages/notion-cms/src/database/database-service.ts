@@ -6,6 +6,7 @@ import type {
 import type { DatabaseRecordType } from "../types/public"
 import type { DatabaseFieldMetadata } from "./query-builder"
 import { QueryBuilder } from "./query-builder"
+import type { QueryResource } from "./query-builder"
 import { debug } from "../utils/debug"
 import { FileManager } from "../file-processor/file-manager"
 
@@ -21,11 +22,6 @@ export interface RecordOptions {
   recordType?: DatabaseRecordType
 }
 
-export interface QueryResourceConfig {
-  databaseId: string
-  dataSourceId: string
-}
-
 type FilesProperty = Extract<
   PageObjectResponse["properties"][string],
   { type: "files" }
@@ -37,7 +33,7 @@ export class DatabaseService {
   constructor(private client: Client, private fileManager: FileManager) {}
 
   query<T, M extends DatabaseFieldMetadata = {}>(
-    resource: QueryResourceConfig,
+    resource: QueryResource,
     fieldMetadata?: M,
     options?: RecordOptions
   ): QueryBuilder<T, M> {
@@ -61,7 +57,7 @@ export class DatabaseService {
   }
 
   async getDataSource(
-    resource: QueryResourceConfig,
+    resource: QueryResource,
     options: QueryOptions = {}
   ): Promise<{
     results: PageObjectResponse[]
@@ -69,7 +65,7 @@ export class DatabaseService {
     hasMore: boolean
   }> {
     try {
-      debug.query(resource.databaseId, {
+      debug.query(resource, {
         data_source_id: resource.dataSourceId,
         filter: options.filter,
         sorts: options.sorts,
@@ -102,8 +98,8 @@ export class DatabaseService {
       }
     } catch (error) {
       debug.error(error, {
-        databaseId: resource.databaseId,
         dataSourceId: resource.dataSourceId,
+        label: resource.label,
         options
       })
       throw error
@@ -119,7 +115,7 @@ export class DatabaseService {
   }
 
   async getAllDataSourceRecords(
-    resource: QueryResourceConfig,
+    resource: QueryResource,
     options: Omit<QueryOptions, "startCursor" | "pageSize"> = {}
   ): Promise<PageObjectResponse[]> {
     const results: PageObjectResponse[] = []
