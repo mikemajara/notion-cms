@@ -126,6 +126,9 @@ export interface RecordMyDatabase extends DatabaseRecord {
 }
 
 // Registry extension for type-safe queries
+// This uses TypeScript's module augmentation feature to extend the DatabaseRegistry
+// interface without modifying the source code. When you import this file, TypeScript
+// automatically knows about your database types.
 declare module "@mikemajara/notion-cms" {
   interface DatabaseRegistry {
     myDatabase: {
@@ -142,14 +145,18 @@ declare module "@mikemajara/notion-cms" {
 
 ### Import the Types
 
-Import the generated types in your code:
+Import the generated types in your code. When you import the generated types file, it:
+
+1. Registers the database configuration with `NotionCMS.prototype.databases`
+2. Extends the `DatabaseRegistry` interface via TypeScript module augmentation
+3. Makes the database key available for type-safe queries
 
 ```typescript
 // Import from the generated index file
+// This import is what registers your types - make sure it runs before using NotionCMS.query()
 import { NotionCMS } from "./notion"
 
-// Types are automatically registered via module augmentation
-// No explicit import needed!
+// Types are now registered and available for type-safe queries
 ```
 
 ### Type-Safe Queries
@@ -169,9 +176,14 @@ records[0].Title // ✅ Autocomplete + type checking
 records[0].InvalidProperty // ❌ TypeScript error
 ```
 
-## Database Keys
+## Database Keys vs Database IDs
 
-The generator creates a "database key" from your database name. The key:
+Understanding the difference between these terms is important:
+
+- **Database ID**: The 32-character hexadecimal string from Notion (e.g., `a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6`). Used when generating types.
+- **Database Key**: The generated TypeScript identifier used in queries (e.g., `eRPDataSourceClients`). Created from your database/data source name.
+
+The generator creates a "database key" from your database/data source name. The key:
 
 - Removes special characters
 - Converts spaces to camelCase
@@ -183,9 +195,11 @@ Examples:
 - Database: "Blog Posts" → Key: `blogPosts`
 - Database: "Project_Tracker" → Key: `projectTracker`
 
-You can find the exact key in your generated types file.
+You can find the exact key in your generated types file. Use the **Database Key** (not the Database ID) when calling `.query()`.
 
 ## Environment Variables
+
+### API Token
 
 Instead of passing the token via command line, you can use environment variables:
 
@@ -207,6 +221,27 @@ npx notion-cms generate \
 ```bash
 npx dotenv-cli -e .env -- notion-cms generate --database your-db-id
 ```
+
+### Data Source ID Override
+
+Generated type files include hardcoded data source IDs, but you can override them using environment variables. This is useful for different environments (development, staging, production) that use different Notion databases.
+
+The pattern is: `NOTION_CMS_<DATABASE_KEY>_DATA_SOURCE_ID`
+
+For example, if your database key is `blogPosts`, you can override the data source ID:
+
+```bash
+# .env
+NOTION_CMS_BLOGPOSTS_DATA_SOURCE_ID=your-data-source-id-here
+```
+
+When the generated types file loads, it will check for this environment variable first, falling back to the hardcoded value if not found.
+
+This allows you to:
+
+- Use the same codebase across environments
+- Point to different Notion databases per environment
+- Keep sensitive IDs out of your generated files (though database IDs aren't sensitive without the API token)
 
 ## Regenerating Types
 

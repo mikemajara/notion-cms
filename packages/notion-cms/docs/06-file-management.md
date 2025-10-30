@@ -55,7 +55,7 @@ const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!, {
   files: {
     strategy: "local",
     storage: {
-      path: "./public/assets/notion-files" // Where to store files
+      path: "./public/assets/notion-files" // Required: Where to store files
     }
   }
 })
@@ -63,6 +63,8 @@ const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!, {
 // Files are cached locally
 // ✅ Stable URLs: /assets/notion-files/abc123.jpg
 ```
+
+**Note:** The `path` option is required for the local strategy. If omitted, the default path `./public/assets/notion-files` will be used, but you should explicitly set it to ensure files are stored where your application can serve them.
 
 **Use When:**
 

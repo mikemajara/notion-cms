@@ -237,6 +237,79 @@ The following block types may exist in Notion but are not yet supported:
 - `verification` - Verification properties
 - Properties introduced in newer Notion API versions
 
+## Edge Cases and Gotchas
+
+### Property Deletion in Notion
+
+If you delete a property in Notion after generating types:
+
+**What happens:**
+
+- TypeScript types still reference the deleted property
+- Queries may fail or return `undefined` for that property
+- Type checking may show errors
+
+**Solution:** Regenerate types after making structural changes to your Notion database.
+
+### Formula Return Types
+
+Formula properties can return different types (string, number, boolean, date). The Simple layer returns the raw value without type inference:
+
+```typescript
+// Simple layer - type is unknown
+const record = await notionCMS
+  .query("myDatabase", { recordType: "simple" })
+  .single()
+
+// Formula might be string, number, boolean, or date
+// TypeScript won't know the exact type
+console.log(record.Formula) // any
+```
+
+**Workaround:** Use Advanced layer to access formula type information, or use Raw layer and check the formula result type manually.
+
+### Empty Values
+
+Different property types handle empty values differently:
+
+- **Multi-select**: Empty array `[]` (not `null` or `undefined`)
+- **Select**: `null` when empty
+- **Title/Rich Text**: Empty string `""` when empty
+- **Number**: `null` when empty
+- **Date**: `null` when empty
+- **People**: Empty array `[]` when empty
+
+Always check for empty arrays vs null vs empty strings based on the property type.
+
+### Timezone Handling
+
+**Simple Layer:**
+
+- Dates are converted to JavaScript `Date` objects
+- Timezone information is lost
+- Dates are in your local timezone
+
+**Advanced Layer:**
+
+- Preserves timezone information in `time_zone` field
+- `parsedStart` and `parsedEnd` are Date objects (timezone info available separately)
+- Use Advanced layer when timezone accuracy is important
+
+```typescript
+// Simple - timezone lost
+const simple = await notionCMS
+  .query("myDatabase", { recordType: "simple" })
+  .single()
+simple.Date // Date object, timezone info lost
+
+// Advanced - timezone preserved
+const advanced = await notionCMS
+  .query("myDatabase", { recordType: "advanced" })
+  .single()
+advanced.Date.time_zone // "America/New_York"
+advanced.Date.parsedStart // Date object
+```
+
 ## Workarounds
 
 ### Accessing Unsupported Properties

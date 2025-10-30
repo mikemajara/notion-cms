@@ -20,17 +20,34 @@ const blocks = await notionCMS.getPageContent(pageId)
 
 ### Recursive Content
 
-By default, `getPageContent` fetches nested content recursively:
+By default, `getPageContent` fetches nested content recursively. This means it will:
+
+1. Fetch all top-level blocks
+2. For each block that has children (like toggles, columns, nested lists), fetch those children
+3. Continue recursively until all nested content is retrieved
 
 ```typescript
 // Fetches all blocks including nested children (default)
+// Makes multiple API calls to get complete content hierarchy
 const blocks = await notionCMS.getPageContent(pageId, { recursive: true })
 
 // Fetch only top-level blocks
+// Single API call, faster but incomplete if page has nested content
 const topLevelBlocks = await notionCMS.getPageContent(pageId, {
   recursive: false
 })
 ```
+
+**Performance considerations:**
+
+- **Recursive (default)**: Complete content but requires multiple API calls for pages with nested structures
+- **Non-recursive**: Faster (single API call) but may miss nested content like:
+  - Toggle blocks with hidden content
+  - Column layouts with nested blocks
+  - Nested list items
+  - Synced blocks
+
+For most use cases, keep `recursive: true` (default) to ensure complete content.
 
 ## Converting to Markdown
 

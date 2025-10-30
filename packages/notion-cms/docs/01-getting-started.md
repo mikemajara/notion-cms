@@ -74,21 +74,28 @@ This command will:
 - Create type-safe query methods
 - Output files to the `./notion` directory
 
-**Note:** The `--database` parameter accepts a Notion database ID. You can find this in your database URL:
+**Note:** The `--database` parameter accepts a Notion **Database ID** (the 32-character hexadecimal string from your database URL). This is different from the **Database Key** (the generated TypeScript identifier) used in queries.
+
+You can find your Database ID in your database URL:
 
 ```
 https://notion.so/workspace/YOUR-DATABASE-ID?v=...
+                                      ^^^^^^^^^^^^^^
+                                      This is your Database ID
 ```
+
+After generation, you'll use the **Database Key** (like `eRPDataSourceClients`) in your queries, not the Database ID.
 
 ### Step 2: Import Generated Types
 
-After generation, import the types in your code:
+After generation, import the types in your code. **Important:** Importing the generated types file automatically registers the types with NotionCMS via TypeScript module augmentation. You must import this file before using `NotionCMS.query()`:
 
 ```typescript
+// Import from the generated index file
+// This import registers the types via module augmentation
 import { NotionCMS } from "./notion"
 
-// The generated types automatically register with NotionCMS
-// You can now use type-safe queries!
+// The types are now registered - you can use type-safe queries!
 ```
 
 ### Step 3: Initialize NotionCMS
@@ -123,10 +130,10 @@ clients.forEach((client) => {
 
 ### Querying Records
 
-The query builder provides several methods to fetch data:
+The query builder provides several methods to fetch data. **Note:** Always specify `recordType` - the default is `"raw"` which returns the full Notion API response. Use `"simple"` for most use cases:
 
 ```typescript
-// Get all records
+// Get all records (Simple layer - recommended for most cases)
 const allRecords = await notionCMS
   .query("yourDatabaseKey", { recordType: "simple" })
   .all()
@@ -214,8 +221,8 @@ const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
 Make sure you've:
 
 1. Run `notion-cms generate` to create types
-2. Imported the generated types file in your code
-3. Used the correct database key (from the generated types)
+2. **Imported the generated types file** in your code (this registers the types)
+3. Used the correct **database key** (from the generated types file, not the database ID)
 
 ### "Missing dataSourceId configuration"
 

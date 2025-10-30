@@ -263,16 +263,33 @@ if (firstPage.hasMore && firstPage.nextCursor) {
 
 ### Automatic Pagination
 
-Use `.all()` to automatically fetch all pages:
+Use `.all()` to automatically fetch all pages. **Important:** This method recursively fetches all pages until there are no more results:
 
 ```typescript
 // Fetches all records across all pages automatically
+// Internally makes multiple API calls, fetching 100 records at a time (Notion's max)
 const allClients = await notionCMS
   .query("eRPDataSourceClients", { recordType: "simple" })
   .all()
 
 // Returns: Array of all records (may take time for large datasets)
 ```
+
+**How it works:**
+
+1. Makes first API call with page size (default: 100, max: 100)
+2. If `hasMore` is true, automatically fetches next page using `nextCursor`
+3. Repeats until all pages are fetched
+4. Returns concatenated array of all results
+
+**Performance considerations:**
+
+- For small datasets (< 100 records): `.all()` is convenient and fast
+- For large datasets (1000+ records): Consider using `.execute()` with manual pagination to:
+  - Show progress to users
+  - Cancel requests if needed
+  - Process data incrementally
+  - Reduce memory usage
 
 ### Limiting Results
 
@@ -469,10 +486,38 @@ try {
 
 ## Performance Considerations
 
-1. **Use `.all()` sparingly** - For large datasets, prefer pagination
-2. **Limit results** - Use `.limit()` to cap results per page
-3. **Filter early** - Apply filters before sorting for better performance
-4. **Index your filters** - Notion optimizes queries based on filtered properties
+### When to Use `.all()` vs Pagination
+
+**Use `.all()` when:**
+
+- ✅ Dataset is small (< 100 records)
+- ✅ You need all data at once
+- ✅ Simple use cases where convenience matters more than performance
+
+**Use `.execute()` with pagination when:**
+
+- ✅ Dataset is large (1000+ records)
+- ✅ You want to show progress/loading states
+- ✅ You need to process data incrementally
+- ✅ Memory usage is a concern
+- ✅ You want to allow request cancellation
+
+### Query Optimization Tips
+
+1. **Filter early** - Apply filters before sorting. Notion processes filters server-side efficiently.
+2. **Limit results** - Use `.limit()` to cap results per page (max 100 per Notion API limits).
+3. **Use indexes** - Notion optimizes queries based on filtered properties automatically.
+4. **Batch processing** - For large datasets, process in batches using pagination instead of loading everything at once.
+
+### Default Page Size
+
+The default page size is 100 records (Notion's maximum). When using `.all()`, this means:
+
+- Small dataset (50 records): 1 API call
+- Medium dataset (250 records): 3 API calls (100 + 100 + 50)
+- Large dataset (5000 records): 50 API calls
+
+Consider your use case and API rate limits when choosing between `.all()` and manual pagination.
 
 ## Next Steps
 
