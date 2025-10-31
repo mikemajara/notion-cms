@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander"
-import { generateTypes, generateMultipleDatabaseTypes } from "./generator"
+import { generateTypes } from "./generator"
 import * as path from "path"
 import * as fs from "fs"
 import packageJson from "../package.json"
@@ -14,11 +14,10 @@ program
 
 program
   .command("generate")
-  .description("Generate TypeScript types from a Notion database")
-  .option("-d, --database <id>", "Notion database ID (for single database)")
+  .description("Generate TypeScript types from Notion databases")
   .option(
-    "--databases <ids>",
-    "Multiple Notion database IDs separated by commas"
+    "-d, --databases <ids...>",
+    "Notion database IDs (comma-separated or repeat flag)"
   )
   .option("-o, --output <path>", "Output path", "./notion")
   .option("-v, --version", "Show version")
@@ -30,25 +29,32 @@ program
         process.exit(0)
       }
 
-      if (!options.database && !options.databases) {
-        console.error(
-          "Error: Either --database or --databases must be provided"
-        )
-        process.exit(1)
-      }
-
-      if (options.database && options.databases) {
-        console.error(
-          "Error: Cannot use both --database and --databases options"
-        )
-        process.exit(1)
-      }
-
       const outputPath = path.resolve(process.cwd(), options.output)
 
-      const databaseIds = options.databases
-        ? options.databases.split(",").map((id: string) => id.trim())
-        : [options.database]
+      const databaseInput = options.databases
+      if (!databaseInput) {
+        console.error("Error: --databases must be provided")
+        process.exit(1)
+      }
+
+      const databaseIds = (
+        Array.isArray(databaseInput) ? databaseInput : [databaseInput]
+      )
+        .flatMap((id: string) =>
+          String(id)
+            .split(/[\s,]+/)
+            .map((value) => value.trim())
+            .filter((value) => value.length > 0)
+        )
+        .filter((id: string) => id.length > 0)
+        .filter((id: string, index: number, all: string[]) => {
+          return all.indexOf(id) === index
+        })
+
+      if (databaseIds.length === 0) {
+        console.error("Error: Provide at least one Notion database ID")
+        process.exit(1)
+      }
 
       console.log(
         `Generating types for ${
@@ -61,26 +67,21 @@ program
         fs.mkdirSync(outputPath, { recursive: true })
       }
 
-      if (databaseIds.length > 1) {
-        await generateMultipleDatabaseTypes(
-          databaseIds,
-          outputPath,
-          options.token
-        )
-      } else {
-        const baseTypesFile = path.join(outputPath, "notion-types.ts")
-        if (fs.existsSync(baseTypesFile)) {
-          fs.unlinkSync(baseTypesFile)
-        }
+      const baseTypesFile = path.join(outputPath, "notion-types.ts")
+      if (fs.existsSync(baseTypesFile)) {
+        fs.unlinkSync(baseTypesFile)
+      }
+
+      for (const databaseId of databaseIds) {
         const results = await generateTypes(
-          databaseIds[0],
+          databaseId,
           outputPath,
           options.token
         )
 
         if (results.length > 0) {
           console.log(
-            `Generated data sources for ${databaseIds[0]}: ${results
+            `Generated data sources for ${databaseId}: ${results
               .map((entry) => entry.databaseKey)
               .join(", ")}`
           )

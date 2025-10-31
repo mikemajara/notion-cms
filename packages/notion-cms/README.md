@@ -21,57 +21,58 @@ pnpm add @mikemajara/notion-cms
 ```
 
 ```typescript
-import { NotionCMS, convertRecordToSimple } from "@mikemajara/notion-cms";
+import { NotionCMS } from "./notion" // Generated types
 
-const notionCms = new NotionCMS("your-notion-api-key");
+const notionCms = new NotionCMS(process.env.NOTION_API_KEY!)
 
-// Fetch raw records once and convert on demand
-const { results: rawRecords } = await notionCms.getDatabase("your-database-id");
+// Query with type safety - generate types first!
+const clients = await notionCms
+  .query("eRPDataSourceClients", { recordType: "simple" })
+  .all()
 
-// Convert to the Simple layer using the helper when you need it
-const simpleRecord = await convertRecordToSimple(rawRecords[0]);
-console.log(simpleRecord.Title); // "My Blog Post"
-console.log(simpleRecord.Tags); // ["react", "typescript"]
+console.log(clients[0]["Client Name"]) // "Acme Corp"
+console.log(clients[0].Email) // "contact@acme.com"
+console.log(clients[0].Tags) // ["VIP", "Active"]
 
-// Query Builder - type-safe filtering and sorting
-const posts = await notionCms
-  .query("blog-database-id")
-  .where("Status")
-  .equals("Published")
-  .sort("Created", "descending")
-  .execute();
+// Filter and sort with full type safety
+const activeClients = await notionCms
+  .query("eRPDataSourceClients", { recordType: "simple" })
+  .filter("Status", "equals", "Active")
+  .sort("Last Contact", "descending")
+  .all()
 ```
 
 ## Documentation
 
 Get started quickly with our comprehensive guides:
 
-- **[📚 Getting Started](./docs/getting-started.md)** - Your first steps with Notion CMS
-- **[⚙️ Installation Guide](./docs/installation.md)** - Detailed setup and configuration
-- **[🧠 Core Concepts](./docs/core-concepts.md)** - Understand the layered API architecture
-- **[📖 API Reference](./docs/api-reference/)** - Complete API documentation
-- **[💡 Examples](./docs/examples/)** - Real-world usage patterns and code samples
+- **[📚 Getting Started](./docs/01-getting-started.md)** - Installation and basic usage
+- **[🧠 Core Concepts](./docs/02-core-concepts.md)** - Understand the three-layer API architecture
+- **[⚙️ Type Generation](./docs/03-type-generation.md)** - Generate TypeScript types from your Notion databases
 
 ## Layered API Preview
 
 Access your data at the level of detail you need:
 
 ```typescript
-const { results } = await notionCms.getDatabase(databaseId);
-const record = results[0];
+// 🎯 Simple Layer - Clean JavaScript types (default)
+const simple = await notionCms
+  .query("myDatabase", { recordType: "simple" })
+  .single()
+simple.Title // "My Blog Post"
+simple.Tags // ["react", "typescript"]
+simple.PublishDate // Date object
 
-// 🎯 Simple API - Clean JavaScript types
-record.Title; // "My Blog Post"
-record.Tags; // ["react", "typescript"]
-record.PublishDate; // Date object
+// 🔍 Advanced Layer - Rich metadata preserved
+const advanced = await notionCms
+  .query("myDatabase", { recordType: "advanced" })
+  .single()
+advanced.Tags // [{ id: "tag1", name: "react", color: "blue" }, ...]
+advanced.Status // { id: "status1", name: "Published", color: "green" }
 
-// 🔍 Advanced API - Rich metadata preserved
-record.advanced.Tags;
-// [{ id: "tag1", name: "react", color: "blue" }, ...]
-
-// ⚡ Raw API - Complete Notion response
-record.raw.properties.Title;
-// Full Notion API response for debugging/advanced use
+// ⚡ Raw Layer - Complete Notion API response
+const raw = await notionCms.query("myDatabase", { recordType: "raw" }).single()
+raw.properties.Title // Full Notion API structure
 ```
 
 ## Type Generation
@@ -79,19 +80,21 @@ record.raw.properties.Title;
 Generate TypeScript types directly from your Notion databases:
 
 ```bash
-npx notion-cms generate --database-id your-database-id
+npx notion-cms generate \
+  --token your-notion-api-token \
+  --database your-database-id \
+  --output ./notion
 ```
 
 ```typescript
-import { BlogPostRecord } from "./generated-types";
+import { NotionCMS } from "./notion" // Generated types auto-register
 
 // Fully typed database operations
 const posts = await notionCms
-  .query<BlogPostRecord>(databaseId)
-  .where("Status")
-  .equals("Published")
+  .query("myDatabase", { recordType: "simple" })
+  .filter("Status", "equals", "Published")
   .sort("PublishDate", "descending")
-  .execute();
+  .all()
 ```
 
 ## License

@@ -31,12 +31,12 @@ notion-cms generate [options]
 
 ### Single Database
 
-Generate types for a single database:
+Generate types for your database:
 
 ```bash
 npx notion-cms generate \
   --token your-notion-api-token \
-  --database your-database-id \
+  --databases your-database-id \
   --output ./notion
 ```
 
@@ -47,30 +47,29 @@ This will:
 - Create an `index.ts` file that exports everything
 - Register types with the NotionCMS class
 
+**Note:** When generating multiple data sources, each gets its own file. The `--databases` flag accepts comma-separated values (`--databases id1,id2`) or repeated flags (`-d id1 -d id2`). Whitespace is ignored when parsing.
+
 ### Multiple Databases
 
-Generate types for multiple databases at once:
+To generate types for multiple Notion databases in a single run, pass all IDs through the same flag:
 
 ```bash
 npx notion-cms generate \
   --token your-notion-api-token \
-  --databases "db-id-1,db-id-2,db-id-3" \
+  --databases db-a-id,db-b-id \
   --output ./notion
 ```
 
-**Note:** When generating multiple databases, each gets its own file. The `--databases` flag expects comma-separated IDs without spaces.
+Each database is processed independently, so every data source receives its own TypeScript file and the shared `index.ts` is updated once.
 
 ## Command Options
 
-| Option        | Short | Required      | Description                              |
-| ------------- | ----- | ------------- | ---------------------------------------- |
-| `--token`     | `-t`  | Yes           | Your Notion API integration token        |
-| `--database`  | `-d`  | Conditional\* | Single database ID to generate types for |
-| `--databases` |       | Conditional\* | Comma-separated list of database IDs     |
-| `--output`    | `-o`  | No            | Output directory (default: `./notion`)   |
-| `--version`   | `-v`  | No            | Show version and exit                    |
-
-\* Either `--database` or `--databases` must be provided, but not both.
+| Option        | Short | Required | Description                                               |
+| ------------- | ----- | -------- | --------------------------------------------------------- |
+| `--token`     | `-t`  | Yes      | Your Notion API integration token                         |
+| `--databases` | `-d`  | Yes      | One or more database IDs (comma-separated or repeat flag) |
+| `--output`    | `-o`  | No       | Output directory (default: `./notion`)                    |
+| `--version`   | `-v`  | No       | Show version and exit                                     |
 
 ## Finding Your Database ID
 
@@ -264,36 +263,6 @@ Notion databases can expose multiple "data sources" (similar to database views).
 3. Creates separate registry entries for each
 
 This means one Notion database can result in multiple generated type files, each representing a different data source.
-
-## Troubleshooting
-
-### "Database does not expose any data sources"
-
-Your database needs at least one data source configured in Notion. This is typically automatic, but check:
-
-- The database is shared with your integration
-- The integration has proper permissions
-- You're using the correct database ID
-
-### "Database not found in registry"
-
-Make sure you:
-
-1. Ran `notion-cms generate`
-2. Imported the generated types file
-3. Used the correct database key (check the generated file)
-
-### Type errors after regenerating
-
-Sometimes TypeScript needs a restart to pick up new types:
-
-1. Restart your TypeScript server (VS Code: Cmd+Shift+P → "TypeScript: Restart TS Server")
-2. Clear your build cache
-3. Restart your development server
-
-### Multiple databases with same name
-
-If you have multiple databases with similar names, the generator will create unique keys by appending numbers or using the data source name. Check the generated files to see the exact keys.
 
 ## Best Practices
 
