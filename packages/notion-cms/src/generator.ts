@@ -15,7 +15,7 @@ type NotionPropertyEntries = Array<[string, NotionPropertyConfig]>
 type DataSourceSelection = {
   dataSource: DataSourceObjectResponse
   compositeName: string
-  commentLabel: string
+  displayLabel: string
   databaseName: string
   dataSourceName: string | null
 }
@@ -57,12 +57,18 @@ function deriveDatabaseDisplayName(
 
 function buildCompositeName(
   baseName: string,
-  dataSourceName?: string | null
+  dataSourceName: string | null,
+  includeDatabaseNamePrefix: boolean
 ): string {
   if (!dataSourceName) {
     return baseName
   }
-  return `${baseName} ${dataSourceName}`.trim()
+
+  if (includeDatabaseNamePrefix) {
+    return `${baseName} ${dataSourceName}`.trim()
+  }
+
+  return dataSourceName
 }
 
 function buildRegistryKey(name: string): string {
@@ -85,7 +91,8 @@ async function fetchDataSource(
 async function resolveDataSources(
   notion: ReturnType<typeof getClient>,
   database: DatabaseObjectResponse,
-  databaseId: string
+  databaseId: string,
+  includeDatabaseNamePrefix: boolean
 ): Promise<DataSourceSelection[]> {
   const baseName = deriveDatabaseDisplayName(database, databaseId)
   const references = database.data_sources ?? []
@@ -104,15 +111,19 @@ async function resolveDataSources(
       fragment.plain_text?.trim()
     )
     const dataSourceName = firstTitleFragment?.plain_text ?? ref.name ?? null
-    const compositeName = buildCompositeName(baseName, dataSourceName)
-    const commentLabel = dataSourceName
+    const compositeName = buildCompositeName(
+      baseName,
+      dataSourceName,
+      includeDatabaseNamePrefix
+    )
+    const displayLabel = dataSourceName
       ? `${baseName} (Data source: ${dataSourceName})`
       : baseName
 
     selections.push({
       dataSource,
       compositeName,
-      commentLabel,
+      displayLabel,
       databaseName: baseName,
       dataSourceName
     })
@@ -271,7 +282,7 @@ export async function generateTypes(
   databaseId: string,
   outputPath: string,
   token: string,
-  options?: { dataSourceId?: string }
+  options?: { dataSourceId?: string; includeDatabaseNamePrefix?: boolean }
 ): Promise<GeneratedDataSourceMetadata[]> {
   const notion = getClient(token)
 
@@ -279,7 +290,12 @@ export async function generateTypes(
     database_id: databaseId
   })) as DatabaseObjectResponse
 
-  const selections = await resolveDataSources(notion, database, databaseId)
+  const selections = await resolveDataSources(
+    notion,
+    database,
+    databaseId,
+    options?.includeDatabaseNamePrefix ?? false
+  )
 
   let targets: DataSourceSelection[]
   if (options?.dataSourceId) {
@@ -309,6 +325,7 @@ export async function generateTypes(
   for (const selection of targets) {
     const properties = selection.dataSource.properties
     const compositeName = selection.compositeName
+    const displayLabel = selection.displayLabel
     const databaseName = selection.databaseName
     const typeName = generateTypeName(compositeName)
     const fileName = generateFileName(compositeName)
@@ -323,10 +340,11 @@ export async function generateTypes(
       sourceFile,
       properties,
       typeName,
-      selection.commentLabel,
+      compositeName,
       databaseId,
       selection.dataSource.id,
-      databaseName
+      databaseName,
+      displayLabel
     )
 
     await sourceFile.save()
@@ -341,11 +359,8 @@ export async function generateTypes(
       fileName
     })
 
-    const label = selection.dataSourceName
-      ? `${selection.databaseName} → ${selection.dataSourceName}`
-      : selection.databaseName
     console.log(
-      `[generator] Generated types for data source "${label}" (${selection.dataSource.id})`
+      `[generator] Generated types for data source "${displayLabel}" (${selection.dataSource.id})`
     )
   }
 
@@ -395,12 +410,13 @@ function generateDatabaseSpecificFile(
   compositeName: string,
   databaseId: string,
   dataSourceId: string,
-  databaseName: string
+  databaseName: string,
+  displayLabel: string
 ): void {
   try {
     const propertyEntries = extractPropertyEntries(properties, {
       databaseId,
-      databaseName: compositeName
+      databaseName: displayLabel
     })
 
     // Add a comment at the top of the file warning that it's auto-generated
@@ -409,7 +425,8 @@ function generateDatabaseSpecificFile(
  * DO NOT EDIT DIRECTLY - YOUR CHANGES WILL BE OVERWRITTEN
  * v0.1.3
  * Generated for database: ${databaseName}
- * Composite name: ${compositeName}
+ * Composite display: ${displayLabel}
+ * Signature name: ${compositeName}
  * Data source: ${dataSourceId ?? "<default>"}
  */`)
 
@@ -591,7 +608,7 @@ declare module "@mikemajara/notion-cms" {
 // Add database configuration to the registry
 NotionCMS.prototype.databases["${databaseKey}"] = {
   dataSourceId: process.env.NOTION_CMS_${databaseKey.toUpperCase()}_DATA_SOURCE_ID || "${dataSourceId}",
-  label: "${compositeName}",
+  label: "${displayLabel}",
   fields: ${typeName}FieldTypes,
 };
 `)

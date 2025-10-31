@@ -49,6 +49,10 @@ This will:
 
 **Note:** When generating multiple data sources, each gets its own file. The `--databases` flag accepts comma-separated values (`--databases id1,id2`) or repeated flags (`-d id1 -d id2`). Whitespace is ignored when parsing.
 
+#### Naming strategy
+
+- By default, generated type names, registry keys, and filenames use the Notion data source name only. If you prefer the database prefixed to every data source, pass `--database-prefix` to the CLI.
+
 ### Multiple Databases
 
 To generate types for multiple Notion databases in a single run, pass all IDs through the same flag:
@@ -64,12 +68,13 @@ Each database is processed independently, so every data source receives its own 
 
 ## Command Options
 
-| Option        | Short | Required | Description                                               |
-| ------------- | ----- | -------- | --------------------------------------------------------- |
-| `--token`     | `-t`  | Yes      | Your Notion API integration token                         |
-| `--databases` | `-d`  | Yes      | One or more database IDs (comma-separated or repeat flag) |
-| `--output`    | `-o`  | No       | Output directory (default: `./notion`)                    |
-| `--version`   | `-v`  | No       | Show version and exit                                     |
+| Option              | Short | Required | Description                                                 |
+| ------------------- | ----- | -------- | ----------------------------------------------------------- |
+| `--token`           | `-t`  | Yes      | Your Notion API integration token                           |
+| `--databases`       | `-d`  | Yes      | One or more database IDs (comma-separated or repeat flag)   |
+| `--database-prefix` |       | No       | Prefix generated data source names with their database name |
+| `--output`          | `-o`  | No       | Output directory (default: `./notion`)                      |
+| `--version`         | `-v`  | No       | Show version and exit                                       |
 
 ## Finding Your Database ID
 

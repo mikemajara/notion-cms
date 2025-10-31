@@ -19,6 +19,10 @@ program
     "-d, --databases <ids...>",
     "Notion database IDs (comma-separated or repeat flag)"
   )
+  .option(
+    "--database-prefix",
+    "Prefix generated data source names with their parent database name"
+  )
   .option("-o, --output <path>", "Output path", "./notion")
   .option("-v, --version", "Show version")
   .requiredOption("-t, --token <token>", "Notion API token")
@@ -72,11 +76,16 @@ program
         fs.unlinkSync(baseTypesFile)
       }
 
+      const includeDatabasePrefix = Boolean(options.databasePrefix)
+
       for (const databaseId of databaseIds) {
         const results = await generateTypes(
           databaseId,
           outputPath,
-          options.token
+          options.token,
+          {
+            includeDatabaseNamePrefix: includeDatabasePrefix
+          }
         )
 
         if (results.length > 0) {
