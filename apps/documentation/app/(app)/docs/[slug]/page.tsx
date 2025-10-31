@@ -63,7 +63,7 @@ export default async function Page({
   return (
     <div className="w-full">
       <div className="flex flex-row gap-4">
-        <div className="px-6 py-6 space-y-2 max-w-lg border-r lg:max-w-2xl">
+        <div className="px-6 py-6 space-y-2 max-w-lg lg:max-w-2xl">
           <Markdown>{content}</Markdown>
           <div className="flex flex-row justify-between items-center mt-10">
             <div className="flex gap-2 items-center">
@@ -96,7 +96,7 @@ export default async function Page({
             </div>
           </div>
         </div>
-        <div className="hidden flex-col gap-2 py-14 text-sm lg:flex">
+        <div className="hidden flex-col gap-2 py-14 text-sm border-l md:flex md:w-48 lg:w-60">
           {getPageIndex(content)?.map((heading, idx) => (
             <Link
               key={idx}

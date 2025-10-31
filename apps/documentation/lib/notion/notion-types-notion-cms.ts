@@ -3,6 +3,9 @@
  * DO NOT EDIT DIRECTLY - YOUR CHANGES WILL BE OVERWRITTEN
  * v0.1.3
  * Generated for database: Notion CMS
+ * Composite display: Notion CMS (Data source: Notion CMS)
+ * Signature name: Notion CMS
+ * Data source: 2132a789-c1fc-8008-bdff-000b1bf647c2
  */
 import { DatabaseRecord, NotionCMS, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
 import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
@@ -78,7 +81,8 @@ declare module "@mikemajara/notion-cms" {
 
 // Add database configuration to the registry
 NotionCMS.prototype.databases["notionCMS"] = {
-  id: process.env.NOTION_CMS_NOTIONCMS_DATABASE_ID || "2132a789c1fc80c985bfefb80ae22ce4",
+  dataSourceId: process.env.NOTION_CMS_NOTIONCMS_DATA_SOURCE_ID || "2132a789-c1fc-8008-bdff-000b1bf647c2",
+  label: "Notion CMS (Data source: Notion CMS)",
   fields: RecordNotionCMSFieldTypes,
 };
 
