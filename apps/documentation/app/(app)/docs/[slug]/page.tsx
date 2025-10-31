@@ -1,14 +1,16 @@
-import { NotionCMS } from "@/lib/notion"
+import {
+  NotionCMS,
+  RecordNotionCMS
+} from "@/lib/notion/notion-types-notion-cms"
 import { blocksToMarkdown } from "@mikemajara/notion-cms"
 import { Markdown } from "@/lib/markdown"
-import remarkGfm from "remark-gfm"
 import { unstable_cache } from "next/cache"
 import Link from "next/link"
 import { Icons } from "@/components/icons"
 import { ArrowUpRightIcon } from "lucide-react"
-import { RecordNotionCMS } from "@/lib/notion"
 import cn from "clsx"
 import { format } from "date-fns"
+import { headingSlugFromText } from "@/lib/utils"
 
 // ISR: Revalidate every hour (3600 seconds)
 export const revalidate = 3600
@@ -25,15 +27,31 @@ export const generateStaticParams = async () => {
  * Extracts h1, h2 and h3 headings and builds an index of the page
  * - Doesn't match code blocks
  */
-const getPageIndex = (content: string) => {
+type PageHeading = {
+  level: number
+  text: string
+  slug: string
+}
+
+const getPageIndex = (content: string): PageHeading[] | undefined => {
   let contentToParse = content
-  contentToParse = contentToParse.replace(/```.*?```/gs, "")
-  contentToParse = contentToParse.replace(/`.*?`/gs, "")
-  const headings = contentToParse.match(/^#+\s+(.*)$/gm)
-  return headings?.map((heading) => ({
-    level: heading.match(/^#+/)?.[0].length,
-    text: heading.replace(/^#+\s+/, "")
-  }))
+  contentToParse = contentToParse.replace(/```[\s\S]*?```/g, "")
+  contentToParse = contentToParse.replace(/`([^`]*)`/g, "$1")
+  const headings = contentToParse.match(/^#{1,3}\s+(.*)$/gm)
+
+  return headings
+    ?.map((heading) => {
+      const level = heading.match(/^#+/)?.[0].length ?? 0
+      const text = heading.replace(/^#+\s+/, "").trim()
+      const slug = headingSlugFromText(text)
+
+      if (!level || !slug) {
+        return undefined
+      }
+
+      return { level, text, slug }
+    })
+    .filter((heading): heading is PageHeading => Boolean(heading))
 }
 
 export default async function Page({
@@ -59,7 +77,7 @@ export default async function Page({
     }
   )
   const { content, page } = await fetchContent()
-
+  console.log(`content`, content)
   return (
     <div className="w-full">
       <div className="flex flex-row gap-4">
@@ -100,7 +118,7 @@ export default async function Page({
           {getPageIndex(content)?.map((heading, idx) => (
             <Link
               key={idx}
-              href={`#${heading.text.replaceAll(" ", "-")}`}
+              href={`#${heading.slug}`}
               className={cn("hover:underline")}
               style={{ paddingLeft: `${heading.level}rem` }}
             >

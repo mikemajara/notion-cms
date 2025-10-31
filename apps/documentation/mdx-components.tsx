@@ -1,5 +1,5 @@
 import type { MDXComponents } from "mdx/types"
-import type { FC } from "react"
+import { Children, isValidElement, type FC, type ReactNode } from "react"
 import { codeToHtml } from "shiki"
 import Link from "next/link"
 import Image from "next/image"
@@ -14,15 +14,34 @@ import { InlineMath, BlockMath } from "react-katex"
 
 import { BlockSideTitle } from "@/components/block-sidetitle"
 import CopyButton from "@/components/copy-button"
+import { headingSlugFromText } from "@/lib/utils"
+
+const textFromNode = (node: ReactNode): string => {
+  return Children.toArray(node)
+    .map((child) => {
+      if (typeof child === "string" || typeof child === "number") {
+        return String(child)
+      }
+
+      if (isValidElement(child)) {
+        return textFromNode(child.props.children)
+      }
+
+      return ""
+    })
+    .join("")
+}
 
 export const components: Record<string, FC<any>> = {
   h1: ({ node, ...props }) => {
     console.log(props)
 
+    const headingId = headingSlugFromText(textFromNode(props.children))
+
     return (
       <h1
         className="pt-8 mb-6 text-2xl font-bold text-primary text-balance"
-        id={props.children.replaceAll(" ", "-")}
+        id={headingId}
         {...props}
       />
     )
@@ -31,21 +50,27 @@ export const components: Record<string, FC<any>> = {
     console.log(props)
     if (props.children === "Footnotes")
       return <hr className="-mx-6 py-4 w-[calc(100%+3rem)]" />
+
+    const headingId = headingSlugFromText(textFromNode(props.children))
     return (
       <h2
         className="pt-8 mb-6 text-xl font-semibold text-primary text-balance"
-        id={props.children?.replaceAll(" ", "-")}
+        id={headingId}
         {...props}
       />
     )
   },
-  h3: ({ node, ...props }) => (
-    <h3
-      className="pt-8 mb-6 text-lg font-regular text-primary text-balance"
-      id={props.children?.replaceAll(" ", "-")}
-      {...props}
-    />
-  ),
+  h3: ({ node, ...props }) => {
+    const headingId = headingSlugFromText(textFromNode(props.children))
+
+    return (
+      <h3
+        className="pt-8 mb-6 text-lg font-regular text-primary text-balance"
+        id={headingId}
+        {...props}
+      />
+    )
+  },
   ul: (props) => (
     <ul
       className="pl-5 mt-2 list-disc list-outside marker:text-primary"

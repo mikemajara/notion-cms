@@ -19,11 +19,11 @@ export default withMDX()({
   },
   redirects: async () => {
     return [
-      // {
-      //   source: "/",
-      //   destination: "/docs/introduction",
-      //   permanent: true
-      // }
+      {
+        source: "/",
+        destination: "/docs/getting-started",
+        permanent: false
+      }
     ]
   }
 } satisfies NextConfig)
