@@ -18,22 +18,16 @@ Install the library using your preferred package manager:
 
 ```bash
 # Using pnpm (recommended)
-pnpm add @mikemajara/notion-cms
+pnpm add @mikemajara/notion-cms @notionhq/client
 
 # Using npm
-npm install @mikemajara/notion-cms
+npm install @mikemajara/notion-cms @notionhq/client
 
 # Using yarn
-yarn add @mikemajara/notion-cms
+yarn add @mikemajara/notion-cms @notionhq/client
 ```
 
-You'll also need the Notion API client as a peer dependency:
-
-```bash
-pnpm add @notionhq/client
-```
-
-### Optional: File Storage
+### File Storage (optional)
 
 If you plan to use file caching (local or S3), install the AWS SDK:
 
@@ -51,13 +45,18 @@ Before you begin, you'll need:
    - Create a new integration
    - Copy the "Internal Integration Token"
    - Share your databases with the integration
-3. **A Notion database** - this will be your data source
+3. **A Notion database** - this will be your main data source
+
+> [!TIP]
+> This library is compatible with Notion's latest **breaking** change in their API
+> which makes a database just a reference or store for multiple databases.
+> Read more about this in their [FAQs: Version 2025-09-03](https://developers.notion.com/docs/upgrade-faqs-2025-09-03)
 
 ## Quick Start
 
 ### Step 1: Generate TypeScript Types
 
-First, generate TypeScript types from your Notion database. This is similar to running `prisma generate` or running migrations in Drizzle.
+First, generate TypeScript types from your Notion database. This is similar to running `prisma generate` or running introspection in Drizzle.
 
 ```bash
 npx notion-cms generate \
@@ -88,7 +87,7 @@ After generation, you'll use the **Database Key** (like `eRPDataSourceClients`) 
 
 ### Step 2: Import Generated Types
 
-After generation, import the types in your code. **Important:** Importing the generated types file automatically registers the types with NotionCMS via TypeScript module augmentation. You must import this file before using `NotionCMS.query()`:
+After generation, import the types in your code. **Important:** Importing the generated types file automatically registers the types with NotionCMS via TypeScript module augmentation. You must import this file before using `NotionCMS.query()`. The best way to do this is to directly import the NotionCMS from the re-export that's generated in your `./notion/index.ts` file:
 
 ```typescript
 // Import from the generated index file
@@ -214,25 +213,7 @@ const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
 - Explore **[Querying Data](./04-querying-data.md)** with filters and sorting
 - See **[Real-World Examples](./07-examples.md)** from the monorepo
 
-## Common Issues
-
-### "Database not found in registry"
-
-Make sure you've:
-
-1. Run `notion-cms generate` to create types
-2. **Imported the generated types file** in your code (this registers the types)
-3. Used the correct **database key** (from the generated types file, not the database ID)
-
-### "Missing dataSourceId configuration"
-
-Regenerate your types - this happens when the database structure has changed or types were generated with an older version.
-
-### Type errors with query methods
-
-Ensure you're using the database key exactly as it appears in your generated types file. The key is case-sensitive and typically follows the pattern `dataSourceName`.
-
-## Getting Help
+## Read more
 
 - Check the [Limitations & Known Issues](./08-limitations.md) guide
 - Review the [Supportability Matrices](./08-limitations.md#supportability-matrices)

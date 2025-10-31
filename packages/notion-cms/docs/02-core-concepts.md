@@ -8,13 +8,19 @@ Notion CMS provides three ways to access your data, each optimized for different
 
 1. **Simple Layer** - Clean JavaScript types, perfect for most use cases
 2. **Advanced Layer** - Rich metadata preserved, when you need colors, IDs, and structured data
-3. **Raw Layer** - Complete Notion API response, for debugging and advanced use
+3. **Raw Layer** - Complete Notion API response, for debugging and advanced use (default)
 
 Think of it like SQL ORMs: Simple is like selecting specific columns, Advanced is like getting relations with metadata, and Raw is the full database row.
 
+> [!TIP]
+> The default response will always be the Raw layer. This helps
+> keeping the API consistent, and might help you in cases like caching
+> where most of the query can be cached as it comes from the API and then
+> different blocks converted as needed.
+
 ## Simple Layer
 
-The Simple layer converts Notion properties into clean JavaScript types. This is the default layer for most queries.
+The Simple layer converts Notion properties into clean JavaScript types.
 
 ### What You Get
 
@@ -135,7 +141,6 @@ console.log(record.archived)
 - ✅ Accessing properties not yet supported in Simple/Advanced
 - ✅ Building advanced integrations
 - ✅ When you need the exact Notion API structure
-- ✅ Working with unsupported property types
 
 ## Choosing the Right Layer
 
@@ -153,11 +158,17 @@ Do you need metadata (colors, IDs, avatars)?
 
 ### Performance Considerations
 
-- **Simple Layer**: Fastest, smallest data footprint
-- **Advanced Layer**: Slightly more data, preserves structure
+- **Simple Layer**: Fastest DX, smallest data footprint
+- **Advanced Layer**: Slightly more data, preserves simple structure
 - **Raw Layer**: Largest payload, complete API response
 
 For most applications, start with Simple and upgrade to Advanced only when you need metadata.
+
+> [!TIP]
+> Note that queries from Notion will always contain the full payload
+> but if you are computing the data in your server, you can choose to send
+> an optimized version of the data for your use case using the Simple and
+> Advanced layers.
 
 ## Converting Between Layers
 
