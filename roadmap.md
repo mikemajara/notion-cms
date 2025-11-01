@@ -13,3 +13,26 @@
 
 - [x] We're missing the native id from each record in the type generation: we need to add that.
 - [x] When building a query appending filter... sort... .single(), the types don't match correctly to a single ResourceRecord.
+
+---
+
+## Query
+
+- [ ] Support explicit AND/OR filters
+- [ ] Support basic pagination through a caching system in the background.
+- [ ]
+
+## Properties
+
+- [ ] Support for formula fields: Formula fields are supported. Notion doesn't hint the type of the formula in the API, but does return the values fine. So the user must set the type in the api, and they shall be able to query them normally.
+- [ ] ...
+
+## Converters
+
+- [ ] Add config for blocksToMarkdown to allow plugins and configure experimental features like underlining or HTML embeded in markdown.
+
+## CLI
+
+- [ ] When formula fields are parsed, Notion gives no information about the type of the formula, unless you query 1 page. This is a limitation cos (1) if there are no pages in the database, we can't really figure out the type of the formula, and (2) if we don't check the pages we won't know. We basically have 2 options here
+  - [ ] A. We prompt the user during the generation so they edit the formula fields as they should know
+  - [ ] B. We try to scan the 1st record in a database, and set the value to that record.
