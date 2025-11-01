@@ -7,14 +7,18 @@
  * Signature name: Notion CMS
  * Data source: 2132a789-c1fc-8008-bdff-000b1bf647c2
  */
-import { DatabaseRecord, NotionCMS, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
-import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import {
+  DatabaseRecord,
+  NotionCMS,
+  DatabaseFieldMetadata
+} from "@mikemajara/notion-cms"
+import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 
-export { NotionCMS } from "@mikemajara/notion-cms";
+export { NotionCMS } from "@mikemajara/notion-cms"
 export const RecordNotionCMSFieldTypes = {
-  "id": { type: "unique_id" },
-  "_slug": { type: "formula" },
-  "Tags": { 
+  id: { type: "unique_id" },
+  _slug: { type: "rich_text" },
+  Tags: {
     type: "multi_select",
     options: ["Onboarding", "Design"] as const
   },
@@ -22,67 +26,91 @@ export const RecordNotionCMSFieldTypes = {
   "Last edited time": { type: "last_edited_time" },
   "Last updated": { type: "date" },
   "Parent page": { type: "relation" },
-  "Revalidate": { type: "button" },
-  "Name": { type: "title" },
-  "Verification": { type: "verification" },
-  "Owner": { type: "people" },
-  "slug": { type: "rich_text" },
-  "Order": { type: "number" },
-} as const satisfies DatabaseFieldMetadata;
+  Revalidate: { type: "button" },
+  Name: { type: "title" },
+  Verification: { type: "verification" },
+  Owner: { type: "people" },
+  slug: { type: "rich_text" },
+  Order: { type: "number" }
+} as const satisfies DatabaseFieldMetadata
 
 export interface RecordNotionCMSAdvanced {
-    id: string;
-    _slug: { type: string; value: any };
-    Tags: { id: string; name: string; color: string }[];
-    "Sub-page": { id: string }[];
-    "Last edited time": { timestamp: string; date: Date };
-    "Last updated": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
-    "Parent page": { id: string }[];
-    Revalidate: any;
-    Name: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
-    Verification: any;
-    Owner: { id: string; name: string | null; avatar_url: string | null; object: string; type: string; email?: string }[];
-    slug: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
-    Order: number;
+  id: string
+  _slug: { type: string; value: any }
+  Tags: { id: string; name: string; color: string }[]
+  "Sub-page": { id: string }[]
+  "Last edited time": { timestamp: string; date: Date }
+  "Last updated": {
+    start: string
+    end: string | null
+    time_zone: string | null
+    parsedStart: Date | null
+    parsedEnd: Date | null
+  } | null
+  "Parent page": { id: string }[]
+  Revalidate: any
+  Name: {
+    content: string
+    annotations: any
+    href: string | null
+    link?: { url: string } | null
+  }[]
+  Verification: any
+  Owner: {
+    id: string
+    name: string | null
+    avatar_url: string | null
+    object: string
+    type: string
+    email?: string
+  }[]
+  slug: {
+    content: string
+    annotations: any
+    href: string | null
+    link?: { url: string } | null
+  }[]
+  Order: number
 }
 
 export interface RecordNotionCMSRaw {
-    id: string;
-    properties: Record<string, any>;
+  id: string
+  properties: Record<string, any>
 }
 
 export interface RecordNotionCMS extends DatabaseRecord {
-    id: string;
-    _slug: any;
-    Tags: Array<"Onboarding" | "Design">;
-    "Sub-page": string[];
-    "Last edited time": string;
-    "Last updated": Date;
-    "Parent page": string[];
-    Revalidate: any;
-    Name: string;
-    Verification: any;
-    Owner: string[];
-    slug: string;
-    Order: number;
+  id: string
+  _slug: string
+  Tags: Array<"Onboarding" | "Design">
+  "Sub-page": string[]
+  "Last edited time": string
+  "Last updated": Date
+  "Parent page": string[]
+  Revalidate: any
+  Name: string
+  Verification: any
+  Owner: string[]
+  slug: string
+  Order: number
 }
 
 // Extend DatabaseRegistry interface with this database
 declare module "@mikemajara/notion-cms" {
   interface DatabaseRegistry {
     notionCMS: {
-      record: RecordNotionCMS;
-      recordAdvanced: RecordNotionCMSAdvanced;
-      recordRaw: PageObjectResponse;
-      fields: typeof RecordNotionCMSFieldTypes;
-    };
+      record: RecordNotionCMS
+      recordAdvanced: RecordNotionCMSAdvanced
+      recordRaw: PageObjectResponse
+      fields: typeof RecordNotionCMSFieldTypes
+    }
   }
 }
 
 // Add database configuration to the registry
 NotionCMS.prototype.databases["notionCMS"] = {
-  dataSourceId: process.env.NOTION_CMS_NOTIONCMS_DATA_SOURCE_ID || "2132a789-c1fc-8008-bdff-000b1bf647c2",
+  dataSourceId:
+    process.env.NOTION_CMS_NOTIONCMS_DATA_SOURCE_ID ||
+    "2132a789-c1fc-8008-bdff-000b1bf647c2",
   label: "Notion CMS (Data source: Notion CMS)",
-  fields: RecordNotionCMSFieldTypes,
-};
-
+  fields: RecordNotionCMSFieldTypes
+}

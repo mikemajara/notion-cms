@@ -44,6 +44,7 @@ function Item(props: React.ComponentProps<typeof Link>) {
 }
 
 const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
+  console.log(pages)
   return (
     <>
       <Link className="flex gap-2 justify-end items-end py-4" href={"/"}>
@@ -53,7 +54,7 @@ const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
         {pages.map((page) => (
           <Item
             key={page.id}
-            href={`/docs/${page.slug}`}
+            href={`/docs/${page._slug}`}
             className="block py-1 w-full text-right transition-colors"
           >
             {page.Name}

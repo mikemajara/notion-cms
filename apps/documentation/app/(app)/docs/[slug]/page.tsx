@@ -65,8 +65,8 @@ export default async function Page({
       const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
       const page = (await notionCMS
         .query("notionCMS", { recordType: "simple" })
-        .filter("slug", "equals", slug)
-        .single()!) as RecordNotionCMS
+        .filter("_slug", "equals", slug)
+        .maybeSingle()!) as RecordNotionCMS
       const content = blocksToMarkdown(await notionCMS.getPageContent(page.id))
       return { content, page }
     },
@@ -77,7 +77,7 @@ export default async function Page({
     }
   )
   const { content, page } = await fetchContent()
-  console.log(`content`, content)
+
   return (
     <div className="w-full">
       <div className="flex flex-row gap-4">
