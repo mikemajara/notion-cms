@@ -104,7 +104,7 @@ export async function getPropertyValueSimple(
     case "phone_number":
       return (property as PhoneNumberPropertyItemObjectResponse).phone_number
     case "formula":
-      return (property as any).formula
+      return (property as any).formula[property.formula.type]
     case "relation": {
       const relationProp = property as RelationPropertyItemObjectResponse
       return Array.isArray(relationProp.relation)
