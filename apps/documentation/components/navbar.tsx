@@ -44,7 +44,6 @@ function Item(props: React.ComponentProps<typeof Link>) {
 }
 
 const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
-  console.log(pages)
   return (
     <>
       <Link className="flex gap-2 justify-end items-end py-4" href={"/"}>

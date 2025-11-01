@@ -81,7 +81,7 @@ export default async function Page({
   return (
     <div className="w-full">
       <div className="flex flex-row gap-4">
-        <div className="px-6 py-6 space-y-2 max-w-lg lg:max-w-2xl">
+        <div className="px-6 py-6 space-y-2 max-w-lg min-h-screen lg:max-w-2xl min-w-lg">
           <Markdown>{content}</Markdown>
           <div className="flex flex-row justify-between items-center mt-10">
             <div className="flex gap-2 items-center">

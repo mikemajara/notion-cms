@@ -34,8 +34,6 @@ const textFromNode = (node: ReactNode): string => {
 
 export const components: Record<string, FC<any>> = {
   h1: ({ node, ...props }) => {
-    console.log(props)
-
     const headingId = headingSlugFromText(textFromNode(props.children))
 
     return (
@@ -47,7 +45,6 @@ export const components: Record<string, FC<any>> = {
     )
   },
   h2: ({ node, ...props }) => {
-    console.log(props)
     if (props.children === "Footnotes")
       return <hr className="-mx-6 py-4 w-[calc(100%+3rem)]" />
 
@@ -162,7 +159,7 @@ export const components: Record<string, FC<any>> = {
     return <code className="inline" {...props} />
   },
   Image,
-  hr: (props) => <hr className="my-14 w-24 border-secondary" {...props} />,
+  hr: (props) => <hr className="my-14 w-full border-secondary" {...props} />,
   table: (props) => (
     <div className="overflow-x-auto my-6 w-0 min-w-full rounded-md border">
       <table {...props} />
