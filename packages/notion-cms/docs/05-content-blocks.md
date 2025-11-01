@@ -29,7 +29,7 @@ By default, `getPageContent` fetches nested content recursively. This means it w
 ```typescript
 // Fetches all blocks including nested children (default)
 // Makes multiple API calls to get complete content hierarchy
-const blocks = await notionCMS.getPageContent(pageId, { recursive: true })
+const blocks = await notionCMS.getPageContent(pageId)
 
 // Fetch only top-level blocks
 // Single API call, faster but incomplete if page has nested content
