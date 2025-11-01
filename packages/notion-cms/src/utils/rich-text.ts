@@ -18,6 +18,12 @@ function applyAnnotations(
     result = `~~${result}~~`
   }
   // underline and color intentionally ignored per spec
+  // TODO: Implement experimental features or plugins for this
+  // we shouldn't add this to the base converter since we should
+  // be based on the spec.
+  // if (annotations.underline) {
+  //   result = `<u>${result}</u>`
+  // }
   return result
 }
 
