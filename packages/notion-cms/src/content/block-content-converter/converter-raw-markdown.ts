@@ -1,5 +1,4 @@
 import type { ContentBlockRaw } from "../../types/content-types"
-import { groupConsecutiveListItems } from "../../utils/block-traversal"
 import { richTextToMarkdown, richTextToPlain } from "../../utils/rich-text"
 
 export interface RawMarkdownOptions {
@@ -76,7 +75,7 @@ function buildStructuralPlaceholder(
   const id = (block as any).id
   let out = `[${kind}]${title ? ` ${title}` : ""}`
   out += ` [id: ${id}]`
-  return `${out}\n`
+  return `${out}`
 }
 
 function renderChildren(
@@ -98,13 +97,17 @@ function renderListGroup(
   orderedLevel: number
 ): string {
   const pad = indent(depth, options.listIndent)
-  let out = ""
+  const lines: string[] = []
   if (listType === "bulleted_list_item") {
     for (const item of items) {
       const field = getBlockField<any>(item)
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      out += `${pad}- ${text}\n`
-      out += renderChildren(item, depth + 1, options, 0)
+      let entry = `${pad}- ${text}`
+      const children = renderChildren(item, depth + 1, options, 0)
+      if (children) {
+        entry += `\n${children}`
+      }
+      lines.push(entry)
     }
   } else {
     let index = 1
@@ -114,12 +117,16 @@ function renderListGroup(
       const marker = options.alternateOrderedListStyles
         ? orderedMarker(index, orderedLevel)
         : String(index)
-      out += `${pad}${marker}. ${text}\n`
-      out += renderChildren(item, depth + 1, options, orderedLevel)
+      let entry = `${pad}${marker}. ${text}`
+      const children = renderChildren(item, depth + 1, options, orderedLevel)
+      if (children) {
+        entry += `\n${children}`
+      }
+      lines.push(entry)
       index++
     }
   }
-  return out
+  return lines.join("[join list group]\n")
 }
 
 function renderTable(
@@ -179,7 +186,7 @@ function renderBlock(
   switch (type) {
     case "paragraph": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return text ? `${text}` : ""
+      return text ? `${text}` : " "
     }
     case "quote": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
@@ -192,24 +199,22 @@ function renderBlock(
     case "to_do": {
       const checked = Boolean(field?.checked)
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `${pad}- [${checked ? "x" : " "}] ${text}${renderChildren(
-        block,
-        depth + 1,
-        options,
-        0
-      )}`
+      const children = renderChildren(block, depth + 1, options, 0)
+      return children
+        ? `${pad}- [${checked ? "x" : " "}] ${text}\n${children}`
+        : `${pad}- [${checked ? "x" : " "}] ${text}`
     }
     case "heading_1": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `# ${text}`
+      return `\n# ${text}\n`
     }
     case "heading_2": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `## ${text}`
+      return `\n## ${text}\n`
     }
     case "heading_3": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `### ${text}`
+      return `\n### ${text}\n`
     }
     case "code": {
       const language = field?.language || ""
@@ -303,26 +308,48 @@ function renderBlocks(
   options: Required<RawMarkdownOptions>,
   orderedChainDepth: number
 ): string {
-  let out = ""
-  const grouped = groupConsecutiveListItems(blocks)
-  for (const node of grouped) {
-    if ((node as any).kind === "list_group") {
-      const group = node as any
-      const currentOrderedLevel =
-        group.listType === "numbered_list_item" ? orderedChainDepth + 1 : 0
-      out +=
-        renderListGroup(
-          group.items,
-          group.listType,
-          depth,
-          options,
-          currentOrderedLevel
-        ) + "\n\n"
+  const segments: string[] = []
+  let pendingListType: "bulleted_list_item" | "numbered_list_item" | null = null
+  let pendingItems: ContentBlockRaw[] = []
+
+  const flushList = () => {
+    if (!pendingListType || pendingItems.length === 0) return
+    const currentOrderedLevel =
+      pendingListType === "numbered_list_item" ? orderedChainDepth + 1 : 0
+    const content = renderListGroup(
+      pendingItems,
+      pendingListType,
+      depth,
+      options,
+      currentOrderedLevel
+    )
+    if (content) {
+      segments.push(content)
+    }
+    pendingListType = null
+    pendingItems = []
+  }
+
+  for (const block of blocks) {
+    const type = getBlockType(block)
+    if (type === "bulleted_list_item" || type === "numbered_list_item") {
+      if (pendingListType !== type) {
+        flushList()
+        pendingListType = type
+      }
+      pendingItems.push(block)
       continue
     }
-    out += renderBlock(node as ContentBlockRaw, depth, options) + "\n\n"
+
+    flushList()
+    const rendered = renderBlock(block, depth, options)
+    if (rendered) {
+      segments.push(rendered)
+    }
   }
-  return out
+
+  flushList()
+  return segments.join("\n")
 }
 
 export function blocksToMarkdown(
@@ -336,5 +363,6 @@ export function blocksToMarkdown(
     alternateOrderedListStyles: opts.alternateOrderedListStyles ?? false
   }
   if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return ""
+  console.log("rawBlocks", JSON.stringify(rawBlocks))
   return renderBlocks(rawBlocks, 0, options, 0)
 }
