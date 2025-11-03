@@ -41,45 +41,6 @@ function renderChildren(
   return renderBlocks(children, depth, options)
 }
 
-function renderListGroup(
-  items: NotionBlock[],
-  listType: "bulleted_list_item" | "numbered_list_item",
-  depth: number,
-  options: Required<RawMarkdownOptions>
-): string {
-  const pad = indent(depth, options.listIndent)
-  const lines: string[] = []
-  if (listType === "bulleted_list_item") {
-    for (const item of items) {
-      const field = getBlockField<any>(item)
-      const text = richTextToMarkdown(field?.rich_text ?? [])
-      const children = renderChildren(item, depth + 1, options)
-      if (children) {
-        const trimmedChildren = children.replace(/\n+$/, "")
-        lines.push(`${pad}- ${text}\n${trimmedChildren}`)
-      } else {
-        lines.push(`${pad}- ${text}`)
-      }
-    }
-  } else {
-    let index = 1
-    for (const item of items) {
-      const field = getBlockField<any>(item)
-      const text = richTextToMarkdown(field?.rich_text ?? [])
-      const marker = String(index)
-      const children = renderChildren(item, depth + 1, options)
-      if (children) {
-        const trimmedChildren = children.replace(/\n+$/, "")
-        lines.push(`${pad}${marker}. ${text}\n${trimmedChildren}`)
-      } else {
-        lines.push(`${pad}${marker}. ${text}`)
-      }
-      index++
-    }
-  }
-  return lines.join("\n")
-}
-
 function renderTable(
   block: NotionBlock,
   _options: Required<RawMarkdownOptions>
@@ -94,30 +55,32 @@ function renderTable(
       return richTextToMarkdown(rich)
     })
   })
-  const hasHeader = Boolean(table?.has_column_header)
-  let out = ""
-  if (rowCells.length === 0) return out
+  if (rowCells.length === 0) return ""
+
+  const lines: string[] = []
   const colCount = rowCells[0].length
-  if (hasHeader) {
-    out += `| ${rowCells[0].join(" | ")} |\n`
-    out += `| ${Array.from({ length: colCount })
-      .map(() => "---")
-      .join(" | ")} |\n`
+  const divider = `| ${Array.from({ length: colCount })
+    .map(() => "---")
+    .join(" | ")} |`
+
+  if (table?.has_column_header) {
+    lines.push(`| ${rowCells[0].join(" | ")} |`)
+    lines.push(divider)
     for (let i = 1; i < rowCells.length; i++) {
-      out += `| ${rowCells[i].join(" | ")} |\n`
+      lines.push(`| ${rowCells[i].join(" | ")} |`)
     }
   } else {
-    out += `| ${Array.from({ length: colCount })
+    const emptyHeader = `| ${Array.from({ length: colCount })
       .map(() => " ")
-      .join(" | ")} |\n`
-    out += `| ${Array.from({ length: colCount })
-      .map(() => "---")
-      .join(" | ")} |\n`
+      .join(" | ")} |`
+    lines.push(emptyHeader)
+    lines.push(divider)
     for (let i = 0; i < rowCells.length; i++) {
-      out += `| ${rowCells[i].join(" | ")} |\n`
+      lines.push(`| ${rowCells[i].join(" | ")} |`)
     }
   }
-  return out
+
+  return lines.join("\n")
 }
 
 function renderBlock(
@@ -127,64 +90,75 @@ function renderBlock(
 ): string {
   const type = getBlockType(block)
   const field = getBlockField<any>(block)
-  if (field === undefined) {
-    throw new Error(
-      `blocksToMarkdown expects Raw Notion blocks; missing field for type "${type}"`
-    )
+
+  const appendWithChildren = (
+    body: string | null | undefined,
+    children: string,
+    indent: string = ""
+  ): string => {
+    let result = ""
+    if (body !== null && body !== undefined) {
+      result += `${body}\n`
+    }
+    if (children) {
+      result += indent + children
+    }
+    return result
   }
-  const pad = indent(depth, options.listIndent)
 
   switch (type) {
-    case "paragraph": {
+    case "paragraph":
+    case "toggle": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return text ? `${text}` : " "
+      return appendWithChildren(
+        text ?? "",
+        renderChildren(block, depth + 1, options),
+        indent(depth + 1, options.listIndent)
+      )
     }
     case "quote": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return text ? `> ${text}` : `>`
-    }
-    case "toggle": {
-      const text = richTextToMarkdown(field?.rich_text ?? [])
-      const children = renderChildren(block, depth + 1, options)
-      if (text && children) {
-        return `${text}\n${children}`
-      }
-      if (text) return text
-      return children
-    }
-    case "to_do": {
-      const checked = Boolean(field?.checked)
-      const text = richTextToMarkdown(field?.rich_text ?? [])
-      const children = renderChildren(block, depth + 1, options)
-      return children
-        ? `${pad}- [${checked ? "x" : " "}] ${text}\n${children}`
-        : `${pad}- [${checked ? "x" : " "}] ${text}`
+      const body = text ? `> ${text}` : ">"
+      return appendWithChildren(
+        body,
+        renderChildren(block, depth + 1, options),
+        indent(depth + 1, options.listIndent)
+      )
     }
     case "heading_1": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `# ${text}`
+      return appendWithChildren(
+        `\n# ${text}\n`,
+        renderChildren(block, depth, options)
+      )
     }
     case "heading_2": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `## ${text}`
+      return appendWithChildren(
+        `\n## ${text}\n`,
+        renderChildren(block, depth, options)
+      )
     }
     case "heading_3": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return `### ${text}`
+      return appendWithChildren(
+        `\n### ${text}\n`,
+        renderChildren(block, depth, options)
+      )
     }
     case "code": {
       const language = field?.language || ""
       const content = richTextToPlain(field?.rich_text ?? [])
-      return `\`\`\`\n${language}\n${content}\n\`\`\``
+      const body = `\`\`\`${language}\n${content}\n\`\`\``
+      return appendWithChildren(body, "") + "\n"
     }
     case "bookmark":
     case "embed":
     case "link_preview": {
       const url = field?.url || ""
       const caption = richTextToMarkdown(field?.caption ?? [])
-      let out = `${url}`
-      if (caption) out += `${caption}`
-      return out
+      const body = caption ? `${url}${caption}` : url
+      return appendWithChildren(body, renderChildren(block, depth, options))
     }
     case "image":
     case "video":
@@ -193,32 +167,28 @@ function renderBlock(
     case "pdf": {
       const src =
         field?.type === "external" ? field?.external?.url : field?.file?.url
-      const caption = richTextToMarkdown(field?.caption ?? [])
-      return `![${caption ?? ""}](${src ?? ""})`
+      const caption = richTextToMarkdown(field?.caption ?? []) || ""
+      const body = `![${caption}](${src ?? ""})`
+      return appendWithChildren(body, "")
     }
     case "equation": {
-      return field?.expression || ""
+      return appendWithChildren(field?.expression || "", "") + "\n"
     }
     case "divider": {
-      return `---`
+      return appendWithChildren("---", "")
     }
     case "table": {
-      return renderTable(block, options)
+      return appendWithChildren(renderTable(block, options), "") + "\n"
     }
     case "table_row": {
       return ""
     }
-    case "column_list": {
-      const _columns = ((field?.children as any[]) || []) as any[]
-      let out = ""
-      const children = (block as any).children as NotionBlock[] | undefined
-      if (children && children.length) {
-        out += renderBlocks(children, depth, options)
-      }
-      return out
+    case "column_list":
+    case "columns": {
+      return renderChildren(block, depth, options)
     }
     case "column": {
-      return renderChildren(block, depth, options)
+      return renderChildren(block, depth, options) + "\n"
     }
     case "synced_block": {
       return renderChildren(block, depth, options)
@@ -226,24 +196,36 @@ function renderBlock(
     case "child_page": {
       if (!options.debug) return ""
       const title = (field?.title as string | undefined) || ""
-      return buildStructuralPlaceholder("child_page", block, title, options)
+      return appendWithChildren(
+        buildStructuralPlaceholder("child_page", block, title, options),
+        ""
+      )
     }
     case "child_database": {
       if (!options.debug) return ""
       const title = (field?.title as string | undefined) || ""
-      return buildStructuralPlaceholder("child_database", block, title, options)
+      return appendWithChildren(
+        buildStructuralPlaceholder("child_database", block, title, options),
+        ""
+      )
     }
     case "breadcrumb": {
       if (!options.debug) return ""
-      return buildStructuralPlaceholder("breadcrumb", block, undefined, options)
+      return appendWithChildren(
+        buildStructuralPlaceholder("breadcrumb", block, undefined, options),
+        ""
+      )
     }
     case "table_of_contents": {
       if (!options.debug) return ""
-      return buildStructuralPlaceholder(
-        "table_of_contents",
-        block,
-        undefined,
-        options
+      return appendWithChildren(
+        buildStructuralPlaceholder(
+          "table_of_contents",
+          block,
+          undefined,
+          options
+        ),
+        ""
       )
     }
     case "template": {
@@ -255,51 +237,98 @@ function renderBlock(
   }
 }
 
-function renderBlocks(
-  blocks: NotionBlock[],
+function renderListItems(
+  items: NotionBlock[],
+  listType: "bulleted_list_item" | "numbered_list_item",
   depth: number,
   options: Required<RawMarkdownOptions>
 ): string {
-  const segments: string[] = []
-  let pendingListType: "bulleted_list_item" | "numbered_list_item" | null = null
-  let pendingItems: NotionBlock[] = []
+  const pad = indent(depth, options.listIndent)
+  let output = ""
+  let index = 1
 
-  const flushList = () => {
-    if (!pendingListType || pendingItems.length === 0) return
-    const content = renderListGroup(
-      pendingItems,
-      pendingListType,
-      depth,
-      options
-    )
-    if (content) {
-      segments.push(content)
+  for (const item of items) {
+    const field = getBlockField<any>(item)
+    const text = richTextToMarkdown(field?.rich_text ?? [])
+    const marker = listType === "bulleted_list_item" ? "- " : `${index}. `
+    output += `${pad}${marker}${text}\n`
+    const children = renderChildren(item, depth + 1, options)
+    if (children) {
+      output += children
     }
-    pendingListType = null
-    pendingItems = []
+    if (listType === "numbered_list_item") {
+      index++
+    }
   }
 
-  for (const block of blocks) {
+  return output
+}
+
+function renderTodoItems(
+  items: NotionBlock[],
+  depth: number,
+  options: Required<RawMarkdownOptions>
+): string {
+  const pad = indent(depth, options.listIndent)
+  let output = ""
+
+  for (const item of items) {
+    const field = getBlockField<any>(item)
+    const text = richTextToMarkdown(field?.rich_text ?? [])
+    const checked = Boolean(field?.checked)
+    output += `${pad}- [${checked ? "x" : " "}] ${text}\n`
+    const children = renderChildren(item, depth + 1, options)
+    if (children) {
+      output += children
+    }
+  }
+
+  return output
+}
+
+function renderBlocks(
+  blocks: NotionBlock[] = [],
+  depth: number,
+  options: Required<RawMarkdownOptions>
+): string {
+  if (!Array.isArray(blocks) || blocks.length === 0) return ""
+
+  let output = ""
+  let index = 0
+
+  while (index < blocks.length) {
+    const block = blocks[index]
     const type = getBlockType(block)
+
     if (type === "bulleted_list_item" || type === "numbered_list_item") {
-      if (pendingListType !== type) {
-        flushList()
-        pendingListType = type
+      const listType = type
+      const items: NotionBlock[] = []
+      while (
+        index < blocks.length &&
+        getBlockType(blocks[index]) === listType
+      ) {
+        items.push(blocks[index])
+        index++
       }
-      pendingItems.push(block)
+      output += renderListItems(items, listType, depth, options)
       continue
     }
 
-    flushList()
-    const rendered = renderBlock(block, depth, options)
-    if (rendered) {
-      segments.push(rendered)
+    if (type === "to_do") {
+      const items: NotionBlock[] = []
+      while (index < blocks.length && getBlockType(blocks[index]) === "to_do") {
+        items.push(blocks[index])
+        index++
+      }
+      output += renderTodoItems(items, depth, options)
+      continue
     }
+
+    output += renderBlock(block, depth, options)
+    index++
   }
 
-  flushList()
-  if (segments.length === 0) return ""
-  return `${segments.join("\n\n")}`.replace(/\n*$/, "") + "\n"
+  return output
 }
 
 export function blocksToMarkdown(
