@@ -19,6 +19,11 @@ function indent(depth: number, unit: string): string {
   return unit.repeat(Math.max(0, depth * 2))
 }
 
+function indentLines(text: string, indent: string): string {
+  if (!text || !indent) return text
+  return text.replace(/^/gm, indent)
+}
+
 function buildStructuralPlaceholder(
   kind: string,
   block: NotionBlock,
@@ -101,7 +106,7 @@ function renderBlock(
       result += `${body}\n`
     }
     if (children) {
-      result += indent + children
+      result += indentLines(children, indent)
     }
     return result
   }
@@ -112,7 +117,7 @@ function renderBlock(
       const text = richTextToMarkdown(field?.rich_text ?? [])
       return appendWithChildren(
         text ?? "",
-        renderChildren(block, depth + 1, options),
+        renderChildren(block, depth, options),
         indent(depth + 1, options.listIndent)
       )
     }
