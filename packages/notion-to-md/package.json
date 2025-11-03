@@ -1,5 +1,5 @@
 {
-  "name": "@mikemajara/notion-to-md",
+  "name": "@notion-kit/converter-markdown",
   "version": "0.1.0",
   "description": "Convert Notion blocks into Markdown",
   "main": "dist/index.js",
