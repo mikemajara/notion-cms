@@ -1,11 +1,11 @@
-# @mikemajara/notion-to-md
+# @notion-utils/md
 
 Utility helpers that turn raw Notion block responses into Markdown and plain text. The implementation mirrors the conversion pipeline used internally in `@mikemajara/notion-cms`, packaged for standalone consumption.
 
 ## Installation
 
 ```bash
-pnpm add @mikemajara/notion-to-md @notionhq/client
+pnpm add @notion-utils/md @notionhq/client
 ```
 
 The Notion SDK is a peer dependency so you control how requests are made.
@@ -14,7 +14,7 @@ The Notion SDK is a peer dependency so you control how requests are made.
 
 ```ts
 import { Client } from "@notionhq/client"
-import { blocksToMarkdown } from "@mikemajara/notion-to-md"
+import { blocksToMarkdown } from "@notion-utils/md"
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN })
 
