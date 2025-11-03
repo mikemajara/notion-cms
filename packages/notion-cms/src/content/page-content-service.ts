@@ -1,9 +1,7 @@
 import { Client } from "@notionhq/client"
 import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 import type { ContentBlockRaw } from "../types/content-types"
-import { SimpleBlock } from "./content-converter"
 import { FileManager } from "../file-processor/file-manager"
-import { convertBlocksToSimple } from "./block-converter"
 
 export class PageContentService {
   constructor(private client: Client, private fileManager: FileManager) {}
@@ -56,12 +54,6 @@ export class PageContentService {
     }
 
     return allBlocks
-  }
-
-  async convertBlocksToSimple(
-    blocks: ContentBlockRaw[]
-  ): Promise<SimpleBlock[]> {
-    return convertBlocksToSimple(blocks, { fileManager: this.fileManager })
   }
 
   private async enrichBlockFiles(block: ContentBlockRaw): Promise<void> {
