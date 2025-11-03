@@ -1,0 +1,56 @@
+{
+  "name": "@mikemajara/notion-to-md",
+  "version": "0.1.0",
+  "description": "Convert Notion blocks into Markdown",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --no-dts --no-splitting --no-minify --watch",
+    "build:dev": "tsup --no-dts --no-splitting --no-minify",
+    "build:fast": "tsup --no-dts --no-splitting",
+    "build:prod": "tsup --minify",
+    "clean": "rm -rf dist .tsbuildinfo",
+    "prepare": "tsup"
+  },
+  "keywords": [
+    "notion",
+    "markdown",
+    "converter"
+  ],
+  "author": "Miguel Alcalde",
+  "license": "MIT",
+  "peerDependencies": {
+    "@notionhq/client": "^5.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "splitting": true,
+    "clean": true,
+    "treeshake": true,
+    "external": [
+      "@notionhq/client"
+    ],
+    "minify": false,
+    "sourcemap": false,
+    "target": "es2020",
+    "bundle": true,
+    "skipNodeModulesBundle": true
+  }
+}
