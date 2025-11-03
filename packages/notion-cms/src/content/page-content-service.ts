@@ -12,15 +12,26 @@ export class PageContentService {
     pageId: string,
     recursive: boolean = true
   ): Promise<ContentBlockRaw[]> {
-    const blocks = await this.getBlocks(pageId)
-    if (recursive) {
-      for (const block of blocks) {
-        if ((block as any).has_children) {
-          block.children = await this.getPageContent(block.id, true)
+    try {
+      const blocks = await this.getBlocks(pageId)
+
+      if (recursive) {
+        for (const block of blocks) {
+          if (block.has_children) {
+            block.children = await this.getPageContent(block.id, true)
+          } else if (block.type === "synced_block") {
+            block.children = await this.getPageContent(
+              block.synced_block?.synced_from?.block_id || "",
+              true
+            )
+          }
         }
       }
+      return blocks
+    } catch (error) {
+      console.error("Error getting page content:", error)
+      return []
     }
-    return blocks
   }
 
   private async getBlocks(blockId: string): Promise<ContentBlockRaw[]> {
