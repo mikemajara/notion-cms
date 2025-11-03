@@ -115,46 +115,50 @@ function renderBlock(
     case "paragraph":
     case "toggle": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
-      return appendWithChildren(
-        text ?? "",
-        renderChildren(block, depth, options),
-        indent(depth + 1, options.listIndent)
+      return (
+        appendWithChildren(
+          text ?? "",
+          renderChildren(block, depth, options),
+          indent(depth + 1, options.listIndent)
+        ) + "\n"
       )
     }
     case "quote": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
       const body = text ? `> ${text}` : ">"
-      return appendWithChildren(
-        body,
-        renderChildren(block, depth + 1, options),
-        indent(depth + 1, options.listIndent)
+      return (
+        appendWithChildren(
+          body,
+          renderChildren(block, depth + 1, options),
+          indent(depth + 1, options.listIndent)
+        ) + "\n"
       )
     }
     case "heading_1": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
       return appendWithChildren(
-        `\n# ${text}\n`,
+        `# ${text}\n`,
         renderChildren(block, depth, options)
       )
     }
     case "heading_2": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
       return appendWithChildren(
-        `\n## ${text}\n`,
+        `## ${text}\n`,
         renderChildren(block, depth, options)
       )
     }
     case "heading_3": {
       const text = richTextToMarkdown(field?.rich_text ?? [])
       return appendWithChildren(
-        `\n### ${text}\n`,
+        `### ${text}\n`,
         renderChildren(block, depth, options)
       )
     }
     case "code": {
       const language = field?.language || ""
       const content = richTextToPlain(field?.rich_text ?? [])
-      const body = `\`\`\`${language}\n${content}\n\`\`\``
+      const body = `\n\`\`\`${language}\n${content}\n\`\`\``
       return appendWithChildren(body, "") + "\n"
     }
     case "bookmark":
@@ -163,7 +167,9 @@ function renderBlock(
       const url = field?.url || ""
       const caption = richTextToMarkdown(field?.caption ?? [])
       const body = caption ? `${url}${caption}` : url
-      return appendWithChildren(body, renderChildren(block, depth, options))
+      return (
+        appendWithChildren(body, renderChildren(block, depth, options)) + "\n"
+      )
     }
     case "image":
     case "video":
@@ -288,7 +294,7 @@ function renderTodoItems(
     }
   }
 
-  return output
+  return output + "\n"
 }
 
 function renderBlocks(
