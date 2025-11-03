@@ -9,6 +9,17 @@
   "files": [
     "dist"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikemajara/notion-cms.git"
+  },
+  "homepage": "https://github.com/mikemajara/notion-cms/tree/main/packages/notion-to-md",
+  "bugs": {
+    "url": "https://github.com/mikemajara/notion-cms/issues"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --no-dts --no-splitting --no-minify --watch",

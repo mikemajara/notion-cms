@@ -1,0 +1,6 @@
+src
+fixtures
+tsconfig.json
+.tsbuildinfo
+*.log
+
