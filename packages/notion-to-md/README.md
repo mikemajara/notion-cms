@@ -1,6 +1,9 @@
 # @notion-utils/md
 
-Utility helpers that turn raw Notion block responses into Markdown and plain text. The implementation mirrors the conversion pipeline used internally in `@mikemajara/notion-cms`, packaged for standalone consumption.
+Utility helpers that turn raw Notion block responses into Markdown and plain text.
+
+- No runtime dependencies
+- Directly processes Notion PageObjectResponse arrays
 
 ## Installation
 
