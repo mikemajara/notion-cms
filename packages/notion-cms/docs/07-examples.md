@@ -74,7 +74,7 @@ Render blog posts with full content blocks.
 
 ```typescript
 import { NotionCMS } from "./notion"
-import { blocksToMarkdown } from "@mikemajara/notion-cms"
+import { blocksToMarkdown } from "@notion-utils/md"
 
 export async function getBlogPosts() {
   const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
@@ -185,7 +185,7 @@ export const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!, {
 
 // app/posts/[slug]/page.tsx
 import { notionCMS } from "@/lib/notion"
-import { blocksToMarkdown } from "@mikemajara/notion-cms"
+import { blocksToMarkdown } from "@notion-utils/md"
 
 export default async function PostPage({
   params

@@ -1,6 +1,6 @@
 # Content Blocks
 
-Notion CMS can convert Notion page content blocks into Markdown or HTML, making it easy to render Notion pages in your application.
+Notion CMS historically converted Notion page blocks into display-friendly formats. That responsibility now lives in the dedicated `@notion-utils/md` package. The snippets below show how to fetch raw blocks with the CMS and hand them off to the new markdown helper.
 
 ## Overview
 
@@ -54,7 +54,7 @@ For most use cases, keep `recursive: true` (default) to ensure complete content.
 Convert blocks to Markdown for rendering in markdown processors or static site generators:
 
 ```typescript
-import { blocksToMarkdown } from "@mikemajara/notion-cms"
+import { blocksToMarkdown } from "@notion-utils/md"
 
 const blocks = await notionCMS.getPageContent(pageId)
 const markdown = blocksToMarkdown(blocks)
@@ -70,8 +70,7 @@ Customize markdown output:
 ```typescript
 const markdown = blocksToMarkdown(blocks, {
   listIndent: "  ", // Indentation for nested lists (default: "  ")
-  debug: false, // Include debug placeholders for unsupported blocks (default: false)
-  alternateOrderedListStyles: false // Use a/b/c and i/ii/iii styles (default: false)
+  debug: false // Include debug placeholders for unsupported blocks (default: false)
 })
 ```
 
@@ -103,47 +102,7 @@ const code = "example"
 
 ## Converting to HTML
 
-Convert blocks to HTML for direct rendering:
-
-```typescript
-import { blocksToHtml } from "@mikemajara/notion-cms"
-
-const blocks = await notionCMS.getPageContent(pageId)
-const html = blocksToHtml(blocks)
-
-console.log(html)
-// Full HTML string ready for rendering
-```
-
-### HTML Options
-
-Customize HTML output:
-
-```typescript
-const html = blocksToHtml(blocks, {
-  classPrefix: "notion-" // CSS class prefix (default: "")
-})
-```
-
-### Example Output
-
-```html
-<h1>Heading 1</h1>
-<p>This is a paragraph with <strong>bold</strong> and <em>italic</em> text.</p>
-<h2>Heading 2</h2>
-<ul>
-  <li>Bullet point 1</li>
-  <li>
-    Bullet point 2
-    <ul>
-      <li>Nested bullet</li>
-    </ul>
-  </li>
-</ul>
-<blockquote>This is a quote block</blockquote>
-<pre><code class="language-typescript">const code = "example"</code></pre>
-<img src="https://example.com/image.jpg" alt="Image caption" />
-```
+> Legacy feature – the CMS package no longer ships an HTML converter. Generate markdown with `@notion-utils/md` and render it with your preferred markdown renderer, or implement a custom HTML transformer tailored to your application.
 
 ## Supported Block Types
 
@@ -219,39 +178,9 @@ const markdown = blocksToMarkdown(blocks)
 
 ## Advanced: Block Conversion Layers
 
-### Simple Blocks
+### Simple & Advanced Blocks
 
-Convert blocks to a simplified structure:
-
-```typescript
-import { convertBlocksToSimple } from "@mikemajara/notion-cms"
-
-const blocks = await notionCMS.getPageContent(pageId)
-const simpleBlocks = await convertBlocksToSimple(blocks, {
-  fileManager: notionCMS.fileManager // Optional: for file processing
-})
-
-// Simple blocks have a consistent structure:
-// { id, type, content, children?, hasChildren }
-```
-
-### Advanced Blocks
-
-Convert blocks with full metadata:
-
-```typescript
-import { convertBlocksToAdvanced } from "@mikemajara/notion-cms"
-
-const blocks = await notionCMS.getPageContent(pageId)
-const advancedBlocks = await convertBlocksToAdvanced(blocks, {
-  mediaUrlResolver: async (block, field) => {
-    // Custom media URL resolution
-    return customUrl
-  }
-})
-
-// Advanced blocks preserve all Notion metadata
-```
+> Legacy feature – the CMS package no longer exposes `convertBlocksToSimple` or `convertBlocksToAdvanced`. Implement your own mapping based on the raw Notion API payload, or compose utilities in your application layer.
 
 ## Rich Text Formatting
 
@@ -263,9 +192,6 @@ Rich text formatting (bold, italic, links, etc.) is preserved in both Markdown a
 
 // Markdown output:
 // "This is **bold** and *italic* with a [link](https://example.com)"
-
-// HTML output:
-// "This is <strong>bold</strong> and <em>italic</em> with a <a href="https://example.com">link</a>"
 ```
 
 ## Tables

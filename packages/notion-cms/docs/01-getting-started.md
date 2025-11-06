@@ -165,7 +165,7 @@ const activeClients = await notionCMS
 Retrieve and convert page content blocks:
 
 ```typescript
-import { blocksToMarkdown } from "@mikemajara/notion-cms"
+import { blocksToMarkdown } from "@notion-utils/md"
 
 const pageId = "your-page-id"
 const blocks = await notionCMS.getPageContent(pageId)
