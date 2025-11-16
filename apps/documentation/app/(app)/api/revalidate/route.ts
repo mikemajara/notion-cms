@@ -1,4 +1,4 @@
-import { convertRecordToSimple } from "@mikemajara/notion-cms"
+import { convertRecordToSimple } from "@notion-utils/cms"
 import { revalidateTag } from "next/cache"
 import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"

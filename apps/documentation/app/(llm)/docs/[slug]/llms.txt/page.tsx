@@ -1,5 +1,5 @@
 import { NotionCMS } from "@/lib/notion"
-import { blocksToMarkdown } from "@mikemajara/notion-cms"
+import { blocksToMarkdown } from "@notion-utils/md"
 import { RecordNotionCMS } from "@/lib/notion"
 
 // ISR: Revalidate every hour (3600 seconds)

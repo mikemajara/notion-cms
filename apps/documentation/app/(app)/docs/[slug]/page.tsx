@@ -1,8 +1,8 @@
 import {
   NotionCMS,
   RecordNotionCMS
-} from "@/lib/notion/notion-types-notion-cms"
-import { blocksToMarkdown } from "@mikemajara/notion-cms"
+} from "@/lib/notion/notion-types-notion-cms-old"
+import { blocksToMarkdown } from "@notion-utils/md"
 import { Markdown } from "@/lib/markdown"
 import { unstable_cache } from "next/cache"
 import Link from "next/link"
@@ -66,7 +66,7 @@ export default async function Page({
       const page = (await notionCMS
         .query("notionCMS", { recordType: "simple" })
         .filter("_slug", "equals", slug)
-        .maybeSingle()!) as RecordNotionCMS
+        .maybeSingle()) as RecordNotionCMS
       const content = blocksToMarkdown(await notionCMS.getPageContent(page.id))
       return { content, page }
     },
