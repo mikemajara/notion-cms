@@ -1,0 +1,70 @@
+{
+  "name": "@notion-utils/html",
+  "version": "0.1.0",
+  "description": "Convert Notion blocks into HTML",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikemajara/notion-cms.git"
+  },
+  "homepage": "https://github.com/mikemajara/notion-cms/tree/main/packages/notion-to-html",
+  "bugs": {
+    "url": "https://github.com/mikemajara/notion-cms/issues"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --no-dts --no-splitting --no-minify --watch",
+    "build:dev": "tsup --no-dts --no-splitting --no-minify",
+    "build:fast": "tsup --no-dts --no-splitting",
+    "build:prod": "tsup --minify",
+    "clean": "rm -rf dist .tsbuildinfo",
+    "test": "vitest",
+    "prepare": "tsup"
+  },
+  "keywords": [
+    "notion",
+    "html",
+    "converter"
+  ],
+  "author": "Miguel Alcalde",
+  "license": "MIT",
+  "peerDependencies": {
+    "@notionhq/client": "^5.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3",
+    "vitest": "^1.6.0"
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "splitting": true,
+    "clean": true,
+    "treeshake": true,
+    "external": [
+      "@notionhq/client"
+    ],
+    "minify": false,
+    "sourcemap": false,
+    "target": "es2020",
+    "bundle": true,
+    "skipNodeModulesBundle": true
+  }
+}
+
