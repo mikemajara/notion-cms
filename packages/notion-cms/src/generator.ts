@@ -1,7 +1,10 @@
 import {
   DatabaseObjectResponse,
-  DataSourceObjectResponse
+  DataSourceObjectResponse,
+  PageObjectResponse,
+  FormulaPropertyItemObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
+import { Client } from "@notionhq/client"
 import * as fs from "fs"
 import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
@@ -278,6 +281,68 @@ function extractPropertyEntries(
   return entries
 }
 
+/**
+ * Detects the return type of a formula field by querying a sample record from the datasource.
+ * Returns the appropriate metadata type (rich_text, number, checkbox, or date) or null if detection fails.
+ */
+async function detectFormulaReturnType(
+  client: Client,
+  dataSourceId: string,
+  propertyName: string,
+  fileName: string
+): Promise<"rich_text" | "number" | "checkbox" | "date" | null> {
+  try {
+    const response = await client.dataSources.query({
+      data_source_id: dataSourceId,
+      page_size: 1
+    })
+
+    if (response.results.length === 0) {
+      console.warn(
+        `[generator] Could not detect formula return type for "${propertyName}": No records found in datasource. Please manually set the type in ${fileName}.`
+      )
+      return null
+    }
+
+    const page = response.results[0] as PageObjectResponse
+    const property = page.properties[propertyName]
+
+    if (!property || property.type !== "formula") {
+      console.warn(
+        `[generator] Could not detect formula return type for "${propertyName}": Property not found or not a formula. Please manually set the type in ${fileName}.`
+      )
+      return null
+    }
+
+    const formulaProp = property as FormulaPropertyItemObjectResponse
+    const formulaType = formulaProp.formula?.type
+
+    // Map Notion's formula types to our metadata types
+    switch (formulaType) {
+      case "string":
+        return "rich_text"
+      case "number":
+        return "number"
+      case "boolean":
+        return "checkbox" // Notion uses "boolean" but we call it "checkbox" for consistency
+      case "date":
+        return "date"
+      default:
+        console.warn(
+          `[generator] Could not detect formula return type for "${propertyName}": Unknown formula type "${formulaType}". Please manually set the type in ${fileName}.`
+        )
+        return null
+    }
+  } catch (error) {
+    console.warn(
+      `[generator] Could not detect formula return type for "${propertyName}": ${
+        error instanceof Error ? error.message : String(error)
+      }. Please manually set the type in ${fileName}.`
+    )
+    return null
+  }
+}
+
 export async function generateTypes(
   databaseId: string,
   outputPath: string,
@@ -336,7 +401,8 @@ export async function generateTypes(
       overwrite: true
     })
 
-    generateDatabaseSpecificFile(
+    await generateDatabaseSpecificFile(
+      notion,
       sourceFile,
       properties,
       typeName,
@@ -344,7 +410,8 @@ export async function generateTypes(
       databaseId,
       selection.dataSource.id,
       databaseName,
-      displayLabel
+      displayLabel,
+      fileName
     )
 
     await sourceFile.save()
@@ -403,7 +470,8 @@ function updateIndexFile(outputPath: string, fileName: string): void {
 }
 
 // Generate database-specific types with registry approach
-function generateDatabaseSpecificFile(
+async function generateDatabaseSpecificFile(
+  client: Client,
   sourceFile: SourceFile,
   properties: DataSourceObjectResponse["properties"],
   typeName: string,
@@ -411,8 +479,9 @@ function generateDatabaseSpecificFile(
   databaseId: string,
   dataSourceId: string,
   databaseName: string,
-  displayLabel: string
-): void {
+  displayLabel: string,
+  fileName: string
+): Promise<void> {
   try {
     const propertyEntries = extractPropertyEntries(properties, {
       databaseId,
@@ -432,7 +501,7 @@ function generateDatabaseSpecificFile(
 
     // Add imports directly from notion-cms
     sourceFile.addImportDeclaration({
-      moduleSpecifier: "@mikemajara/notion-cms",
+      moduleSpecifier: "@notion-utils/cms",
       namedImports: ["DatabaseRecord", "NotionCMS", "DatabaseFieldMetadata"]
     })
     // Import PageObjectResponse for raw typing in registry
@@ -442,7 +511,7 @@ function generateDatabaseSpecificFile(
     })
 
     sourceFile.addExportDeclaration({
-      moduleSpecifier: "@mikemajara/notion-cms",
+      moduleSpecifier: "@notion-utils/cms",
       namedExports: ["NotionCMS"]
     })
 
@@ -530,6 +599,26 @@ function generateDatabaseSpecificFile(
     type: "${propertyValue.type}",
     options: [${options}] as const
   },`)
+      } else if (propertyValue.type === "formula") {
+        // Detect formula return type by querying a sample record
+        const detectedType = await detectFormulaReturnType(
+          client,
+          dataSourceId,
+          propertyName,
+          fileName
+        )
+
+        if (detectedType) {
+          metadataStatements.push(
+            `  "${propertyName}": { type: "${detectedType}" },`
+          )
+        } else {
+          // Fallback to rich_text (most common) and warn user
+          console.warn(
+            `[generator] Formula property "${propertyName}" could not be auto-detected. Defaulting to "rich_text". If this is incorrect, please manually edit the type in ${fileName}.`
+          )
+          metadataStatements.push(`  "${propertyName}": { type: "rich_text" },`)
+        }
       } else {
         metadataStatements.push(
           `  "${propertyName}": { type: "${propertyValue.type}" },`
@@ -594,7 +683,7 @@ function generateDatabaseSpecificFile(
     // Generate DatabaseRegistry interface extension and configuration
     sourceFile.addStatements(`
 // Extend DatabaseRegistry interface with this database
-declare module "@mikemajara/notion-cms" {
+declare module "@notion-utils/cms" {
   interface DatabaseRegistry {
     ${databaseKey}: {
       record: ${typeName};
