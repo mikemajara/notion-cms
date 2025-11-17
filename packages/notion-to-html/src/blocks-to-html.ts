@@ -4,13 +4,23 @@ import {
   richTextToHtml,
   richTextToPlain
 } from "./rich-text"
-import type { NotionBlock } from "./types"
+import type {
+  HtmlAttributes,
+  HtmlElementNode,
+  HtmlNode,
+  HtmlPlugin,
+  HtmlRawNode,
+  HtmlTextNode,
+  HtmlNodeMeta,
+  NotionBlock
+} from "./types"
 
 export interface RawHtmlOptions {
   debug?: boolean
   listClassName?: string
   todoClassName?: string
   columnClassName?: string
+  plugins?: HtmlPlugin[]
 }
 
 interface ResolvedHtmlOptions {
@@ -18,6 +28,12 @@ interface ResolvedHtmlOptions {
   listClassName?: string
   todoClassName?: string
   columnClassName?: string
+  plugins: HtmlPlugin[]
+}
+
+interface RenderEnvironment {
+  options: ResolvedHtmlOptions
+  blockMap: Map<string, NotionBlock>
 }
 
 const CLASS_COLUMNS = "notion-columns"
@@ -28,18 +44,49 @@ const CLASS_TODO = "notion-todo-list"
 const CLASS_DEBUG = "notion-debug-placeholder"
 const CLASS_MEDIA = "notion-media"
 
+const VOID_ELEMENTS = new Set([
+  "area",
+  "base",
+  "br",
+  "col",
+  "embed",
+  "hr",
+  "img",
+  "input",
+  "link",
+  "meta",
+  "param",
+  "source",
+  "track",
+  "wbr"
+])
+
+const BOOLEAN_ATTRIBUTES = new Set([
+  "checked",
+  "disabled",
+  "controls",
+  "playsinline",
+  "autoplay",
+  "loop",
+  "muted"
+])
+
 function resolveOptions(opts?: RawHtmlOptions): ResolvedHtmlOptions {
+  const pluginList: HtmlPlugin[] = Array.isArray(opts?.plugins)
+    ? (opts?.plugins as HtmlPlugin[])
+    : []
   return {
     debug: opts?.debug ?? false,
     listClassName: opts?.listClassName,
     todoClassName: opts?.todoClassName,
-    columnClassName: opts?.columnClassName
+    columnClassName: opts?.columnClassName,
+    plugins: [...pluginList]
   }
 }
 
-function classAttribute(...names: (string | undefined)[]): string {
+function mergeClassNames(...names: (string | undefined)[]): string | undefined {
   const classes = names.filter(Boolean).join(" ")
-  return classes ? ` class="${classes}"` : ""
+  return classes || undefined
 }
 
 function getBlockType(block: NotionBlock): string {
@@ -51,74 +98,237 @@ function getBlockField<T>(block: NotionBlock): T | undefined {
   return (block as any)[type] as T
 }
 
-function buildStructuralPlaceholder(
-  kind: string,
-  block: NotionBlock,
-  title: string | undefined,
-  _options: ResolvedHtmlOptions
-): string {
-  const id = (block as any).id
-  const safeKind = escapeAttribute(kind)
-  const safeId = escapeAttribute(String(id))
-  const safeTitle = title ? escapeHtml(title) : ""
-  return `<div${classAttribute(CLASS_DEBUG)} data-kind="${safeKind}" data-block-id="${safeId}">${safeTitle}</div>`
+function registerBlock(env: RenderEnvironment, block?: NotionBlock): void {
+  if (!block || !block.id) return
+  env.blockMap.set(block.id, block)
+}
+
+function createMeta(
+  level: number,
+  block?: NotionBlock,
+  blockTypeOverride?: string
+): HtmlNodeMeta {
+  const meta: HtmlNodeMeta = {
+    level
+  }
+
+  if (block) {
+    meta.blockId = block.id
+    meta.blockType = blockTypeOverride ?? getBlockType(block)
+  } else if (blockTypeOverride) {
+    meta.blockType = blockTypeOverride
+  }
+
+  return meta
+}
+
+function createElementForBlock(
+  env: RenderEnvironment,
+  tagName: string,
+  block: NotionBlock | undefined,
+  level: number,
+  attributes: HtmlAttributes = {},
+  children: HtmlNode[] = [],
+  blockTypeOverride?: string
+): HtmlElementNode {
+  registerBlock(env, block)
+  const attrs: HtmlAttributes = { ...attributes }
+  attrs["data-level"] = attrs["data-level"] ?? String(level)
+  const blockType =
+    blockTypeOverride ?? (block ? getBlockType(block) : undefined)
+  if (blockType && attrs["data-type"] === undefined) {
+    attrs["data-type"] = blockType
+  }
+  const meta = createMeta(level, block, blockTypeOverride)
+  return {
+    kind: "element",
+    tagName,
+    attributes: attrs,
+    children,
+    meta
+  }
+}
+
+function createElement(
+  tagName: string,
+  level: number,
+  attributes: HtmlAttributes = {},
+  children: HtmlNode[] = [],
+  metaOverrides: Partial<HtmlNodeMeta> = {}
+): HtmlElementNode {
+  const meta: HtmlNodeMeta = {
+    blockId: metaOverrides.blockId,
+    blockType: metaOverrides.blockType,
+    level: metaOverrides.level ?? level
+  }
+  const attrs: HtmlAttributes = { ...attributes }
+  attrs["data-level"] = attrs["data-level"] ?? String(meta.level)
+  if (meta.blockType && attrs["data-type"] === undefined) {
+    attrs["data-type"] = meta.blockType
+  }
+  return {
+    kind: "element",
+    tagName,
+    attributes: attrs,
+    children,
+    meta
+  }
+}
+
+function createRawForBlock(
+  env: RenderEnvironment,
+  html: string,
+  block: NotionBlock | undefined,
+  level: number,
+  blockTypeOverride?: string
+): HtmlRawNode {
+  registerBlock(env, block)
+  return {
+    kind: "raw",
+    html,
+    meta: createMeta(level, block, blockTypeOverride)
+  }
+}
+
+function createTextForBlock(
+  env: RenderEnvironment,
+  value: string,
+  block: NotionBlock | undefined,
+  level: number,
+  blockTypeOverride?: string
+): HtmlTextNode {
+  registerBlock(env, block)
+  return {
+    kind: "text",
+    value,
+    meta: createMeta(level, block, blockTypeOverride)
+  }
 }
 
 function renderChildren(
+  env: RenderEnvironment,
   block: NotionBlock,
-  depth: number,
-  options: ResolvedHtmlOptions
-): string {
+  depth: number
+): HtmlNode[] {
   const children = (block as any).children as NotionBlock[] | undefined
-  if (!children || !children.length) return ""
-  return renderBlocks(children, depth + 1, options)
+  if (!children || children.length === 0) return []
+  return renderBlocks(env, children, depth + 1)
 }
 
 function renderListItems(
+  env: RenderEnvironment,
   items: NotionBlock[],
   listType: "bulleted_list_item" | "numbered_list_item",
-  depth: number,
-  options: ResolvedHtmlOptions
-): string {
-  const tag = listType === "bulleted_list_item" ? "ul" : "ol"
+  depth: number
+): HtmlElementNode | null {
+  if (!items.length) return null
+  const containerTag = listType === "bulleted_list_item" ? "ul" : "ol"
   const baseClass =
     listType === "bulleted_list_item" ? CLASS_BULLETED : CLASS_NUMBERED
-  const attrs = classAttribute(baseClass, options.listClassName)
-  const entries = items
-    .map((item) => {
-      const field = getBlockField<any>(item)
-      const text = richTextToHtml(field?.rich_text ?? [])
-      const children = renderChildren(item, depth + 1, options)
-      return `<li>${text}${children}</li>`
-    })
-    .join("")
-  return `<${tag}${attrs}>${entries}</${tag}>`
+  const className = mergeClassNames(baseClass, env.options.listClassName)
+  const attrs: HtmlAttributes = {}
+  if (className) {
+    attrs.class = className
+  }
+  const list = createElementForBlock(
+    env,
+    containerTag,
+    items[0],
+    depth,
+    attrs,
+    [],
+    listType
+  )
+
+  list.children = items.map((item) => {
+    const field = getBlockField<any>(item)
+    const textHtml = richTextToHtml(field?.rich_text ?? [])
+    const liChildren: HtmlNode[] = []
+    if (textHtml) {
+      liChildren.push(createRawForBlock(env, textHtml, item, depth + 1))
+    }
+    liChildren.push(...renderChildren(env, item, depth + 1))
+    return createElementForBlock(env, "li", item, depth + 1, {}, liChildren)
+  })
+
+  return list
 }
 
 function renderTodoItems(
+  env: RenderEnvironment,
   items: NotionBlock[],
-  depth: number,
-  options: ResolvedHtmlOptions
-): string {
-  const attrs = classAttribute(CLASS_TODO, options.todoClassName)
-  const entries = items
-    .map((item) => {
-      const field = getBlockField<any>(item)
-      const text = richTextToHtml(field?.rich_text ?? [])
-      const checked = Boolean(field?.checked)
-      const children = renderChildren(item, depth + 1, options)
-      const checkbox = `<input type="checkbox"${checked ? " checked" : ""} disabled />`
-      return `<li>${checkbox}<span>${text}</span>${children}</li>`
-    })
-    .join("")
-  return `<ul${attrs}>${entries}</ul>`
+  depth: number
+): HtmlElementNode | null {
+  if (!items.length) return null
+  const className = mergeClassNames(CLASS_TODO, env.options.todoClassName)
+  const attrs: HtmlAttributes = {}
+  if (className) {
+    attrs.class = className
+  }
+  const list = createElementForBlock(
+    env,
+    "ul",
+    items[0],
+    depth,
+    attrs,
+    [],
+    "to_do"
+  )
+
+  list.children = items.map((item) => {
+    const field = getBlockField<any>(item)
+    const textHtml = richTextToHtml(field?.rich_text ?? [])
+    const checked = Boolean(field?.checked)
+    const liChildren: HtmlNode[] = []
+
+    const inputAttrs: HtmlAttributes = { type: "checkbox", disabled: "" }
+    if (checked) {
+      inputAttrs.checked = ""
+    }
+
+    const checkbox = createElement(
+      "input",
+      depth + 1,
+      inputAttrs,
+      [],
+      {
+        blockId: item.id,
+        blockType: getBlockType(item)
+      }
+    )
+
+    const span = createElement(
+      "span",
+      depth + 1,
+      {},
+      [],
+      {
+        blockId: item.id,
+        blockType: getBlockType(item)
+      }
+    )
+
+    if (textHtml) {
+      span.children.push(
+        createRawForBlock(env, textHtml, item, depth + 1)
+      )
+    }
+
+    liChildren.push(checkbox, span)
+    liChildren.push(...renderChildren(env, item, depth + 1))
+
+    return createElementForBlock(env, "li", item, depth + 1, {}, liChildren)
+  })
+
+  return list
 }
 
 function renderTable(
+  env: RenderEnvironment,
   block: NotionBlock,
-  options: ResolvedHtmlOptions
-): string {
-  const table = getBlockField<any>(block)
+  depth: number
+): HtmlElementNode | null {
+  const tableField = getBlockField<any>(block)
   const rows = ((block as any).children as NotionBlock[] | undefined) || []
   const cellRows = rows.map((row) => {
     const field = getBlockField<any>(row)
@@ -126,123 +336,430 @@ function renderTable(
     return cells.map((cell) => richTextToHtml(Array.isArray(cell) ? cell : []))
   })
 
-  if (cellRows.length === 0) return ""
+  if (cellRows.length === 0) return null
 
-  const hasColumnHeader = Boolean(table?.has_column_header)
-  const hasRowHeader = Boolean(table?.has_row_header)
+  const hasColumnHeader = Boolean(tableField?.has_column_header)
+  const hasRowHeader = Boolean(tableField?.has_row_header)
 
-  let thead = ""
-  let tbodyRows = cellRows
+  const table = createElementForBlock(env, "table", block, depth)
+  const children: HtmlNode[] = []
 
-  if (hasColumnHeader && cellRows.length > 0) {
-    const headerCells = cellRows[0]
-      .map((cell) => `<th>${cell}</th>`)
-      .join("")
-    thead = `<thead><tr>${headerCells}</tr></thead>`
-    tbodyRows = cellRows.slice(1)
+  if (hasColumnHeader) {
+    const headerCells = cellRows[0] || []
+    const thead = createElement(
+      "thead",
+      depth + 1,
+      {},
+      [],
+      {
+        blockId: block.id,
+        blockType: getBlockType(block)
+      }
+    )
+    const headerRow = createElement(
+      "tr",
+      depth + 2,
+      {},
+      [],
+      {
+        blockId: block.id,
+        blockType: getBlockType(block)
+      }
+    )
+
+    headerRow.children = headerCells.map((cellHtml) => {
+      const th = createElement(
+        "th",
+        depth + 3,
+        {},
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      if (cellHtml) {
+        th.children.push(createRawForBlock(env, cellHtml, block, depth + 3))
+      }
+      return th
+    })
+
+    thead.children.push(headerRow)
+    children.push(thead)
   }
 
-  const body = tbodyRows
-    .map((row) => {
-      const cells = row
-        .map((cell, index) => {
-          if (hasRowHeader && index === 0) {
-            return `<th scope="row">${cell}</th>`
-          }
-          return `<td>${cell}</td>`
-        })
-        .join("")
-      return `<tr>${cells}</tr>`
-    })
-    .join("")
+  const bodyRows = hasColumnHeader ? cellRows.slice(1) : cellRows
+  const tbody = createElement(
+    "tbody",
+    depth + 1,
+    {},
+    [],
+    {
+      blockId: block.id,
+      blockType: getBlockType(block)
+    }
+  )
 
-  const tbody = `<tbody>${body}</tbody>`
-  return `<table>${thead}${tbody}</table>`
+  tbody.children = bodyRows.map((rowCells) => {
+    const tr = createElement(
+      "tr",
+      depth + 2,
+      {},
+      [],
+      {
+        blockId: block.id,
+        blockType: getBlockType(block)
+      }
+    )
+
+    tr.children = rowCells.map((cellHtml, index) => {
+      const isHeader = hasRowHeader && index === 0
+      const tagName = isHeader ? "th" : "td"
+      const cellAttrs: HtmlAttributes = {}
+      if (isHeader) {
+        cellAttrs.scope = "row"
+      }
+      const cellNode = createElement(
+        tagName,
+        depth + 3,
+        cellAttrs,
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      if (cellHtml) {
+        cellNode.children.push(
+          createRawForBlock(env, cellHtml, block, depth + 3)
+        )
+      }
+      return cellNode
+    })
+
+    return tr
+  })
+
+  children.push(tbody)
+  table.children = children
+  return table
 }
 
 function renderMediaFigure(
-  kind: "bookmark" | "embed" | "link_preview" | "image" | "video" | "audio" | "file" | "pdf",
+  env: RenderEnvironment,
+  block: NotionBlock,
+  kind:
+    | "bookmark"
+    | "embed"
+    | "link_preview"
+    | "image"
+    | "video"
+    | "audio"
+    | "file"
+    | "pdf",
   url: string | undefined,
   captionHtml: string,
-  captionPlain: string
-): string {
-  if (!url) return ""
+  captionPlain: string,
+  depth: number
+): HtmlElementNode | null {
+  if (!url) return null
+  const figureClass = mergeClassNames(CLASS_MEDIA, `notion-${kind}`)
+  const attrs: HtmlAttributes = {}
+  if (figureClass) {
+    attrs.class = figureClass
+  }
+  const figure = createElementForBlock(
+    env,
+    "figure",
+    block,
+    depth,
+    attrs,
+    [],
+    kind
+  )
+
+  const figcaption =
+    captionHtml && captionHtml.length
+      ? createElement(
+          "figcaption",
+          depth + 1,
+          {},
+          [createRawForBlock(env, captionHtml, block, depth + 1)],
+          {
+            blockId: block.id,
+            blockType: getBlockType(block)
+          }
+        )
+      : null
+
   const safeUrl = escapeAttribute(url)
-  const figureClass = classAttribute(CLASS_MEDIA, `notion-${kind}`)
-  const figcaption = captionHtml ? `<figcaption>${captionHtml}</figcaption>` : ""
 
   switch (kind) {
     case "bookmark":
     case "embed":
     case "link_preview": {
       const label = captionHtml || escapeHtml(url)
-      return `<figure${figureClass}><a href="${safeUrl}">${label}</a>${figcaption}</figure>`
+      const anchor = createElement(
+        "a",
+        depth + 1,
+        { href: safeUrl },
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      anchor.children.push(createRawForBlock(env, label, block, depth + 1))
+      figure.children.push(anchor)
+      if (figcaption) figure.children.push(figcaption)
+      return figure
     }
     case "image": {
-      const alt = captionPlain ? escapeAttribute(captionPlain) : "Notion image"
-      return `<figure${figureClass}><img src="${safeUrl}" alt="${alt}" loading="lazy" />${figcaption}</figure>`
+      const alt =
+        captionPlain && captionPlain.length
+          ? escapeAttribute(captionPlain)
+          : "Notion image"
+      const img = createElement(
+        "img",
+        depth + 1,
+        { src: safeUrl, alt, loading: "lazy" },
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      figure.children.push(img)
+      if (figcaption) figure.children.push(figcaption)
+      return figure
     }
     case "video": {
-      return `<figure${figureClass}><video src="${safeUrl}" controls playsinline></video>${figcaption}</figure>`
+      const video = createElement(
+        "video",
+        depth + 1,
+        { src: safeUrl, controls: "", playsinline: "" },
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      figure.children.push(video)
+      if (figcaption) figure.children.push(figcaption)
+      return figure
     }
     case "audio": {
-      return `<figure${figureClass}><audio src="${safeUrl}" controls></audio>${figcaption}</figure>`
+      const audio = createElement(
+        "audio",
+        depth + 1,
+        { src: safeUrl, controls: "" },
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      figure.children.push(audio)
+      if (figcaption) figure.children.push(figcaption)
+      return figure
     }
     case "file": {
       const label = captionHtml || escapeHtml(captionPlain || "Download file")
-      return `<figure${figureClass}><a href="${safeUrl}">${label}</a>${figcaption}</figure>`
+      const anchor = createElement(
+        "a",
+        depth + 1,
+        { href: safeUrl },
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      anchor.children.push(createRawForBlock(env, label, block, depth + 1))
+      figure.children.push(anchor)
+      if (figcaption) figure.children.push(figcaption)
+      return figure
     }
     case "pdf": {
-      return `<figure${figureClass}><object data="${safeUrl}" type="application/pdf"></object>${figcaption}</figure>`
+      const object = createElement(
+        "object",
+        depth + 1,
+        { data: safeUrl, type: "application/pdf" },
+        [],
+        {
+          blockId: block.id,
+          blockType: getBlockType(block)
+        }
+      )
+      figure.children.push(object)
+      if (figcaption) figure.children.push(figcaption)
+      return figure
     }
     default:
-      return ""
+      return null
   }
 }
 
-function renderBlock(
+function buildStructuralPlaceholder(
+  env: RenderEnvironment,
+  kind: string,
   block: NotionBlock,
-  depth: number,
-  options: ResolvedHtmlOptions
-): string {
+  title: string | undefined,
+  depth: number
+): HtmlElementNode {
+  const attrs: HtmlAttributes = {
+    class: CLASS_DEBUG,
+    "data-kind": kind,
+    "data-block-id": block.id
+  }
+  const children: HtmlNode[] = []
+  if (title) {
+    children.push(createTextForBlock(env, title, block, depth))
+  }
+  return createElementForBlock(
+    env,
+    "div",
+    block,
+    depth,
+    attrs,
+    children,
+    kind
+  )
+}
+
+function renderBlock(
+  env: RenderEnvironment,
+  block: NotionBlock,
+  depth: number
+): HtmlNode[] {
   const type = getBlockType(block)
   const field = getBlockField<any>(block)
 
   switch (type) {
     case "paragraph": {
-      const text = richTextToHtml(field?.rich_text ?? [])
-      const children = renderChildren(block, depth, options)
-      const paragraph = `<p>${text}</p>`
-      return `${paragraph}${children}`
+      const textHtml = richTextToHtml(field?.rich_text ?? [])
+      const children: HtmlNode[] = []
+      if (textHtml) {
+        children.push(createRawForBlock(env, textHtml, block, depth))
+      }
+      const paragraph = createElementForBlock(
+        env,
+        "p",
+        block,
+        depth,
+        {},
+        children
+      )
+      return [paragraph, ...renderChildren(env, block, depth)]
     }
     case "toggle": {
-      const summary = richTextToHtml(field?.rich_text ?? [])
-      const children = renderChildren(block, depth, options)
-      const body = children ? `<div>${children}</div>` : ""
-      return `<details>${summary ? `<summary>${summary}</summary>` : ""}${body}</details>`
+      const summaryHtml = richTextToHtml(field?.rich_text ?? [])
+      const summaryNode =
+        summaryHtml.length > 0
+          ? createElement(
+              "summary",
+              depth + 1,
+              {},
+              [createRawForBlock(env, summaryHtml, block, depth + 1)],
+              {
+                blockId: block.id,
+                blockType: type,
+                level: depth + 1
+              }
+            )
+          : null
+      const childContent = renderChildren(env, block, depth)
+      const body =
+        childContent.length > 0
+          ? createElement(
+              "div",
+              depth + 1,
+              {},
+              childContent,
+              {
+                blockId: block.id,
+                blockType: type,
+                level: depth + 1
+              }
+            )
+          : null
+      const detailsChildren: HtmlNode[] = []
+      if (summaryNode) detailsChildren.push(summaryNode)
+      if (body) detailsChildren.push(body)
+      const details = createElementForBlock(
+        env,
+        "details",
+        block,
+        depth,
+        {},
+        detailsChildren
+      )
+      return [details]
     }
     case "quote": {
-      const text = richTextToHtml(field?.rich_text ?? [])
-      const children = renderChildren(block, depth + 1, options)
-      return `<blockquote>${text}${children}</blockquote>`
+      const textHtml = richTextToHtml(field?.rich_text ?? [])
+      const quoteChildren: HtmlNode[] = []
+      if (textHtml) {
+        quoteChildren.push(createRawForBlock(env, textHtml, block, depth))
+      }
+      quoteChildren.push(...renderChildren(env, block, depth))
+      const quote = createElementForBlock(
+        env,
+        "blockquote",
+        block,
+        depth,
+        {},
+        quoteChildren
+      )
+      return [quote]
     }
-    case "heading_1": {
-      const text = richTextToHtml(field?.rich_text ?? [])
-      return `<h1>${text}</h1>`
-    }
-    case "heading_2": {
-      const text = richTextToHtml(field?.rich_text ?? [])
-      return `<h2>${text}</h2>`
-    }
+    case "heading_1":
+    case "heading_2":
     case "heading_3": {
-      const text = richTextToHtml(field?.rich_text ?? [])
-      return `<h3>${text}</h3>`
+      const tagName =
+        type === "heading_1" ? "h1" : type === "heading_2" ? "h2" : "h3"
+      const textHtml = richTextToHtml(field?.rich_text ?? [])
+      const children: HtmlNode[] = []
+      if (textHtml) {
+        children.push(createRawForBlock(env, textHtml, block, depth))
+      }
+      const heading = createElementForBlock(
+        env,
+        tagName,
+        block,
+        depth,
+        {},
+        children
+      )
+      return [heading]
     }
     case "code": {
       const language = field?.language || ""
       const plain = escapeHtml(richTextToPlain(field?.rich_text ?? []))
-      const langAttr = language ? ` data-language="${escapeAttribute(language)}"` : ""
-      return `<pre><code${langAttr}>${plain}</code></pre>`
+      const codeAttrs: HtmlAttributes = {}
+      if (language) {
+        codeAttrs["data-language"] = language
+      }
+      const code = createElement(
+        "code",
+        depth + 1,
+        codeAttrs,
+        [createRawForBlock(env, plain, block, depth + 1)],
+        {
+          blockId: block.id,
+          blockType: type,
+          level: depth + 1
+        }
+      )
+      const pre = createElementForBlock(
+        env,
+        "pre",
+        block,
+        depth,
+        {},
+        [code]
+      )
+      return [pre]
     }
     case "bookmark":
     case "embed":
@@ -250,10 +767,17 @@ function renderBlock(
       const url = field?.url || ""
       const caption = richTextToHtml(field?.caption ?? [])
       const captionPlain = richTextToPlain(field?.caption ?? [])
-      return (
-        renderMediaFigure(type, url, caption, captionPlain) +
-        renderChildren(block, depth, options)
+      const figure = renderMediaFigure(
+        env,
+        block,
+        type,
+        url,
+        caption,
+        captionPlain,
+        depth
       )
+      const extras = renderChildren(env, block, depth)
+      return figure ? [figure, ...extras] : extras
     }
     case "image":
     case "video":
@@ -264,81 +788,109 @@ function renderBlock(
         field?.type === "external" ? field?.external?.url : field?.file?.url
       const caption = richTextToHtml(field?.caption ?? [])
       const captionPlain = richTextToPlain(field?.caption ?? [])
-      return renderMediaFigure(type, src, caption, captionPlain)
+      const figure = renderMediaFigure(
+        env,
+        block,
+        type,
+        src,
+        caption,
+        captionPlain,
+        depth
+      )
+      return figure ? [figure] : []
     }
     case "equation": {
       const expression = field?.expression || ""
-      const safeExpression = escapeHtml(expression)
       const attr = escapeAttribute(expression)
-      return `<span data-notion-equation="${attr}">${safeExpression}</span>`
+      const span = createElementForBlock(
+        env,
+        "span",
+        block,
+        depth,
+        { "data-notion-equation": attr },
+        [createRawForBlock(env, escapeHtml(expression), block, depth)],
+        type
+      )
+      return [span]
     }
     case "divider": {
-      return "<hr />"
+      const hr = createElementForBlock(env, "hr", block, depth)
+      return [hr]
     }
     case "table": {
-      return renderTable(block, options)
+      const table = renderTable(env, block, depth)
+      return table ? [table] : []
     }
     case "table_row": {
-      return ""
+      return []
     }
     case "column_list":
     case "columns": {
-      const children = renderChildren(block, depth, options)
-      return `<div${classAttribute(CLASS_COLUMNS, options.columnClassName)}>${children}</div>`
+      const className = mergeClassNames(CLASS_COLUMNS, env.options.columnClassName)
+      const attrs: HtmlAttributes = {}
+      if (className) attrs.class = className
+      const children = renderChildren(env, block, depth)
+      const div = createElementForBlock(env, "div", block, depth, attrs, children)
+      return [div]
     }
     case "column": {
-      const children = renderChildren(block, depth, options)
-      return `<div${classAttribute(CLASS_COLUMN, options.columnClassName)}>${children}</div>`
+      const className = mergeClassNames(CLASS_COLUMN, env.options.columnClassName)
+      const attrs: HtmlAttributes = {}
+      if (className) attrs.class = className
+      const children = renderChildren(env, block, depth)
+      const div = createElementForBlock(env, "div", block, depth, attrs, children)
+      return [div]
     }
     case "synced_block": {
-      return renderChildren(block, depth, options)
+      return renderChildren(env, block, depth)
     }
     case "child_page": {
-      if (!options.debug) return ""
+      if (!env.options.debug) return []
       const title = (field?.title as string | undefined) || ""
-      return buildStructuralPlaceholder("child_page", block, title, options)
+      return [buildStructuralPlaceholder(env, "child_page", block, title, depth)]
     }
     case "child_database": {
-      if (!options.debug) return ""
+      if (!env.options.debug) return []
       const title = (field?.title as string | undefined) || ""
-      return buildStructuralPlaceholder("child_database", block, title, options)
+      return [buildStructuralPlaceholder(env, "child_database", block, title, depth)]
     }
     case "breadcrumb": {
-      if (!options.debug) return ""
-      return buildStructuralPlaceholder("breadcrumb", block, undefined, options)
+      if (!env.options.debug) return []
+      return [buildStructuralPlaceholder(env, "breadcrumb", block, undefined, depth)]
     }
     case "table_of_contents": {
-      if (!options.debug) return ""
-      return buildStructuralPlaceholder(
-        "table_of_contents",
-        block,
-        undefined,
-        options
-      )
+      if (!env.options.debug) return []
+      return [
+        buildStructuralPlaceholder(
+          env,
+          "table_of_contents",
+          block,
+          undefined,
+          depth
+        )
+      ]
     }
     case "template": {
-      return renderChildren(block, depth, options)
+      return renderChildren(env, block, depth)
     }
-    case "to_do": {
-      return "" // handled by grouped renderer
-    }
+    case "to_do":
     case "bulleted_list_item":
     case "numbered_list_item": {
-      return "" // handled by grouped renderer
+      return []
     }
     default:
-      return ""
+      return []
   }
 }
 
 function renderBlocks(
+  env: RenderEnvironment,
   blocks: NotionBlock[] = [],
-  depth = 0,
-  options: ResolvedHtmlOptions
-): string {
-  if (!Array.isArray(blocks) || blocks.length === 0) return ""
+  depth = 0
+): HtmlNode[] {
+  if (!Array.isArray(blocks) || blocks.length === 0) return []
 
-  const parts: string[] = []
+  const nodes: HtmlNode[] = []
   let index = 0
 
   while (index < blocks.length) {
@@ -355,7 +907,8 @@ function renderBlocks(
         items.push(blocks[index])
         index++
       }
-      parts.push(renderListItems(items, listType, depth, options))
+      const listNode = renderListItems(env, items, listType, depth)
+      if (listNode) nodes.push(listNode)
       continue
     }
 
@@ -365,15 +918,201 @@ function renderBlocks(
         items.push(blocks[index])
         index++
       }
-      parts.push(renderTodoItems(items, depth, options))
+      const todoNode = renderTodoItems(env, items, depth)
+      if (todoNode) nodes.push(todoNode)
       continue
     }
 
-    parts.push(renderBlock(block, depth, options))
+    nodes.push(...renderBlock(env, block, depth))
     index++
   }
 
-  return parts.join("")
+  return nodes
+}
+
+interface PluginEntry {
+  plugin: HtmlPlugin
+  store: Map<string, unknown>
+}
+
+function preparePluginEntries(plugins: HtmlPlugin[]): PluginEntry[] {
+  return [...plugins]
+    .filter(Boolean)
+    .sort(
+      (a, b) => (a.priority ?? 0) - (b.priority ?? 0)
+    )
+    .map((plugin) => ({
+      plugin,
+      store: new Map<string, unknown>()
+    }))
+}
+
+function cloneMeta(meta: HtmlNodeMeta): HtmlNodeMeta {
+  return {
+    blockId: meta.blockId,
+    blockType: meta.blockType,
+    level: meta.level
+  }
+}
+
+function createElementFromMeta(
+  meta: HtmlNodeMeta,
+  tagName: string,
+  attributes: HtmlAttributes = {},
+  children: HtmlNode[] = []
+): HtmlElementNode {
+  const attrs: HtmlAttributes = { ...attributes }
+  attrs["data-level"] = attrs["data-level"] ?? String(meta.level)
+  if (meta.blockType && attrs["data-type"] === undefined) {
+    attrs["data-type"] = meta.blockType
+  }
+  return {
+    kind: "element",
+    tagName,
+    attributes: attrs,
+    children,
+    meta: cloneMeta(meta)
+  }
+}
+
+function createPostProcessContext(
+  entry: PluginEntry,
+  node: HtmlNode,
+  ancestors: HtmlElementNode[],
+  blockMap: Map<string, NotionBlock>
+) {
+  let skipped = false
+  const meta = node.meta
+  const block = meta.blockId ? blockMap.get(meta.blockId) : undefined
+
+  return {
+    block,
+    level: meta.level,
+    ancestors: [...ancestors],
+    getState<T>(key: string): T | undefined {
+      return entry.store.get(key) as T | undefined
+    },
+    setState<T>(key: string, value: T): void {
+      entry.store.set(key, value)
+    },
+    deleteState(key: string): void {
+      entry.store.delete(key)
+    },
+    createElement(
+      tagName: string,
+      attributes: HtmlAttributes = {},
+      children: HtmlNode[] = []
+    ): HtmlElementNode {
+      return createElementFromMeta(meta, tagName, attributes, children)
+    },
+    createText(value: string): HtmlTextNode {
+      return {
+        kind: "text",
+        value,
+        meta: cloneMeta(meta)
+      }
+    },
+    createRaw(html: string): HtmlRawNode {
+      return {
+        kind: "raw",
+        html,
+        meta: cloneMeta(meta)
+      }
+    },
+    skipRemaining(): void {
+      skipped = true
+    },
+    get skipped(): boolean {
+      return skipped
+    }
+  }
+}
+
+function processNode(
+  node: HtmlNode,
+  ancestors: HtmlElementNode[],
+  entries: PluginEntry[],
+  blockMap: Map<string, NotionBlock>
+): HtmlNode {
+  let current = node
+
+  for (const entry of entries) {
+    const handler = entry.plugin.postProcess
+    if (!handler) continue
+    const context = createPostProcessContext(entry, current, ancestors, blockMap)
+    const result = handler(current, context)
+    if (result) {
+      current = result
+    }
+    if (context.skipped) {
+      break
+    }
+  }
+
+  if (current.kind === "element") {
+    ancestors.push(current)
+    const processedChildren = current.children.map((child) =>
+      processNode(child, ancestors, entries, blockMap)
+    )
+    current.children = processedChildren
+    ancestors.pop()
+  }
+
+  return current
+}
+
+function runPostProcessors(
+  nodes: HtmlNode[],
+  plugins: HtmlPlugin[],
+  blockMap: Map<string, NotionBlock>
+): HtmlNode[] {
+  if (!plugins.length) return nodes
+  const entries = preparePluginEntries(plugins)
+  const ancestors: HtmlElementNode[] = []
+  return nodes.map((node) => processNode(node, ancestors, entries, blockMap))
+}
+
+function serializeAttributes(attributes: HtmlAttributes): string {
+  const entries = Object.entries(attributes)
+  if (entries.length === 0) return ""
+  entries.sort(([a], [b]) => (a > b ? 1 : a < b ? -1 : 0))
+  const serialized = entries
+    .map(([key, value]) => {
+      if (value === undefined) return ""
+      if (BOOLEAN_ATTRIBUTES.has(key) && value === "") {
+        return key
+      }
+      return `${key}="${escapeAttribute(String(value))}"`
+    })
+    .filter(Boolean)
+    .join(" ")
+  return serialized ? ` ${serialized}` : ""
+}
+
+function serializeNode(node: HtmlNode): string {
+  switch (node.kind) {
+    case "element": {
+      const attrs = serializeAttributes(node.attributes)
+      if (VOID_ELEMENTS.has(node.tagName)) {
+        return `<${node.tagName}${attrs} />`
+      }
+      const children = node.children.map(serializeNode).join("")
+      return `<${node.tagName}${attrs}>${children}</${node.tagName}>`
+    }
+    case "text": {
+      return escapeHtml(node.value)
+    }
+    case "raw": {
+      return node.html
+    }
+    default:
+      return ""
+  }
+}
+
+function serializeNodes(nodes: HtmlNode[]): string {
+  if (!nodes.length) return ""
+  return nodes.map(serializeNode).join("")
 }
 
 export function blocksToHtml(
@@ -382,6 +1121,12 @@ export function blocksToHtml(
 ): string {
   if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return ""
   const options = resolveOptions(opts)
-  return renderBlocks(rawBlocks, 0, options)
+  const env: RenderEnvironment = {
+    options,
+    blockMap: new Map()
+  }
+  const nodes = renderBlocks(env, rawBlocks, 0)
+  const processedNodes = runPostProcessors(nodes, options.plugins, env.blockMap)
+  return serializeNodes(processedNodes)
 }
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest"
 
 import { blocksToHtml } from "./blocks-to-html"
 import { richTextToHtml } from "./rich-text"
-import type { NotionBlock } from "./types"
+import type { NotionBlock, HtmlPlugin } from "./types"
 
 let blockCounter = 0
 
@@ -201,16 +201,16 @@ describe("blocksToHtml", () => {
     })
 
     expect(html).toBe(
-      '<h1>Hello World</h1>' +
-        '<p>This is <a href="https://example.com"><strong>bold link</strong></a><u> underline</u></p>' +
-        '<details><summary>More</summary><div><p>Details</p></div></details>' +
-        '<div class="notion-columns"><div class="notion-column"><p>Column A</p></div><div class="notion-column"><p>Column B</p></div></div>' +
-        '<ul class="notion-bulleted-list custom-list"><li>First bullet</li><li>Second bullet</li></ul>' +
-        '<ul class="notion-todo-list custom-todo"><li><input type="checkbox" disabled /><span>Task one</span></li><li><input type="checkbox" checked disabled /><span>Task two</span></li></ul>' +
-        '<table><thead><tr><th>Header A</th><th>Header B</th></tr></thead><tbody><tr><td>Row 1A</td><td>Row 1B</td></tr></tbody></table>' +
-        '<figure class="notion-media notion-bookmark"><a href="https://example.com">Bookmark caption</a><figcaption>Bookmark caption</figcaption></figure>' +
-        '<figure class="notion-media notion-image"><img src="https://example.com/img.png" alt="Alt text" loading="lazy" /><figcaption>Alt text</figcaption></figure>' +
-        '<div class="notion-debug-placeholder" data-kind="child_page" data-block-id="child-page">Nested Page</div>'
+      '<h1 data-level="0" data-type="heading_1">Hello World</h1>' +
+        '<p data-level="0" data-type="paragraph">This is <a href="https://example.com"><strong>bold link</strong></a><u> underline</u></p>' +
+        '<details data-level="0" data-type="toggle"><summary data-level="1" data-type="toggle">More</summary><div data-level="1" data-type="toggle"><p data-level="1" data-type="paragraph">Details</p></div></details>' +
+        '<div class="notion-columns" data-level="0" data-type="column_list"><div class="notion-column" data-level="1" data-type="column"><p data-level="2" data-type="paragraph">Column A</p></div><div class="notion-column" data-level="1" data-type="column"><p data-level="2" data-type="paragraph">Column B</p></div></div>' +
+        '<ul class="notion-bulleted-list custom-list" data-level="0" data-type="bulleted_list_item"><li data-level="1" data-type="bulleted_list_item">First bullet</li><li data-level="1" data-type="bulleted_list_item">Second bullet</li></ul>' +
+        '<ul class="notion-todo-list custom-todo" data-level="0" data-type="to_do"><li data-level="1" data-type="to_do"><input data-level="1" data-type="to_do" disabled type="checkbox" /><span data-level="1" data-type="to_do">Task one</span></li><li data-level="1" data-type="to_do"><input checked data-level="1" data-type="to_do" disabled type="checkbox" /><span data-level="1" data-type="to_do">Task two</span></li></ul>' +
+        '<table data-level="0" data-type="table"><thead data-level="1" data-type="table"><tr data-level="2" data-type="table"><th data-level="3" data-type="table">Header A</th><th data-level="3" data-type="table">Header B</th></tr></thead><tbody data-level="1" data-type="table"><tr data-level="2" data-type="table"><td data-level="3" data-type="table">Row 1A</td><td data-level="3" data-type="table">Row 1B</td></tr></tbody></table>' +
+        '<figure class="notion-media notion-bookmark" data-level="0" data-type="bookmark"><a data-level="1" data-type="bookmark" href="https://example.com">Bookmark caption</a><figcaption data-level="1" data-type="bookmark">Bookmark caption</figcaption></figure>' +
+        '<figure class="notion-media notion-image" data-level="0" data-type="image"><img alt="Alt text" data-level="1" data-type="image" loading="lazy" src="https://example.com/img.png" /><figcaption data-level="1" data-type="image">Alt text</figcaption></figure>' +
+        '<div class="notion-debug-placeholder" data-block-id="child-page" data-kind="child_page" data-level="0" data-type="child_page">Nested Page</div>'
     )
   })
 
@@ -221,6 +221,92 @@ describe("blocksToHtml", () => {
     )
 
     expect(html).toBe("")
+  })
+
+  it("runs postProcess plugins in order", () => {
+    const listBlocks: NotionBlock[] = [
+      createBlock("bulleted_list_item", {
+        rich_text: [createRichText("Item 1")]
+      }),
+      createBlock("bulleted_list_item", {
+        rich_text: [createRichText("Item 2")]
+      }),
+      createBlock("bulleted_list_item", {
+        rich_text: [createRichText("Item 3")]
+      })
+    ]
+
+    const alternatingBullets: HtmlPlugin = {
+      id: "alternate-bullets",
+      postProcess(node, ctx) {
+        if (node.kind !== "element") return
+        const type = node.attributes["data-type"]
+        if (node.tagName === "ul" && type === "bulleted_list_item") {
+          const key = `list:${node.meta.blockId ?? ctx.level}`
+          ctx.setState(key, 0)
+          return
+        }
+
+        if (node.tagName !== "li" || type !== "bulleted_list_item") {
+          return
+        }
+
+        const listAncestor = ctx.ancestors
+          .slice()
+          .reverse()
+          .find(
+            (ancestor) =>
+              ancestor.tagName === "ul" &&
+              ancestor.attributes["data-type"] === "bulleted_list_item"
+          )
+
+        const listKey = `list:${listAncestor?.meta.blockId ?? "global"}`
+        const count = ctx.getState<number>(listKey) ?? 0
+        const next = count + 1
+        ctx.setState(listKey, next)
+        const style = next % 2 === 0 ? "list-style-type: circle" : "list-style-type: disc"
+        node.attributes.style = style
+      }
+    }
+
+    const html = blocksToHtml(listBlocks, {
+      plugins: [alternatingBullets]
+    })
+
+    expect(html).toBe(
+      '<ul data-level="0" data-type="bulleted_list_item"><li data-level="1" data-type="bulleted_list_item" style="list-style-type: disc">Item 1</li><li data-level="1" data-type="bulleted_list_item" style="list-style-type: circle">Item 2</li><li data-level="1" data-type="bulleted_list_item" style="list-style-type: disc">Item 3</li></ul>'
+    )
+  })
+
+  it("allows plugins to replace rendered nodes", () => {
+    const bookmark = createBlock("bookmark", {
+      url: "https://example.com",
+      caption: [createRichText("Example Bookmark")]
+    })
+
+    const customBookmark: HtmlPlugin = {
+      id: "custom-bookmark",
+      postProcess(node, ctx) {
+        if (node.kind !== "element") return
+        if (node.tagName !== "figure") return
+        if (node.attributes["data-type"] !== "bookmark") return
+
+        const href = ctx.block && (ctx.block as any).bookmark?.url
+        const component = ctx.createElement("Bookmark", {
+          href: href ?? ""
+        })
+        component.children.push(ctx.createText("Custom Bookmark"))
+        return component
+      }
+    }
+
+    const html = blocksToHtml([bookmark], {
+      plugins: [customBookmark]
+    })
+
+    expect(html).toBe(
+      '<Bookmark data-level="0" data-type="bookmark" href="https://example.com">Custom Bookmark</Bookmark>'
+    )
   })
 })
 
