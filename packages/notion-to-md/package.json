@@ -1,6 +1,6 @@
 {
   "name": "@notion-utils/md",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Convert Notion blocks into Markdown",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -18,7 +18,7 @@
     "url": "https://github.com/mikemajara/notion-cms/issues"
   },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",
@@ -59,9 +59,12 @@
       "@notionhq/client"
     ],
     "minify": false,
-    "sourcemap": false,
+    "sourcemap": true,
     "target": "es2020",
     "bundle": true,
     "skipNodeModulesBundle": true
+  },
+  "dependencies": {
+    "remark-breaks": "^4.0.0"
   }
 }
