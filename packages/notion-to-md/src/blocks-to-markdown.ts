@@ -354,6 +354,6 @@ export function blocksToMarkdown(
     debug: opts.debug ?? false
   }
   if (!Array.isArray(rawBlocks) || rawBlocks.length === 0) return ""
-  console.log("rawBlocks", JSON.stringify(rawBlocks))
+
   return renderBlocks(rawBlocks, 0, options)
 }
