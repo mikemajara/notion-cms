@@ -183,7 +183,9 @@ function renderBlock(
       return appendWithChildren(body, "")
     }
     case "equation": {
-      return appendWithChildren(field?.expression || "", "") + "\n"
+      return (
+        "$$\n" + appendWithChildren(field?.expression || "", "") + "$$" + "\n"
+      )
     }
     case "divider": {
       return appendWithChildren("---", "")
