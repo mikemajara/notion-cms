@@ -1,6 +1,6 @@
 {
   "name": "nextjs-with-shadcn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,11 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "a": "npx shadcn add",
-    "generate-types": "source .env && npx @mikemajara/notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID",
-    "generate-types:force": "source .env && npx @mikemajara/notion-cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID -f"
+    "generate-types": "source .env && npx @notion-utils/cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID",
+    "generate-types:force": "source .env && npx @notion-utils/cms generate -t $NOTION_API_KEY -d $NOTION_RESOURCE_TRACKER_DATABASE_ID -f"
   },
   "dependencies": {
-    "@mikemajara/notion-cms": "workspace:*",
+    "@notion-utils/cms": "workspace:*",
+    "@notion-utils/md": "workspace:*",
     "@radix-ui/react-avatar": "^1.1.4",
     "@radix-ui/react-dialog": "^1.1.4",
     "@radix-ui/react-navigation-menu": "^1.2.3",

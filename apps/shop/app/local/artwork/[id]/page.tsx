@@ -7,7 +7,7 @@ import { StrategyIndicator } from "@/components/strategy-indicator"
 // Import to ensure prototype extensions are executed
 import "@/notion/notion-types-art-gallery-inventory"
 import ReactMarkdown from "react-markdown"
-import { blocksToMarkdown } from "@mikemajara/notion-cms"
+import { blocksToMarkdown } from "@notion-utils/md"
 import remarkGfm from "remark-gfm"
 import { components } from "@/components/markdown/components"
 

@@ -1,6 +1,6 @@
 {
   "name": "@notion-utils/cms",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "A TypeScript library for using Notion as a headless CMS",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -49,6 +49,7 @@
   "author": "Miguel Alcalde",
   "license": "MIT",
   "dependencies": {
+    "@notion-utils/types": "workspace:*",
     "commander": "^13.1.0",
     "image-size": "^2.0.2",
     "ts-morph": "^21.0.1"
@@ -108,7 +109,7 @@
       "typescript"
     ],
     "minify": false,
-    "sourcemap": false,
+    "sourcemap": true,
     "target": "es2020",
     "bundle": true,
     "skipNodeModulesBundle": true

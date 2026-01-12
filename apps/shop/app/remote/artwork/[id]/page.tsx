@@ -1,8 +1,4 @@
-import {
-  convertBlocksToSimple,
-  convertRecordToSimple,
-  NotionCMS
-} from "@mikemajara/notion-cms"
+import { convertRecordToSimple, NotionCMS } from "@mikemajara/notion-cms"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
@@ -10,7 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StrategyIndicator } from "@/components/strategy-indicator"
 // Import to ensure prototype extensions are executed
 import "@/notion/notion-types-art-gallery-inventory"
-import { renderBlock } from "@/lib/helpers"
+import ReactMarkdown from "react-markdown"
+import { blocksToMarkdown } from "@notion-utils/md"
+import remarkGfm from "remark-gfm"
+import { components } from "@/components/markdown/components"
 
 export default async function ArtworkPage({
   params
@@ -32,13 +31,12 @@ export default async function ArtworkPage({
   try {
     const pageId = (await params).id
     const artwork = await convertRecordToSimple(
-      await notionCMS.getRecordRaw(pageId)
+      await notionCMS.getRecord(pageId)
     )
 
-    // Fetch the page content blocks
-    const pageContent = await convertBlocksToSimple(
-      await notionCMS.getPageContentRaw(pageId)
-    )
+    // Fetch the page content blocks and convert to markdown
+    const pageContentRaw = await notionCMS.getPageContent(pageId)
+    const pageContentMarkdown = blocksToMarkdown(pageContentRaw)
 
     return (
       <div className="container px-4 py-8 mx-auto">
@@ -129,7 +127,7 @@ export default async function ArtworkPage({
           </div>
 
           {/* Page Content */}
-          {pageContent && pageContent.length > 0 && (
+          {pageContentMarkdown && (
             <div className="mt-12">
               <Card>
                 <CardHeader>
@@ -137,11 +135,12 @@ export default async function ArtworkPage({
                 </CardHeader>
                 <CardContent>
                   <div className="max-w-none prose prose-lg">
-                    {pageContent.map((block, index) => (
-                      <div key={index} className="mb-4">
-                        {renderBlock(block)}
-                      </div>
-                    ))}
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={components}
+                    >
+                      {pageContentMarkdown}
+                    </ReactMarkdown>
                   </div>
                 </CardContent>
               </Card>

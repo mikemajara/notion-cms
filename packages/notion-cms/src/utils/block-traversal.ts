@@ -1,4 +1,4 @@
-import type { ContentBlockRaw } from "../types/content-types"
+import type { ContentBlockRaw } from "@notion-utils/types"
 
 /**
  * Block traversal utilities for processing Notion content blocks

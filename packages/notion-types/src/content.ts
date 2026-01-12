@@ -1,4 +1,5 @@
 import type { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+
 export type ContentBlockAdvanced =
   | {
       id: string
@@ -90,3 +91,5 @@ export type ContentTableRowAdvanced = Extract<
 export type ContentBlockRaw = BlockObjectResponse & {
   children?: ContentBlockRaw[]
 }
+
+

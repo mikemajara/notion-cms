@@ -1,0 +1,47 @@
+{
+  "name": "@notion-utils/types",
+  "version": "0.1.0",
+  "description": "Shared TypeScript definitions for the notion-utils packages",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikemajara/notion-cms.git"
+  },
+  "homepage": "https://github.com/mikemajara/notion-cms/tree/main/packages/notion-types",
+  "bugs": {
+    "url": "https://github.com/mikemajara/notion-cms/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "build:watch": "tsc --project tsconfig.json --watch",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepare": "tsc --project tsconfig.json"
+  },
+  "keywords": [
+    "notion",
+    "types",
+    "typescript"
+  ],
+  "author": "Miguel Alcalde",
+  "license": "MIT",
+  "peerDependencies": {
+    "@notionhq/client": "^5.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
+
+

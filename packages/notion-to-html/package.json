@@ -45,6 +45,9 @@
     "typescript": "^5.3.3",
     "vitest": "^1.6.0"
   },
+  "dependencies": {
+    "@notion-utils/types": "workspace:*"
+  },
   "tsup": {
     "entry": [
       "src/index.ts"
@@ -67,4 +70,3 @@
     "skipNodeModulesBundle": true
   }
 }
-

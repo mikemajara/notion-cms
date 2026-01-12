@@ -9,7 +9,12 @@
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@notion-utils/types": ["packages/notion-types/dist/index.d.ts"],
+      "@notion-utils/types/*": ["packages/notion-types/dist/*"]
+    }
   },
   "exclude": ["node_modules"]
 }

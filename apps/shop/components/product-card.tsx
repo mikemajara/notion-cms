@@ -1,46 +1,46 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { RecordArtGalleryInventory } from "@/notion/notion-types-art-gallery-inventory";
-import { generateProductLink, type FileStrategy } from "@/lib/strategy-utils";
+import Image from "next/image"
+import Link from "next/link"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import { RecordArtGalleryInventory } from "@/notion/notion-types-art-gallery-inventory"
+import { generateProductLink, type FileStrategy } from "@/lib/strategy-utils"
 
 interface ProductCardProps {
-  artwork: RecordArtGalleryInventory;
-  strategy: FileStrategy;
-  className?: string;
+  artwork: RecordArtGalleryInventory
+  strategy: FileStrategy
+  className?: string
 }
 
 export function ProductCard({
   artwork,
   strategy,
-  className,
+  className
 }: ProductCardProps) {
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("es-ES", {
       style: "currency",
-      currency: "USD",
-    }).format(price);
-  };
+      currency: "EUR"
+    }).format(price)
+  }
 
   const getStatusVariant = (status: any) => {
-    if (!status) return "secondary";
+    if (!status) return "secondary"
 
-    const statusName = typeof status === "string" ? status : status.name;
+    const statusName = typeof status === "string" ? status : status.name
 
     switch (statusName?.toLowerCase()) {
       case "available":
       case "for sale":
-        return "default";
+        return "default"
       case "sold":
-        return "destructive";
+        return "destructive"
       case "reserved":
-        return "secondary";
+        return "secondary"
       default:
-        return "outline";
+        return "outline"
     }
-  };
+  }
 
   const getMediumColor = (medium: string) => {
     const colors = {
@@ -61,13 +61,13 @@ export function ProductCard({
       Photography:
         "bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400",
       Textile:
-        "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
-    };
+        "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
+    }
     return (
       colors[medium as keyof typeof colors] ||
       "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400"
-    );
-  };
+    )
+  }
 
   return (
     <Link href={generateProductLink(artwork.id, strategy)} className="group">
@@ -77,7 +77,7 @@ export function ProductCard({
           className
         )}
       >
-        <div className="relative aspect-square overflow-hidden">
+        <div className="overflow-hidden relative aspect-square">
           {artwork.Image.length > 0 ? (
             <Image
               src={artwork.Image?.[0]?.url}
@@ -87,7 +87,7 @@ export function ProductCard({
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
-            <div className="flex h-full items-center justify-center bg-muted">
+            <div className="flex justify-center items-center h-full bg-muted">
               <span className="text-muted-foreground">No Image</span>
             </div>
           )}
@@ -107,7 +107,7 @@ export function ProductCard({
         <CardContent className="p-4">
           <div className="space-y-2">
             <div>
-              <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+              <h3 className="text-lg font-semibold leading-tight line-clamp-2">
                 {artwork["Artwork Title"] || "Untitled"}
               </h3>
               <p className="text-sm text-muted-foreground">
@@ -115,7 +115,7 @@ export function ProductCard({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2 items-center">
               {artwork.Medium && (
                 <Badge
                   variant="outline"
@@ -140,18 +140,19 @@ export function ProductCard({
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-0 flex justify-between items-center">
-          <div className="font-bold text-lg">
+        <CardFooter className="flex justify-between items-center p-4 pt-0">
+          <div className="text-lg font-bold">
             {artwork.Price ? formatPrice(artwork.Price) : "Price on Request"}
           </div>
 
           {artwork["Commission Rate"] && artwork["Commission Rate"] > 0 && (
             <Badge variant="secondary" className="text-xs">
-              {artwork["Commission Rate"]}% commission
+              {artwork["Commission Rate"]}% commission (
+              {artwork["Total commission"].number})
             </Badge>
           )}
         </CardFooter>
       </Card>
     </Link>
-  );
+  )
 }

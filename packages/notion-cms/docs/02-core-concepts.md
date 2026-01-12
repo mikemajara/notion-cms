@@ -178,7 +178,7 @@ You can convert records between layers using helper functions:
 import {
   convertRecordToSimple,
   convertRecordToAdvanced
-} from "@mikemajara/notion-cms"
+} from "@notion-utils/cms"
 
 // Start with raw
 const rawRecords = await notionCMS

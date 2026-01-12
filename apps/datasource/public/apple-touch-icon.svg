@@ -1,0 +1,10 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none"
+  xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="180" height="180" rx="45" fill="#000000"/>
+
+  <!-- Template stack design -->
+  <rect x="45" y="90" width="90" height="60" rx="8" fill="#ffffff" opacity="0.3"/>
+  <rect x="52" y="60" width="90" height="60" rx="8" fill="#ffffff" opacity="0.6"/>
+  <rect x="60" y="30" width="90" height="60" rx="8" fill="#ffffff"/>
+</svg> 

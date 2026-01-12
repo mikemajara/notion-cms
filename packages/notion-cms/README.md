@@ -17,13 +17,15 @@ Transform your Notion databases into a powerful, type-safe CMS that works perfec
 ## Quick Start
 
 ```bash
-pnpm add @mikemajara/notion-cms
+pnpm add @notion-utils/cms @notionhq/client
 ```
 
-```typescript
-import { NotionCMS } from "./notion" // Generated types
+> Install `@aws-sdk/client-s3` if you plan to use the bundled S3 storage adapter.
 
-const notionCms = new NotionCMS(process.env.NOTION_API_KEY!)
+```typescript
+import { NotionCMS } from "./notion" // Generated entrypoint re-exports NotionCMS
+
+const notionCms = new NotionCMS(process.env.NOTION_API_KEY as string)
 
 // Query with type safety - generate types first!
 const clients = await notionCms
@@ -42,6 +44,8 @@ const activeClients = await notionCms
   .all()
 ```
 
+> The generator creates an index file (e.g. `./notion/index.ts`) that registers your databases and re-exports `NotionCMS`. Import from that generated path wherever you bootstrap the client.
+
 ## Documentation
 
 Get started quickly with our comprehensive guides:
@@ -49,6 +53,7 @@ Get started quickly with our comprehensive guides:
 - **[📚 Getting Started](./docs/01-getting-started.md)** - Installation and basic usage
 - **[🧠 Core Concepts](./docs/02-core-concepts.md)** - Understand the three-layer API architecture
 - **[⚙️ Type Generation](./docs/03-type-generation.md)** - Generate TypeScript types from your Notion databases
+- **[🚢 Release Checklist](./docs/99-release-checklist.md)** - Steps to prepare and publish new versions
 
 ## Layered API Preview
 
@@ -87,9 +92,10 @@ npx notion-cms generate \
 ```
 
 ```typescript
-import { NotionCMS } from "./notion" // Generated types auto-register
+import { NotionCMS } from "./notion"
 
-// Fully typed database operations
+const notionCms = new NotionCMS(process.env.NOTION_API_KEY as string)
+
 const posts = await notionCms
   .query("myDatabase", { recordType: "simple" })
   .filter("Status", "equals", "Published")

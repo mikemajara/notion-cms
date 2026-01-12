@@ -38,8 +38,10 @@ class DebugLogger {
   }
 
   query(
-    context: { dataSourceId: string; label?: string } | string,
-    options: any
+    context:
+      | { dataSourceId?: string; databaseId?: string; label?: string }
+      | string,
+    options: any = {}
   ) {
     if (!this.shouldLog("debug")) {
       return
@@ -47,19 +49,26 @@ class DebugLogger {
 
     const normalized =
       typeof context === "string"
-        ? { dataSourceId: context, label: context }
-        : context
+        ? { dataSourceId: context, databaseId: context, label: context }
+        : {
+            dataSourceId: context.dataSourceId ?? context.databaseId,
+            databaseId: context.databaseId ?? context.dataSourceId,
+            label: context.label
+          }
 
-    console.log("\n[NotionCMS Query]:", {
+    const queryDetails = {
       label: normalized.label,
       dataSourceId: normalized.dataSourceId,
+      databaseId: normalized.databaseId,
       filter: options.filter,
       sorts: options.sorts,
-      pageSize: options.page_size,
-      startCursor: options.start_cursor,
-      includeArchived: options.include_archived,
+      pageSize: options.page_size ?? options.pageSize,
+      startCursor: options.start_cursor ?? options.startCursor,
+      includeArchived: options.include_archived ?? options.includeArchived,
       timestamp: new Date().toISOString()
-    })
+    }
+
+    console.log("\n[NotionCMS Query]:", queryDetails)
   }
 
   error(error: any, context?: any) {

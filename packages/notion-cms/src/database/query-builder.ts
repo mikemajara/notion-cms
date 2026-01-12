@@ -3,7 +3,7 @@ import type {
   QueryDataSourceParameters,
   PageObjectResponse
 } from "@notionhq/client/build/src/api-endpoints"
-import type { DatabaseRecordType } from "../types/public"
+import type { DatabaseRecordType } from "@notion-utils/types"
 import { debug } from "../utils/debug"
 import { FileManager } from "../file-processor/file-manager"
 import {

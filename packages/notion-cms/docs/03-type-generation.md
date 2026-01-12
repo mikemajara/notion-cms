@@ -23,7 +23,7 @@ npx notion-cms generate [options]
 Or install globally (not recommended):
 
 ```bash
-pnpm add -g @mikemajara/notion-cms
+pnpm add -g @notion-utils/cms
 notion-cms generate [options]
 ```
 
@@ -133,7 +133,7 @@ export interface RecordMyDatabase extends DatabaseRecord {
 // This uses TypeScript's module augmentation feature to extend the DatabaseRegistry
 // interface without modifying the source code. When you import this file, TypeScript
 // automatically knows about your database types.
-declare module "@mikemajara/notion-cms" {
+declare module "@notion-utils/cms" {
   interface DatabaseRegistry {
     myDatabase: {
       record: RecordMyDatabase
@@ -272,7 +272,6 @@ This means one Notion database can result in multiple generated type files, each
 ## Best Practices
 
 1. **Version Control**: Commit generated types to your repository
-
    - They're deterministic and change only when your database changes
    - Helps with code reviews and deployment
 

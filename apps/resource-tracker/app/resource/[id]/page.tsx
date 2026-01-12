@@ -1,76 +1,77 @@
-import { NotionCMS } from "@mikemajara/notion-cms";
-import { RecordResourceTracker } from "@/notion";
-import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ArrowLeft, ExternalLink } from "lucide-react";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import "@/notion/notion-types-resource-tracker";
+import { NotionCMS } from "@mikemajara/notion-cms"
+import { blocksToMarkdown } from "@notion-utils/md"
+import { RecordResourceTracker } from "@/notion"
+import { notFound } from "next/navigation"
+import Link from "next/link"
+import { ArrowLeft, ExternalLink } from "lucide-react"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
+import "@/notion/notion-types-resource-tracker"
 
 interface ResourceWithContent {
-  resource: RecordResourceTracker;
-  content: string;
-  hasContent: boolean;
+  resource: RecordResourceTracker
+  content: string
+  hasContent: boolean
 }
 
 async function getResourceById(
   id: string
 ): Promise<ResourceWithContent | null> {
   try {
-    const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "");
-    const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || "";
-    console.debug(`id`, id);
+    const notionCMS = new NotionCMS(process.env.NOTION_API_KEY || "")
+    const databaseId = process.env.NOTION_RESOURCE_TRACKER_DATABASE_ID || ""
+    console.debug(`id`, id)
     const resource = (await notionCMS
       .queryResourceTracker(databaseId)
       .filter("ID", "equals", parseInt(id))
-      .single()) as RecordResourceTracker;
+      .single()) as RecordResourceTracker
 
     if (!resource) {
-      return null;
+      return null
     }
 
     // Fetch page content
-    let content = "";
-    let hasContent = false;
+    let content = ""
+    let hasContent = false
 
     try {
-      const blocks = await notionCMS.getPageContent(resource.id, true);
-      content = notionCMS.blocksToMarkdown(blocks);
-      hasContent = blocks.length > 0 && content.trim().length > 0;
+      const blocks = await notionCMS.getPageContent(resource.id, true)
+      content = blocksToMarkdown(blocks)
+      hasContent = blocks.length > 0 && content.trim().length > 0
     } catch (contentError) {
-      console.warn("Could not fetch page content:", contentError);
+      console.warn("Could not fetch page content:", contentError)
       // Don't fail the whole request if content fetching fails
     }
 
     return {
       resource,
       content,
-      hasContent,
-    };
+      hasContent
+    }
   } catch (error) {
-    console.error("Error fetching resource:", error);
-    return null;
+    console.error("Error fetching resource:", error)
+    return null
   }
 }
 
 export default async function ResourceDetailPage({
-  params,
+  params
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string }>
 }) {
-  const id = (await params).id;
-  const result = await getResourceById(id);
+  const id = (await params).id
+  const result = await getResourceById(id)
 
   if (!result) {
-    notFound();
+    notFound()
   }
 
-  const { resource, content, hasContent } = result;
+  const { resource, content, hasContent } = result
 
   return (
     <div className="container max-w-4xl py-8 mx-auto">
@@ -419,5 +420,5 @@ export default async function ResourceDetailPage({
         </Card>
       )}
     </div>
-  );
+  )
 }

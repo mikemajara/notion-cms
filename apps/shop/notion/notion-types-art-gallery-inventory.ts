@@ -3,85 +3,166 @@
  * DO NOT EDIT DIRECTLY - YOUR CHANGES WILL BE OVERWRITTEN
  * v0.1.3
  * Generated for database: Art Gallery Inventory
+ * Composite display: Art Gallery Inventory (Data source: Art Gallery Inventory)
+ * Signature name: Art Gallery Inventory
+ * Data source: 2232a789-c1fc-80df-832c-000ba3e90038
  */
-import { DatabaseRecord, NotionCMS, DatabaseFieldMetadata } from "@mikemajara/notion-cms";
-import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import {
+  DatabaseRecord,
+  NotionCMS,
+  DatabaseFieldMetadata
+} from "@mikemajara/notion-cms"
+import { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints"
 
-export { NotionCMS } from "@mikemajara/notion-cms";
+export { NotionCMS } from "@mikemajara/notion-cms"
 export const RecordArtGalleryInventoryFieldTypes = {
-  "id": { type: "unique_id" },
-  "Artist": { type: "rich_text" },
+  id: { type: "unique_id" },
+  Artist: { type: "rich_text" },
   "Date Acquired": { type: "date" },
+  "Total commission": { type: "number" },
   "Date Sold": { type: "date" },
-  "Image": { type: "files" },
-  "Published": { type: "checkbox" },
-  "Price": { type: "number" },
-  "Medium": { 
+  Image: { type: "files" },
+  Published: { type: "checkbox" },
+  Price: { type: "number" },
+  Medium: {
     type: "select",
-    options: ["Oil Paint", "Acrylic", "Watercolor", "Sculpture", "Mixed Media", "Digital", "Charcoal/Graphite", "Photography", "Textile", "Glass", "Painting", "Charcoal", "Installation"] as const
+    options: [
+      "Oil Paint",
+      "Acrylic",
+      "Watercolor",
+      "Sculpture",
+      "Mixed Media",
+      "Digital",
+      "Charcoal/Graphite",
+      "Photography",
+      "Textile",
+      "Glass",
+      "Painting",
+      "Charcoal",
+      "Installation"
+    ] as const
   },
   "Commission Rate": { type: "number" },
-  "Dimensions": { type: "rich_text" },
-  "Status": { type: "status" },
-  "Certificate": { type: "files" },
-  "Description": { type: "rich_text" },
-  "Artwork Title": { type: "title" },
-} as const satisfies DatabaseFieldMetadata;
+  Dimensions: { type: "rich_text" },
+  Status: { type: "status" },
+  Certificate: { type: "files" },
+  Description: { type: "rich_text" },
+  "Artwork Title": { type: "title" }
+} as const satisfies DatabaseFieldMetadata
 
 export interface RecordArtGalleryInventoryAdvanced {
-    id: string;
-    Artist: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
-    "Date Acquired": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
-    "Date Sold": { start: string; end: string | null; time_zone: string | null; parsedStart: Date | null; parsedEnd: Date | null } | null;
-    Image: { name: string; type: string; external?: { url: string }; file?: { url: string; expiry_time: string } }[];
-    Published: boolean;
-    Price: number;
-    Medium: { id: string; name: string; color: string } | null;
-    "Commission Rate": number;
-    Dimensions: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
-    Status: { id: string; name: string; color: string } | null;
-    Certificate: { name: string; type: string; external?: { url: string }; file?: { url: string; expiry_time: string } }[];
-    Description: { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
-    "Artwork Title": { content: string; annotations: any; href: string | null; link?: { url: string } | null }[];
+  id: string
+  Artist: {
+    content: string
+    annotations: any
+    href: string | null
+    link?: { url: string } | null
+  }[]
+  "Date Acquired": {
+    start: string
+    end: string | null
+    time_zone: string | null
+    parsedStart: Date | null
+    parsedEnd: Date | null
+  } | null
+  "Total commission": { type: string; value: any }
+  "Date Sold": {
+    start: string
+    end: string | null
+    time_zone: string | null
+    parsedStart: Date | null
+    parsedEnd: Date | null
+  } | null
+  Image: {
+    name: string
+    type: string
+    external?: { url: string }
+    file?: { url: string; expiry_time: string }
+  }[]
+  Published: boolean
+  Price: number
+  Medium: { id: string; name: string; color: string } | null
+  "Commission Rate": number
+  Dimensions: {
+    content: string
+    annotations: any
+    href: string | null
+    link?: { url: string } | null
+  }[]
+  Status: { id: string; name: string; color: string } | null
+  Certificate: {
+    name: string
+    type: string
+    external?: { url: string }
+    file?: { url: string; expiry_time: string }
+  }[]
+  Description: {
+    content: string
+    annotations: any
+    href: string | null
+    link?: { url: string } | null
+  }[]
+  "Artwork Title": {
+    content: string
+    annotations: any
+    href: string | null
+    link?: { url: string } | null
+  }[]
 }
 
 export interface RecordArtGalleryInventoryRaw {
-    id: string;
-    properties: Record<string, any>;
+  id: string
+  properties: Record<string, any>
 }
 
 export interface RecordArtGalleryInventory extends DatabaseRecord {
-    id: string;
-    Artist: string;
-    "Date Acquired": Date;
-    "Date Sold": Date;
-    Image: { name: string; url: string; }[];
-    Published: boolean;
-    Price: number;
-    Medium: "Oil Paint" | "Acrylic" | "Watercolor" | "Sculpture" | "Mixed Media" | "Digital" | "Charcoal/Graphite" | "Photography" | "Textile" | "Glass" | "Painting" | "Charcoal" | "Installation";
-    "Commission Rate": number;
-    Dimensions: string;
-    Status: any;
-    Certificate: { name: string; url: string; }[];
-    Description: string;
-    "Artwork Title": string;
+  id: string
+  Artist: string
+  "Date Acquired": Date
+  "Total commission": any
+  "Date Sold": Date
+  Image: { name: string; url: string }[]
+  Published: boolean
+  Price: number
+  Medium:
+    | "Oil Paint"
+    | "Acrylic"
+    | "Watercolor"
+    | "Sculpture"
+    | "Mixed Media"
+    | "Digital"
+    | "Charcoal/Graphite"
+    | "Photography"
+    | "Textile"
+    | "Glass"
+    | "Painting"
+    | "Charcoal"
+    | "Installation"
+  "Commission Rate": number
+  Dimensions: string
+  Status: any
+  Certificate: { name: string; url: string }[]
+  Description: string
+  "Artwork Title": string
 }
 
 // Extend DatabaseRegistry interface with this database
 declare module "@mikemajara/notion-cms" {
   interface DatabaseRegistry {
     artGalleryInventory: {
-      record: RecordArtGalleryInventory;
-      recordAdvanced: RecordArtGalleryInventoryAdvanced;
-      recordRaw: PageObjectResponse;
-      fields: typeof RecordArtGalleryInventoryFieldTypes;
-    };
+      record: RecordArtGalleryInventory
+      recordAdvanced: RecordArtGalleryInventoryAdvanced
+      recordRaw: PageObjectResponse
+      fields: typeof RecordArtGalleryInventoryFieldTypes
+    }
   }
 }
 
 // Add database configuration to the registry
 NotionCMS.prototype.databases["artGalleryInventory"] = {
-  id: process.env.NOTION_CMS_ARTGALLERYINVENTORY_DATABASE_ID || "2232a789c1fc8093849cdadd5a099fcb",
-  fields: RecordArtGalleryInventoryFieldTypes,
-};
-
+  dataSourceId:
+    process.env.NOTION_CMS_ARTGALLERYINVENTORY_DATA_SOURCE_ID ||
+    "2232a789-c1fc-80df-832c-000ba3e90038",
+  label: "Art Gallery Inventory (Data source: Art Gallery Inventory)",
+  fields: RecordArtGalleryInventoryFieldTypes
+}

@@ -1,0 +1,9 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+- Shared components should be stored in the @/components directory.
+- Components that are specific to a page should be stored in the @/app/[page]/\_components directory.
+- Components that belong to libraries will be stored in the @/components/[library] directory. Example @/components/ui for shadcn/ui, or @/components/origin-ui for origin-ui.

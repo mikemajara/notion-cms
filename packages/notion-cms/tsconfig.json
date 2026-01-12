@@ -14,8 +14,18 @@
     "isolatedModules": true,
     "noEmit": true,
     "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo"
+    "tsBuildInfoFile": ".tsbuildinfo",
+    "baseUrl": ".",
+    "paths": {
+      "@notion-utils/types": ["../notion-types/dist/index.d.ts"],
+      "@notion-utils/types/*": ["../notion-types/dist/*"]
+    }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/*.test.ts", "dist", "**/*.spec.ts", "src/tests/**"]
+  "exclude": ["node_modules", "**/*.test.ts", "dist", "**/*.spec.ts", "src/tests/**"],
+  "references": [
+    {
+      "path": "../notion-types"
+    }
+  ]
 }

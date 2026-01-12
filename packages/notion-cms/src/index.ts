@@ -22,11 +22,10 @@ export type {
 
 export type {
   ContentBlockAdvanced,
+  ContentBlockRaw,
   ContentTableRowAdvanced,
-  ContentBlockRaw
-} from "./types/content-types"
-
-export type { DatabaseRecord } from "./types/public"
+  DatabaseRecord
+} from "@notion-utils/types"
 
 export {
   convertRecordToSimple,

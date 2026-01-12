@@ -1,10 +1,14 @@
 import { Client } from "@notionhq/client"
 import { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import type { ContentBlockRaw } from "../types/content-types"
+import type { ContentBlockRaw } from "@notion-utils/types"
 import { FileManager } from "../file-processor/file-manager"
+import { debug } from "../utils/debug"
 
 export class PageContentService {
-  constructor(private client: Client, private fileManager: FileManager) {}
+  constructor(
+    private client: Client,
+    private fileManager: FileManager
+  ) {}
 
   async getPageContent(
     pageId: string,
@@ -36,24 +40,32 @@ export class PageContentService {
     let allBlocks: ContentBlockRaw[] = []
     let hasMore = true
     let startCursor: string | undefined = undefined
+    console.log("You are using the local version")
+    debug.log("You are using the local version")
+    try {
+      while (hasMore) {
+        const response = await this.client.blocks.children.list({
+          block_id: blockId,
+          start_cursor: startCursor
+        })
 
-    while (hasMore) {
-      const response = await this.client.blocks.children.list({
-        block_id: blockId,
-        start_cursor: startCursor
-      })
+        const blocks = response.results as BlockObjectResponse[]
+        const rawBlocks: ContentBlockRaw[] = blocks as ContentBlockRaw[]
 
-      const blocks = response.results as BlockObjectResponse[]
-      const rawBlocks: ContentBlockRaw[] = blocks as ContentBlockRaw[]
+        await Promise.all(
+          rawBlocks.map((block) => this.enrichBlockFiles(block))
+        )
 
-      await Promise.all(rawBlocks.map((block) => this.enrichBlockFiles(block)))
+        allBlocks = [...allBlocks, ...rawBlocks]
+        hasMore = response.has_more
+        startCursor = response.next_cursor || undefined
+      }
 
-      allBlocks = [...allBlocks, ...rawBlocks]
-      hasMore = response.has_more
-      startCursor = response.next_cursor || undefined
+      return allBlocks
+    } catch (error) {
+      console.error("Error getting blocks: for blockId", blockId, error)
+      throw error
     }
-
-    return allBlocks
   }
 
   private async enrichBlockFiles(block: ContentBlockRaw): Promise<void> {

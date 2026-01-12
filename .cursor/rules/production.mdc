@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+We are not in a production environment. This application doesn't have any users yet. When planning new features and/or evaluating risks, you should not think of backwards compatibility if we are in a development phase. The whole point of developing is experimenting without the need to keep backwards compatibility. Act accordingly.

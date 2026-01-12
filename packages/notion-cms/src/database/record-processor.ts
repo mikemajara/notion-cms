@@ -1,5 +1,5 @@
 import type { PageObjectResponse } from "@notionhq/client/build/src/api-endpoints"
-import type { DatabaseRecordType } from "../types/public"
+import type { DatabaseRecordType } from "@notion-utils/types"
 import type { FileManager } from "../file-processor/file-manager"
 import { getPropertyValueSimple } from "./database-record-converter/converter-record-simple"
 import { getPropertyValueAdvanced } from "./database-record-converter/converter-record-advanced"

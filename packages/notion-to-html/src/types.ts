@@ -1,8 +1,6 @@
-import type { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints"
+import type { ContentBlockRaw } from "@notion-utils/types"
 
-export type NotionBlock = BlockObjectResponse & {
-  children?: NotionBlock[]
-}
+export type NotionBlock = ContentBlockRaw
 
 export type HtmlAttributes = Record<string, string>
 

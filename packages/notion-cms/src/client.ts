@@ -14,8 +14,11 @@ import type {
   ValueTypeMap,
   TypeSafeFilterCondition
 } from "./database/query-builder"
-import type { ContentBlockRaw } from "./types/content-types"
-import type { DatabaseRecord, DatabaseRecordType } from "./types/public"
+import type {
+  ContentBlockRaw,
+  DatabaseRecord,
+  DatabaseRecordType
+} from "@notion-utils/types"
 import { NotionCMSConfig, mergeConfig } from "./config"
 import { FileManager } from "./file-processor/file-manager"
 import { PageContentService } from "./content/page-content-service"

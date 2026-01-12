@@ -1,16 +1,16 @@
+import type { ContentBlockRaw } from "@notion-utils/types"
 import { richTextToMarkdown, richTextToPlain } from "./rich-text"
-import type { NotionBlock } from "./types"
 
 export interface RawMarkdownOptions {
   listIndent?: string
   debug?: boolean
 }
 
-function getBlockType(block: NotionBlock): string {
+function getBlockType(block: ContentBlockRaw): string {
   return (block as any).type as string
 }
 
-function getBlockField<T = any>(block: NotionBlock): T | undefined {
+function getBlockField<T = any>(block: ContentBlockRaw): T | undefined {
   const type = getBlockType(block)
   return (block as any)[type] as T
 }
@@ -26,7 +26,7 @@ function indentLines(text: string, indent: string): string {
 
 function buildStructuralPlaceholder(
   kind: string,
-  block: NotionBlock,
+  block: ContentBlockRaw,
   title: string | undefined,
   _options: Required<RawMarkdownOptions>
 ): string {
@@ -37,21 +37,21 @@ function buildStructuralPlaceholder(
 }
 
 function renderChildren(
-  block: NotionBlock,
+  block: ContentBlockRaw,
   depth: number,
   options: Required<RawMarkdownOptions>
 ): string {
-  const children = (block as any).children as NotionBlock[] | undefined
+  const children = (block as any).children as ContentBlockRaw[] | undefined
   if (!children || !children.length) return ""
   return renderBlocks(children, depth, options)
 }
 
 function renderTable(
-  block: NotionBlock,
+  block: ContentBlockRaw,
   _options: Required<RawMarkdownOptions>
 ): string {
   const table = getBlockField<any>(block)
-  const rows = ((block as any).children as NotionBlock[] | undefined) || []
+  const rows = ((block as any).children as ContentBlockRaw[] | undefined) || []
   const rowCells: string[][] = rows.map((r) => {
     const field = getBlockField<any>(r)
     const cells = (field?.cells as any[] | undefined) || []
@@ -89,7 +89,7 @@ function renderTable(
 }
 
 function renderBlock(
-  block: NotionBlock,
+  block: ContentBlockRaw,
   depth: number,
   options: Required<RawMarkdownOptions>
 ): string {
@@ -251,7 +251,7 @@ function renderBlock(
 }
 
 function renderListItems(
-  items: NotionBlock[],
+  items: ContentBlockRaw[],
   listType: "bulleted_list_item" | "numbered_list_item",
   depth: number,
   options: Required<RawMarkdownOptions>
@@ -278,7 +278,7 @@ function renderListItems(
 }
 
 function renderTodoItems(
-  items: NotionBlock[],
+  items: ContentBlockRaw[],
   depth: number,
   options: Required<RawMarkdownOptions>
 ): string {
@@ -300,7 +300,7 @@ function renderTodoItems(
 }
 
 function renderBlocks(
-  blocks: NotionBlock[] = [],
+  blocks: ContentBlockRaw[] = [],
   depth: number,
   options: Required<RawMarkdownOptions>
 ): string {
@@ -315,7 +315,7 @@ function renderBlocks(
 
     if (type === "bulleted_list_item" || type === "numbered_list_item") {
       const listType = type
-      const items: NotionBlock[] = []
+      const items: ContentBlockRaw[] = []
       while (
         index < blocks.length &&
         getBlockType(blocks[index]) === listType
@@ -328,7 +328,7 @@ function renderBlocks(
     }
 
     if (type === "to_do") {
-      const items: NotionBlock[] = []
+      const items: ContentBlockRaw[] = []
       while (index < blocks.length && getBlockType(blocks[index]) === "to_do") {
         items.push(blocks[index])
         index++
@@ -345,7 +345,7 @@ function renderBlocks(
 }
 
 export function blocksToMarkdown(
-  rawBlocks: NotionBlock[] = [],
+  rawBlocks: ContentBlockRaw[] = [],
   opts?: RawMarkdownOptions
 ): string {
   opts = opts ?? {}

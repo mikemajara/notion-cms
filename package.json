@@ -9,12 +9,21 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "changeset": "changeset",
+    "version-packages": "pnpm changeset version && pnpm install --lockfile-only",
+    "release": "node scripts/release.mjs",
+    "release:beta": "pnpm run release -- beta",
+    "release:latest": "pnpm run release -- latest",
+    "knip": "knip"
   },
   "devDependencies": {
-    "turbo": "^1.12.5",
+    "@changesets/cli": "^2.27.9",
+    "@types/node": "^25.0.6",
     "eslint": "^8.56.0",
-    "typescript": "^5.4.2"
+    "knip": "^5.80.2",
+    "turbo": "^1.12.5",
+    "typescript": "^5.8.3"
   },
   "packageManager": "pnpm@8.15.0",
   "engines": {

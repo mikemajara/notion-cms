@@ -1,14 +1,12 @@
-import {
-  blocksToHtml,
-  blocksToMarkdown,
-  convertRecordToSimple,
-  NotionCMS
-} from "@mikemajara/notion-cms"
+import { convertRecordToSimple, NotionCMS } from "@mikemajara/notion-cms"
 import { notFound } from "next/navigation"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import ReactMarkdown from "react-markdown"
+import { blocksToMarkdown } from "@notion-utils/md"
+import remarkGfm from "remark-gfm"
+import { components } from "@/components/markdown/components"
 // Import to ensure prototype extensions are executed
 import "@/notion/notion-types-art-gallery-inventory"
 
@@ -27,12 +25,10 @@ export default async function ArtworkPage({
     // Fetch the specific artwork by ID using the generated query method
     const pageId = (await params).id
     const artwork = await convertRecordToSimple(
-      await notionCMS.getRecordRaw(pageId)
+      await notionCMS.getRecord(pageId)
     )
-    const content = await notionCMS.getPageContentRaw(pageId)
-    const md = await blocksToMarkdown(content)
-    console.log(md)
-    const htmlContent = await blocksToHtml(content)
+    const pageContentRaw = await notionCMS.getPageContent(pageId)
+    const pageContentMarkdown = blocksToMarkdown(pageContentRaw)
 
     if (!artwork) {
       notFound()
@@ -126,30 +122,21 @@ export default async function ArtworkPage({
           </div>
 
           {/* Page Content */}
-          {content && content.length > 0 && (
+          {pageContentMarkdown && (
             <div className="mt-12">
               <Card>
                 <CardHeader>
                   <CardTitle>About This Artwork</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="whitespace-pre-wrap">
-                    <ReactMarkdown>{md}</ReactMarkdown>
-                  </p>
-                  <hr />
-                  <hr />
-                  <div
-                    className="max-w-none prose prose-lg"
-                    dangerouslySetInnerHTML={{ __html: htmlContent }}
-                  />
-
-                  {/* <div className="max-w-none prose prose-lg">
-                    {pageContent.map((block, index) => (
-                      <div key={index} className="mb-4">
-                        {renderBlock(block)}
-                      </div>
-                    ))}
-                  </div> */}
+                  <div className="max-w-none prose prose-lg">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={components}
+                    >
+                      {pageContentMarkdown}
+                    </ReactMarkdown>
+                  </div>
                 </CardContent>
               </Card>
             </div>

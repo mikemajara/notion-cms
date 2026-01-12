@@ -11,7 +11,7 @@ export default async function Home() {
     }
   })
   const artworks = await cms
-    .query("artGalleryInventory")
+    .query("artGalleryInventory", { recordType: "simple" })
     .filter("Published", "equals", true)
     .sort("Date Acquired", "descending")
     .all()

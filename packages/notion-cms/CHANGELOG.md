@@ -6,9 +6,16 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ## [Unreleased]
 
+### Added
+
+- Introduced the `@notion-utils/types` package and re-exported shared block and record types directly from `@notion-utils/cms` as a type-only dependency.
+
+## [1.0.0] - 2025-11-17
+
 ### Fixed
 
 - Include `ts-morph` in production dependencies so the CLI works when invoked via `pnpm dlx`.
+- Normalize `debug.query` logging output so database identifiers and pagination metadata are reported consistently.
 
 ## [0.2.3] - 2025-10-03
 

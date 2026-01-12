@@ -18,13 +18,13 @@ Install the library using your preferred package manager:
 
 ```bash
 # Using pnpm (recommended)
-pnpm add @mikemajara/notion-cms @notionhq/client
+pnpm add @notion-utils/cms @notionhq/client
 
 # Using npm
-npm install @mikemajara/notion-cms @notionhq/client
+npm install @notion-utils/cms @notionhq/client
 
 # Using yarn
-yarn add @mikemajara/notion-cms @notionhq/client
+yarn add @notion-utils/cms @notionhq/client
 ```
 
 ### File Storage (optional)

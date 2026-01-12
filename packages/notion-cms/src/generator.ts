@@ -10,7 +10,7 @@ import * as path from "path"
 import { Project, SourceFile } from "ts-morph"
 import { getClient } from "./shared"
 // Use runtime type to avoid redefining in generator
-import type { NotionPropertyType } from "./types/public"
+import type { NotionPropertyType } from "@notion-utils/types"
 type NotionPropertyConfig = DataSourceObjectResponse["properties"][string]
 
 type NotionPropertyEntries = Array<[string, NotionPropertyConfig]>

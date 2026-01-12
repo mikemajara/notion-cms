@@ -7,3 +7,5 @@ export type NotionDataSourceObject = DataSourceObjectResponse
 export type NotionPageObject = PageObjectResponse
 export type NotionPropertyTypeBase =
   DataSourceObjectResponse["properties"][string]["type"]
+
+
