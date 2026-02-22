@@ -402,6 +402,6 @@ Files should only download once. If you see repeated downloads:
 
 ## Next Steps
 
-- Review **[Limitations](./08-limitations.md)** - Complete feature supportability
+- Review **[Limitations](./08-support.md)** - Complete feature supportability
 - See **[Real-World Examples](./07-examples.md)** - File management patterns
 - Check **[Content Blocks](./05-content-blocks.md)** - How files appear in blocks

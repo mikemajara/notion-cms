@@ -376,6 +376,6 @@ export async function yourPattern() {
 
 ## Next Steps
 
-- Review **[Limitations](./08-limitations.md)** - Understand what's supported
+- Review **[Limitations](./08-support.md)** - Understand what's supported
 - Check **[Core Concepts](./02-core-concepts.md)** - Deep dive into the API layers
 - Explore the [monorepo apps](../../../apps/) - See full implementations

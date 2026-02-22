@@ -61,7 +61,7 @@ First, generate TypeScript types from your Notion database. This is similar to r
 ```bash
 npx notion-cms generate \
   --token your-notion-api-token \
-  --database your-database-id \
+  --databases your-database-id \
   --output ./notion
 ```
 
@@ -73,7 +73,7 @@ This command will:
 - Create type-safe query methods
 - Output files to the `./notion` directory
 
-**Note:** The `--database` parameter accepts a Notion **Database ID** (the 32-character hexadecimal string from your database URL). This is different from the **Database Key** (the generated TypeScript identifier) used in queries.
+**Note:** The `--databases` parameter accepts one or more Notion **Database IDs** (the 32-character hexadecimal string from your database URL). This is different from the **Database Key** (the generated TypeScript identifier) used in queries.
 
 You can find your Database ID in your database URL:
 
@@ -215,6 +215,6 @@ const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
 
 ## Read more
 
-- Check the [Limitations & Known Issues](./08-limitations.md) guide
-- Review the [Supportability Matrices](./08-limitations.md#supportability-matrices)
+- Check the [Limitations & Known Issues](./08-support.md) guide
+- Review the [Supportability Matrices](./08-support.md#supportability-matrices)
 - Explore example apps in the [monorepo](https://github.com/mikemajara/notion-cms)

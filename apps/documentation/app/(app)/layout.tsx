@@ -9,7 +9,7 @@ import "katex/dist/katex.min.css"
 
 import Navbar from "@/components/navbar"
 import "@/styles/globals.css"
-import { NotionCMS } from "@/lib/notion"
+import { getDocsPages } from "@/lib/docs"
 
 const geist = Geist({
   subsets: ["latin"],
@@ -92,11 +92,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
-  const pages = await notionCMS
-    .query("notionCMS", { recordType: "simple" })
-    .sort("Order", "ascending")
-    .all()
+  const pages = getDocsPages()
 
   return (
     <html lang="en" className="overflow-x-hidden touch-manipulation">

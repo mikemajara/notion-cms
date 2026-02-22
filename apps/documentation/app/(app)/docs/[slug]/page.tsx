@@ -1,26 +1,18 @@
-import {
-  NotionCMS,
-  RecordNotionCMS
-} from "@/lib/notion/notion-types-notion-cms-old"
-import { blocksToMarkdown } from "@notion-utils/md"
 import { Markdown } from "@/lib/markdown"
-import { unstable_cache } from "next/cache"
 import Link from "next/link"
 import { Icons } from "@/components/icons"
 import { ArrowUpRightIcon } from "lucide-react"
 import cn from "clsx"
 import { format } from "date-fns"
 import { headingSlugFromText } from "@/lib/utils"
+import { getDocsPage, getDocsPages } from "@/lib/docs"
+import { notFound } from "next/navigation"
 
 // ISR: Revalidate every hour (3600 seconds)
 export const revalidate = 3600
 
 export const generateStaticParams = async () => {
-  const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
-  const pages = await notionCMS
-    .query("notionCMS", { recordType: "simple" })
-    .all()
-  return pages.map((page) => ({ slug: page.slug }))
+  return getDocsPages().map((page) => ({ slug: page.slug }))
 }
 
 /**
@@ -60,23 +52,13 @@ export default async function Page({
   params: Promise<{ slug: string }>
 }) {
   const slug = (await params).slug
-  const fetchContent = unstable_cache(
-    async () => {
-      const notionCMS = new NotionCMS(process.env.NOTION_API_KEY!)
-      const page = (await notionCMS
-        .query("notionCMS", { recordType: "simple" })
-        .filter("_slug", "equals", slug)
-        .maybeSingle()) as RecordNotionCMS
-      const content = blocksToMarkdown(await notionCMS.getPageContent(page.id))
-      return { content, page }
-    },
-    [`docs-page-${slug}`],
-    {
-      tags: [`docs-${slug}`],
-      revalidate: 3600
-    }
-  )
-  const { content, page } = await fetchContent()
+  const page = getDocsPage(slug)
+
+  if (!page) {
+    notFound()
+  }
+
+  const content = page.content
 
   return (
     <div className="w-full">
@@ -86,16 +68,12 @@ export default async function Page({
           <div className="flex flex-row justify-between items-center mt-10">
             <div className="flex gap-2 items-center">
               <Link
-                href={`https://mikemajara.notion.site/${page.id.replaceAll(
-                  "-",
-                  ""
-                )}`}
+                href={`https://github.com/mikemajara/notion-cms/blob/notion-v5.1/packages/notion-cms/docs/${page.fileName}`}
                 className="flex gap-2 items-center hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <Icons.notion className="w-4 h-4" />
-                {/* See in Notion */}
                 <ArrowUpRightIcon className="w-4 h-4" />
               </Link>
               <Link
@@ -108,8 +86,7 @@ export default async function Page({
             </div>
             <div>
               <p>
-                Last updated:{" "}
-                {page["Last updated"] && format(page["Last updated"], "PPp")}
+                Last updated: {format(page.updatedAt, "PPp")}
               </p>
             </div>
           </div>

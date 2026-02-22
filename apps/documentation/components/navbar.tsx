@@ -3,7 +3,7 @@
 import cn from "clsx"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { RecordNotionCMS } from "@/lib/notion"
+import { DocsPageSummary } from "@/lib/docs"
 import Image from "next/image"
 import {
   Sheet,
@@ -43,7 +43,7 @@ function Item(props: React.ComponentProps<typeof Link>) {
   )
 }
 
-const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
+const Content = ({ pages }: { pages: DocsPageSummary[] }) => {
   return (
     <>
       <Link className="flex gap-2 justify-end items-end py-4" href={"/"}>
@@ -52,11 +52,11 @@ const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
       <ul className="flex flex-col gap-1 mb-6 text-right lowercase hover:font-regular">
         {pages.map((page) => (
           <Item
-            key={page.id}
-            href={`/docs/${page._slug}`}
+            key={page.slug}
+            href={`/docs/${page.slug}`}
             className="block py-1 w-full text-right transition-colors"
           >
-            {page.Name}
+            {page.title}
           </Item>
         ))}
       </ul>
@@ -64,7 +64,7 @@ const Content = ({ pages }: { pages: RecordNotionCMS[] }) => {
   )
 }
 
-export default function Navbar({ pages }: { pages: RecordNotionCMS[] }) {
+export default function Navbar({ pages }: { pages: DocsPageSummary[] }) {
   return (
     <nav className="relative pr-6 w-auto border-r">
       <div className="block absolute top-2 left-2 sm:hidden z-1">

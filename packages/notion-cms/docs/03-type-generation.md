@@ -216,14 +216,14 @@ Then run:
 
 ```bash
 npx notion-cms generate \
-  --database your-database-id \
+  --databases your-database-id \
   --output ./notion
 ```
 
 **Note:** The generator doesn't automatically read `.env` files. You'll need to load them yourself or use a tool like `dotenv-cli`:
 
 ```bash
-npx dotenv-cli -e .env -- notion-cms generate --database your-db-id
+npx dotenv-cli -e .env -- notion-cms generate --databases your-db-id
 ```
 
 ### Data Source ID Override

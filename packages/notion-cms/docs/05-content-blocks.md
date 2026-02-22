@@ -4,7 +4,7 @@ Notion CMS historically converted Notion page blocks into display-friendly forma
 
 ## Overview
 
-Content blocks represent the rich content inside Notion pages - paragraphs, headings, images, lists, tables, and more. Notion CMS provides converters to transform these blocks into formats suitable for rendering.
+Content blocks represent the rich content inside Notion pages - paragraphs, headings, images, lists, tables, and more. Use `@notion-utils/md` (and optionally `@notion-utils/html`) to transform the raw blocks into display-ready output.
 
 ## Getting Page Content
 
@@ -279,10 +279,10 @@ const docs = await notionCMS
 
 for (const doc of docs) {
   const blocks = await notionCMS.getPageContent(doc.id)
-  const html = blocksToHtml(blocks, { classPrefix: "doc-" })
+  const markdown = blocksToMarkdown(blocks)
 
   // Save to file or render in your framework
-  await saveDocPage(doc.slug, html)
+  await saveDocPage(doc.slug, markdown)
 }
 ```
 
@@ -306,10 +306,10 @@ const previewMarkdown = blocksToMarkdown(previewBlocks)
 
 ### Unsupported Block Types
 
-Some Notion block types are not yet supported. These are silently skipped unless debug mode is enabled. See the [Limitations](./08-limitations.md) guide for a complete supportability matrix.
+Some Notion block types are not yet supported. These are silently skipped unless debug mode is enabled. See the [Limitations](./08-support.md) guide for a complete supportability matrix.
 
 ## Next Steps
 
 - Learn about **[File Management](./06-file-management.md)** - Caching Notion files
-- Review **[Limitations](./08-limitations.md)** - Complete block supportability matrix
+- Review **[Limitations](./08-support.md)** - Complete block supportability matrix
 - See **[Real-World Examples](./07-examples.md)** - Content rendering patterns
