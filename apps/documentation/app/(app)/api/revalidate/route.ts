@@ -1,23 +1,22 @@
-import { convertRecordToSimple } from "@notion-utils/cms"
 import { revalidateTag } from "next/cache"
 import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function POST(request: NextRequest) {
   try {
-    const { data } = await request.json()
-    const record = await convertRecordToSimple(data)
+    const payload = await request.json()
+    const slug = payload?.slug
 
-    if (!record.slug) {
+    if (!slug || typeof slug !== "string") {
       return NextResponse.json({ error: "Slug is required" }, { status: 400 })
     }
 
-    // Revalidate the specific page tag
-    revalidateTag(`docs-${record.slug}`)
-    revalidatePath(`/docs/${record.slug}/llms.txt`)
+    revalidateTag(`docs-${slug}`)
+    revalidatePath(`/docs/${slug}`)
+    revalidatePath(`/docs/${slug}/llms.txt`)
 
     return NextResponse.json(
-      { message: `Page with slug "${record.slug}" revalidated successfully` },
+      { message: `Page with slug "${slug}" revalidated successfully` },
       { status: 200 }
     )
   } catch (error) {

@@ -21,7 +21,7 @@ export default withMDX()({
     return [
       {
         source: "/",
-        destination: "/docs/introduction",
+        destination: "/docs/getting-started",
         permanent: false
       }
     ]

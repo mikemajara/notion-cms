@@ -7,6 +7,7 @@ This document provides a comprehensive overview of what's supported, what's part
 ### Content Block Supportability Matrix
 
 This matrix shows which Notion block types are supported in content conversion (Markdown/HTML).
+`Advanced` refers to custom application-level mapping from raw blocks, not a built-in CMS block converter.
 
 | Block Type            | Markdown | HTML | Advanced | Notes                                            |
 | --------------------- | -------- | ---- | -------- | ------------------------------------------------ |
@@ -17,7 +18,7 @@ This matrix shows which Notion block types are supported in content conversion (
 | `heading_3`           | ✅       | ✅   | ✅       | Full support                                     |
 | `quote`               | ✅       | ✅   | ✅       | Full support                                     |
 | `code`                | ✅       | ✅   | ✅       | Language preserved                               |
-| `callout`             | ⚠️       | ⚠️   | ✅       | Icon not rendered in Markdown/HTML               |
+| `callout`             | ❌       | ❌   | ✅       | Not currently rendered by `@notion-utils/md`/`html` |
 | **List Blocks**       |
 | `bulleted_list_item`  | ✅       | ✅   | ✅       | Full support                                     |
 | `numbered_list_item`  | ✅       | ✅   | ✅       | Full support                                     |
@@ -185,12 +186,12 @@ const rollup = record.properties.MyRollup.rollup
 
 ```typescript
 const blocks = await notionCMS.getPageContent(pageId)
-const advancedBlocks = await convertBlocksToAdvanced(blocks)
 
-advancedBlocks.forEach((block) => {
+blocks.forEach((block) => {
   if (block.type === "bookmark") {
     // Custom rendering with fetch to get preview metadata
-    renderRichPreview(block.url, block.caption_text)
+    const url = (block as any).bookmark?.url
+    renderRichPreview(url)
   }
 })
 ```
@@ -332,10 +333,9 @@ For unsupported or partially supported blocks:
 
 ```typescript
 const blocks = await notionCMS.getPageContent(pageId)
-const advancedBlocks = await convertBlocksToAdvanced(blocks)
 
 // Custom rendering logic
-advancedBlocks.forEach((block) => {
+blocks.forEach((block) => {
   if (block.type === "unsupported_type") {
     // Implement custom rendering
   }

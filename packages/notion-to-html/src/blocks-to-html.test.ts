@@ -274,7 +274,7 @@ describe("blocksToHtml", () => {
     })
 
     expect(html).toBe(
-      '<ul data-level="0" data-type="bulleted_list_item"><li data-level="1" data-type="bulleted_list_item" style="list-style-type: disc">Item 1</li><li data-level="1" data-type="bulleted_list_item" style="list-style-type: circle">Item 2</li><li data-level="1" data-type="bulleted_list_item" style="list-style-type: disc">Item 3</li></ul>'
+      '<ul class="notion-bulleted-list" data-level="0" data-type="bulleted_list_item"><li data-level="1" data-type="bulleted_list_item" style="list-style-type: disc">Item 1</li><li data-level="1" data-type="bulleted_list_item" style="list-style-type: circle">Item 2</li><li data-level="1" data-type="bulleted_list_item" style="list-style-type: disc">Item 3</li></ul>'
     )
   })
 
